@@ -1,0 +1,668 @@
+
+<html>
+<head
+<title>
+The Standard C++ Locale
+</title>
+</head>
+<body  bgcolor="#e8e8e8" text="#101010">
+<p>
+A version of the following article has been published
+in Dr. Dobb's Journal.
+<p>
+<hr>
+<h2>The Standard C++ Locale</h2>
+<p>
+
+by Nathan C. Myers <br>
+<a href="http://www.cantrip.org/">&lt;http://www.cantrip.org/&gt;</a>
+<p>
+<hr>
+<p>
+  When your users' language matches your own, it is not hard to make your
+programs use it correctly in menus, dates, messages, and sorted lists.  
+Software travels, though, and these days you and most potential users 
+of your code may have only a machine language in common.  The market 
+for your code becomes immensely larger if it can accommodate their needs,
+too.
+
+<p>
+  The description of where your program is running, and of your user's 
+preferences, is called its <em>locale</em>.  Keeping the locale separate 
+from the program code so that it can be changed easily is called 
+<em>internationalization</em>.  In C the locale describes only what 
+is common to an entire country, but the C++ locale is more flexible.
+
+<h3>Challenges</h3>
+
+<p>
+  In supporting internationalization, the C++ Standard Library
+confronts many challenges.  Your server programs may have            
+many clients around the world, so the standard library must
+support more than one locale per program.  You use (or will soon use)
+multi-threading, so it must be re-entrant.  The ways your users'    
+cultures and preferences differ are unlimited, so it must be    
+extensible.  Because you may not (yet) care about locales, it must
+be ignorable.  Finally, because it is standard, it must be   
+efficient, easy, and safe to use.
+
+<p>
+  The answer in the Standard C++ library to all these requirements uses 
+the full power of the language, including new standard features not yet 
+implemented in all compilers.  This article suggests how the C++ locale 
+library may be used.  It also shows how it might be implemented, so you 
+can use the same techniques in your own programs.
+<p>
+
+<h3>The Locale Object</h3>
+
+<p>
+  A locale in the C (not C++) standard describes a character encoding 
+(with sorting rules) and the formats for a few value types: numbers, 
+dates, money.  These represent only the edge of a vast continent of 
+real cultural and personal choices; others commonly expressed 
+include time zone, measurement system, paper size, window colors and 
+fonts, citizenship, letterhead, e-mail address, sex, and shoe size.  
+No standard or standards can list all your preferences.  The C++ 
+standard only provides (as examples) those categories found in the 
+traditional C locale libraries--but you can extend it.
+
+<p>
+  The key to understanding the C++ locale library is the <em>facet</em>.  
+A facet, informally, is a class interface for a service that may be 
+obtained from a locale object.  For example, the Standard C++ library 
+facet <tt>num_put&lt;&gt;</tt> formats numeric values, and 
+<tt>collate&lt;&gt;</tt> provides an ordering for string values.  
+A facet is also an object contained in a locale.  Each locale 
+object contains a set of facet objects to provide these services.
+
+<p>
+  The C++ locale is a simple object that can be (efficiently) passed 
+around, copied, and assigned just like any built-in value.  Functions 
+that take a locale argument can declare a default argument value, 
+<tt>locale()</tt>, which is a copy of the current global locale; 
+this allows you to omit the argument and get reasonable behavior.  
+Each iostream instance keeps a locale object on hand, for use by the 
+operators &gt;&gt; and &lt;&lt;.  These measures give the locale 
+facilities a low profile so they won't intrude where their more 
+powerful features are not needed.
+<p>
+
+<h3>A Date Class Example</h3>
+
+<p>
+  How does this look, in code?  Example 1 is a simple Date class.
+
+<p>
+<hr>
+<h4>Example 1: A simple Date class</h4>
+
+<pre>
+
+  // file: date.h
+  #include &lt;iosfwd&gt; // for istream, ostream
+  #include &lt;ctime&gt;  // for struct tm
+
+  namespace ChronLib {
+  class Date {
+    long day;  // days since 1752-09-14
+   public:
+    enum Month { jan, feb, mar, apr, may, jun, 
+                 jul, aug, sep, oct, nov, dec };
+  
+    Date(int year, Month month, int day);
+    void asCLibTime(struct std::tm*) const;  
+  };
+
+  std::ostream&amp;
+  operator&lt;&lt; (std::ostream&amp; os, Date const&amp; date);
+
+  std::istream&amp;
+  operator&gt;&gt; (std::istream&amp; is, Date&amp; date);
+  }
+
+</pre>
+<hr>
+
+<p>
+Don't let the "std::" namespace notation throw you; all the library 
+components of Standard C++ are members of the namespace <tt>std</tt>.  
+The new standard headers &lt;iosfwd&gt; and &lt;ctime&gt; declare the 
+standard names used in the example, and the "::" notation gives access 
+to those members. 
+
+<p>
+  Nothing about locales or facets is visible here; just a 
+constructor, stream operators, and a single member function, 
+<tt>asCLibTime()</tt>, which fills a Standard C library 
+<tt>struct tm</tt> for communication with other libraries.   
+(See your <tt>strftime()</tt> manual page for more information 
+about <tt>struct tm</tt>.)  Thus, you don't need to know anything 
+about locales to be able to use class Date.
+
+<p>
+  The formats your users expect to see for dates vary all over the 
+map.  If you coded a format into operators &gt;&gt; and &lt;&lt;, you 
+would leave most of your potential users dissatisfied.  Instead, when 
+you write those operators, you can delegate the formatting to the 
+locale object kept by the stream.  This will be demonstrated in 
+example 3.
+
+<p>
+<h3>An Example Program</h3>
+
+<p>
+  How can your users control the format produced by an operator&lt;&lt; 
+that uses locales?  Example 2 may be the simplest possible example.
+
+<p>
+<hr>
+<h4>Example 2: A program that uses your preferred locale</h4>
+<pre>
+
+  #include &lt;iostream&gt;  /* for cout */
+  #include &lt;locale&gt;    /* for locale */
+  #include "date.h" 
+  
+  int main()
+  {
+    using namespace std; 
+    using ChronLib::Date;
+    cout.imbue( locale("") );
+    cout &lt;&lt; Date(1942, Date::dec, 7) &lt;&lt; endl;
+    return 0;
+  }
+
+</pre>
+
+<hr>
+<p>
+The new standard headers, &lt;iostream&gt; and &lt;locale&gt;, 
+declare the names <tt>std::locale</tt>, <tt>std::cout</tt>, and 
+<tt>std::endl</tt>, used here, and "date.h" has the declarations 
+from Example 1.  The line that begins with "using" lets you leave 
+the "std::" off standard names used later in the function.  
+
+<p>
+  The constructor call <tt>locale("")</tt> creates a locale object 
+that represents the user's preferences.  The standard doesn't say what 
+this means, but on many systems the library substitutes whatever is 
+found in an environment variable (often LANG or LC_ALL) in place of 
+the empty string.  A common name for the American locale, for example, 
+is "en_US".  (On POSIX systems you can type "locale -a" to list the 
+names of supported locales.)
+
+<p>
+  The call to <tt>cout.imbue()</tt> installs the newly constructed 
+locale in the ostream <tt>cout</tt>, for use by the various 
+operators &lt;&lt;.  
+The next line uses Date's operator&lt;&lt; (declared in Example 1) which 
+delegates the work to a facet of the locale that it obtains from <tt>cout</tt>.
+
+<p>
+<h3>Using Facets</h3>
+
+<p>
+  To use a facet of a locale, you call the Standard C++ library 
+global function template <tt>use_facet&lt;&gt;()</tt>, found in the 
+standard header &lt;locale&gt;.  Figure 1 shows its declaration.
+
+<p>
+<hr>
+<h4>Figure 1: The standard template use_facet&lt;&gt;()</h4>
+
+<pre>
+
+  namespace std {
+    template &lt;class Facet&gt;
+      Facet const&amp;  use_facet(locale const&amp; loc);
+  };
+
+</pre>
+
+<p>  
+<hr>
+
+<p>
+For a facet class <tt>Stats</tt> with a member function <tt>shoeSize()</tt>, 
+for example, and a locale object named <tt>loc</tt>, a call would look 
+like:
+
+<pre>
+  use_facet&lt;Stats&gt;(loc).shoeSize();
+</pre>
+
+<p>
+  This syntax for calling a function template, where you supply the 
+template parameter explicitly instead of the compiler deducing it 
+from one of the arguments, is not implemented in all compilers 
+yet; it is called "explicit template function qualification".
+It resembles the syntax for the new cast expressions, such as 
+<tt>dynamic_cast&lt;&gt;</tt>, and in fact 
+<tt>use_facet&lt;&gt;()</tt> acts 
+as a safe cast.  In the example above, the resulting reference is 
+used immediately to call the member function <tt>Stats::shoeSize()</tt> 
+on the instance of <tt>Stats</tt> stored in the locale object <tt>loc</tt>.
+
+<p>
+<h3>An Example operator&lt;&lt;</h3>
+
+<p>
+  Example 3 is a complete implementation of <tt>Date::operator&lt;&lt;</tt>.
+It uses the standard facet <tt>time_put&lt;char&gt;</tt>.
+
+<p>
+<hr>
+<h4>Example 3: Operator&lt;&lt; for class Date</h4>
+
+<pre>
+
+  // date_insert.C
+  #include &lt;ctime&gt;    /* for struct tm */
+  #include &lt;ostream&gt;  /* for ostream */
+  #include &lt;locale&gt;
+  #include "date.h" 
+
+  namespace ChronLib {
+  std::ostream&amp;
+  operator&lt;&lt;(std::ostream&amp; os, Date const&amp; date)
+  {
+    using namespace std;
+    ostream::sentry  cerberus(os);                 //1
+    if (!bool(cerberus)) return os;                //2
+    struct tm tmbuf; date.asCLibTm(&amp;tmbuf);        //3
+    time_put&lt;char&gt; const&amp;  timeFacet = 
+      use_facet&lt; time_put&lt;char&gt; &gt;( os.getloc() );  //4
+    if (timeFacet.put(
+          os,os,os.fill(),&amp;tmbuf,'x').failed())    //5
+      os.setstate(os.badbit);
+    return os;                                     //6
+  }
+  }
+
+</pre>
+
+<hr>
+
+<p>
+A lot is going on here.  The lines marked //1 and //2 create and 
+check a standard "ostream::sentry" object.  (This is a new class
+in the standard iostream library; its constructor prepares the 
+ostream for output.  In a multi-threaded environment it might 
+lock the stream.)  Line //3 fills in the local struct variable 
+<tt>tmbuf</tt> with the components of the date argument.
+
+<p>
+The interesting part follows: In line //4, <tt>os.getloc()</tt> 
+obtains the locale object kept by the ostream argument <tt>os</tt>, 
+and the call to <tt>use_facet&lt;&gt;()</tt> gets a reference to the 
+standard facet <tt>time_put&lt;char&gt;</tt> in that locale.  In line 
+//5, the call to <tt>time_put&lt;char&gt;::put</tt> actually writes the 
+characters out to the stream <tt>os</tt> and returns a value to report 
+any errors.  (Ignore the arguments to <tt>put</tt>, for now.)  Line 
+//6 destroys the <tt>locale::sentry</tt> object (perhaps unlocking 
+the stream) and returns the stream <tt>os</tt>.
+
+<p>
+  Reflect on what this means.  The header "date.h" didn't mention 
+locales, but because of this code hidden in <tt>operator&gt;&gt;</tt>, 
+a couple of lines in <tt>main()</tt> let you format dates 
+appropriately for users anywhere in the world.  (Without those 
+lines in <tt>main()</tt>, you get the default "C" locale behavior.)
+
+<p>
+<h3>Your Own Facet</h3>
+
+<p>
+  The standard facets are designed so you can derive from them to get 
+finer control of locale behavior.  Such a derived facet inherits the 
+interface of the base facet, but you can override its virtual members 
+to change its behavior.
+
+<p>
+  Derivation is not the only way you can extend a locale.  You can make 
+your own facet, and construct a locale to hold it.  Example 4 is the 
+sample <tt>Stats</tt> facet mentioned earlier.
+
+<p>
+<hr>
+
+<h4>Example 4: The sample Stats facet</h4>
+
+<pre>
+
+  // stats.h
+  #include &lt;locale&gt;
+
+  class Stats  : public std::locale::facet {
+   public:
+    static std::locale::id id;
+  
+    Stats(int ss)        : shoeSize_(ss) {}
+    int shoeSize() const { return shoeSize_; }
+  
+   private:
+    Stats(Stats&amp;);           // not defined:
+    void operator=(Stats&amp;);  // not defined:
+  
+    int shoeSize_;
+  };
+  
+  // stats.C
+  #include "stats.h"
+  std::locale::id Stats::id;
+  
+</pre>
+
+<hr>
+<p>
+
+What makes the class <tt>Stats</tt> a facet?  It's derived from 
+<tt>locale::facet</tt>, it has a public static member named 
+<tt>id</tt> of type <tt>locale::id</tt>, and its member functions 
+are declared const.  That's all.  It does not need a default 
+constructor, copy constructor, or assignment operator.  (They 
+are declared here so that anybody who tries to use them will get
+a compiler error.)  
+
+<p>
+  A facet class instance is only useful as part of a locale.  
+Example 5 shows one way to install a facet instance as part of 
+a locale.
+
+<p>
+<hr>
+<h4>Example 5: Using the Stats facet</h4>
+
+<pre>
+
+  locale  aLocale( locale(), new Stats(48) );
+  int s = use_facet&lt;Stats&gt;(aLocale).shoeSize();
+
+</pre>
+<hr>
+
+<p>
+The first statement constructs a locale object named <tt>aLocale</tt> 
+as a copy of the current global locale, with the addition of a newly 
+created Stats facet.  (In a real program you would probably get the 
+<tt>Stats</tt> constructor argument from a file.)  It uses one of the 
+locale class's template constructors (see figure 5), which deduces 
+the facet type from the pointer argument.  (Support for template 
+constructors, as for other member templates, is a recent addition to 
+the language, and is not yet implemented in all compilers.)  The locale 
+takes ownership of the facet object, so that you never need to delete 
+it, and its memory can't leak.  The second statement demonstrates using 
+it, as in the earlier examples.  
+
+<p>
+  Facets are most useful if they are standard, so that you can use them 
+without preparing, or making your users prepare, data files for every 
+language.  The most useful of any new facets you invent can be published
+and standardized, independently of the C++ Standard; then the data files 
+for each language can be collected and posted on the internet for use by 
+anyone's programs.  
+
+<p>
+<h3>Under the Hood</h3>
+
+<p>
+  How does all this work?  It can all be implemented in ordinary C++. 
+You can use the same techniques in your own programs.
+
+<p>
+  First, the locale object itself is efficient to copy and assign 
+because it really contains only a pointer, as in Figure 2.  
+
+<p>
+<hr>
+<h4>Figure 2: Standard C++ locale implementation</h4>
+
+<pre>
+
+  class locale {
+   public:
+    class facet;
+    class id;
+  
+   ~locale() 
+      { if (imp_-&gt;refs_-- == 0) delete imp_; }
+    locale() 
+      : imp_(__global_imp) { ++imp_-&gt;refs_; }
+    locale(locale const&amp; other)
+      : imp_(other.imp_)   { ++imp_-&gt;refs_; }
+    template &lt;class Facet&gt;
+      locale(locale const&amp; other, Facet* f);
+    explicit locale(char const* name);
+    // other constructors
+    locale&amp; operator=(locale const&amp; l);
+  
+    template &lt;class Facet&gt;
+      friend Facet const&amp;  use_facet(locale const&amp;);
+  
+   private:
+    struct imp {
+      size_t refs_; 
+      vector&lt;facet*&gt; facets_;
+      imp(const imp&amp;);
+     ~imp();
+    };
+    imp* imp_;
+  };
+
+</pre>
+<hr>
+<p>
+
+(Only the members used in examples above are listed here.)  The only
+non-const member function is assignment, so all copies can share the 
+same "implementation vector", pointed to by member <tt>imp_</tt>.  The 
+copy constructor copies <tt>imp_</tt> and bumps the reference count; 
+the default constructor copies a pointer to a global instance, the same 
+way.  (This definition uses one new language feature not mentioned yet: 
+the constructor from "<tt>char const *</tt>" is declared "explicit" so 
+the compiler will not use it as an implicit conversion.)
+
+<p>
+  The facet base class, <tt>locale::facet</tt>, shown in Figure 3, is
+also reference-counted.
+
+<p>
+<hr>
+
+<h4>Figure 3: locale::facet base class definition</h4>
+
+<pre>
+
+  class locale::facet {
+    friend class locale;
+    friend class locale::imp;
+    size_t refs_;
+   protected:
+    explicit facet(int refs = 0);
+    virtual ~facet();
+  };
+
+</pre>
+<hr>
+<p>
+
+It has a virtual destructor so that when the count goes to zero, 
+the locale can safely destroy an instance of any class derived 
+from it.  (This definition depends on another recent language 
+feature: a nested class can now be defined outside the containing 
+class.)
+
+<p>
+  Note that the examples here follow the convention that a reference
+count value of zero implies a single reference.  This gives any static 
+instances an initial use count of one before any static constructors 
+have been executed.  This property is often useful, though it is not 
+actually used in the code presented here.
+
+<p>
+  The only tricky bit is in the class <tt>locale::id</tt>, in Figure 4.
+
+<p>
+<hr>
+<h4>Figure 4: locale::id class definition</h4>
+
+<pre>
+
+  class locale::id {
+    friend class locale;
+    size_t index_;
+    static size_t mark_;
+  };
+
+</pre>
+<hr>
+<p>
+
+Recall that each facet type contains a static member of type 
+<tt>locale::id</tt>.  Thus, there is one static instance per facet 
+type.  The default constructor <tt>id()</tt> (carefully) does not 
+initialize the member <tt>index_</tt>.  Because "static constructors" 
+are called at times that are (for most practical purposes) random, 
+they may be called after the value has already been used, so it 
+is essential that initialization not depend on a constructor.
+The members of each static instance are reliably set to zero by 
+the program loader, and remain zero until they are set to something 
+else.  When does the member <tt>index_</tt> get set?  
+
+<p>
+  Figure 5 shows the definition of the locale template constructor 
+used back in Example 5.
+
+<p>
+<hr>
+
+<h4>Figure 5: locale template constructor</h4>
+
+<pre>
+
+  template &lt;class Facet&gt;
+    locale::locale(
+      locale const&amp; other, Facet* f)
+  {
+    imp_ = new imp(*other.imp_);
+    imp_-&gt;refs_ = 0;  // one reference
+  
+    size_t& index = Facet::id.index_;
+    if (!index) 
+      index = ++Facet::id.mark_;
+    if (index &gt;= imp_-&gt;facets_.size())
+      imp_-&gt;facets_.resize(index+1);
+  
+    ++f-&gt;facet::refs_;
+    facet*&amp; fpr = imp_-&gt;facets_[index];
+    if (fpr) --fpr-&gt;refs_;
+    fpr = f;
+  }
+
+</pre>
+<hr>
+<p>
+
+The constructor begins by copying the implementation vector from 
+<tt>other</tt>, which increments all the facet reference counts.  
+Then it sets <tt>Facet::id.index_</tt> to assign the facet an identity
+if it has none yet, and (if necessary) grows the new vector to fit.   
+Finally, it installs the new facet, being careful to keep the 
+reference counts right.  Thus, the <tt>id::index_</tt> member is 
+zero until it is actually used, and it is considered used only when 
+a locale object exists which contains the facet that owns it.  
+(This code is not thread-safe; the thread-safe version would be 
+a bit harder to read, but otherwise similar.)
+
+<p>
+  Notice that this template constructor, and <tt>use_facet&lt;&gt;()</tt>, 
+can be instantiated only if the Facet parameter really qualifies as a 
+facet in every way; otherwise, you get a compile or link error.  Hence,
+the library enforces its own interface requirements.
+
+<p>
+<h3>The Function Template use_facet&lt;&gt;()</h3>
+
+<p>
+  The template <tt>use_facet</tt>, declared in Figure 1 and called in 
+several of the examples, is (finally) defined in Figure 6.
+
+<p>
+<hr>
+
+<h4>Figure 6: The Function Template use_facet&lt;&gt;()</h4>
+
+<pre>
+
+  template &lt;class Facet&gt;
+    inline Facet const&amp; 
+    use_facet(locale const&amp; loc)
+  {
+    size_t index = Facet::id.index_;
+    locale::facet* fp;
+    if (index &gt;= loc.imp_-&gt;facets_.size() ||
+        (fp = loc.imp_-&gt;facets_[index]) == 0)
+      throw bad_cast();
+    return static_cast&lt;Facet const&amp;&gt;(*fp);
+  }
+
+</pre>
+<hr>
+<p>
+
+If the facet has not yet been assigned an identity, or if no instance 
+of it (or anything derived from it) is found in the argument locale, 
+<tt>use_facet&lt;&gt;()</tt> throws an exception.  (The test, here, 
+is tricky: 
+if <tt>index</tt> is bigger than the vector, or if the pointer at offset
+<tt>index</tt> is zero, then the facet is not present; the pointer at 
+offset zero, corresponding to an uninitialized facet index, is always 
+zero.)
+
+<p>
+  I have omitted definitions of assignment operators and destructors 
+because they are not very interesting.  I also have omitted the 
+definition of the locale constructor from a string (as used in 
+Example 2), because it would not fit in a magazine article.
+<p>
+
+<h3>Conclusion</h3>
+
+<p>
+  The Standard C++ locale library offers much more than what is 
+presented here.  Still, the most interesting facets are yet to 
+be designed.  The C++ Standard committee is closing up shop; it 
+remains for people like you, working with POSIX and <tt>ad hoc</tt> 
+internet interest groups, to standardize bindings for what now clog 
+the "preferences" menu of every interactive application.  Perhaps 
+the most pressing need is for a standard time zone facet which can 
+check the current version of a timezone database out on the internet 
+(such as the "TZ" database at ftp://elsie.nci.nih.gov/pub/).
+
+<p>
+[Thank you to all my reviewers, but particularly to Chris Lopez 
+and John Gilson.]
+
+<p>
+<hr>
+
+<p>
+<blockquote>
+Bio:
+Nathan developed the facilities found in chapter 22 of the Draft
+C++ Standard mainly so he would be able to write portable C++ 
+programs without bothering about locales.  He can be reached via 
+his web page, <tt>http://www.cantrip.org/</tt>.
+</blockquote>
+
+<p>
+<HR>
+Return to <A HREF="http://www.cantrip.org/">The Cantrip Corpus</a>.
+Send email: <A HREF="mailto:ncm-nospam@cantrip.org">ncm-nospam@cantrip.org</A>
+<FONT size=-1>
+<ADDRESS>Copyright <a href="copyright.html">&copy;</a>1997 by Nathan Myers. All Rights Reserved.
+URL: &lt;http://www.cantrip.org/locale.html&gt;</ADDRESS>
+</FONT>
+</body>
+</html>

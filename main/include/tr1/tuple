@@ -1,0 +1,1397 @@
+#ifndef _SSTL_TR1_TUPLE_
+# define _SSTL_TR1_TUPLE_
+
+#include <utility>
+#include <iosfwd>
+#include <ios>
+
+namespace std
+{namespace tr1 {
+
+	namespace tuple_impl
+	{
+		class unused {};
+	}
+	
+	template <typename t0 = tuple_impl::unused, typename t1 = tuple_impl::unused, typename t2 = tuple_impl::unused, 
+	          typename t3 = tuple_impl::unused, typename t4 = tuple_impl::unused, typename t5 = tuple_impl::unused,
+	          typename t6 = tuple_impl::unused, typename t7 = tuple_impl::unused, typename t8 = tuple_impl::unused,
+	          typename t9 = tuple_impl::unused>
+	class tuple;
+
+	namespace tuple_impl
+	{
+		template <typename t0 = tuple_impl::unused, typename t1 = tuple_impl::unused, typename t2 = tuple_impl::unused, 
+				typename t3 = tuple_impl::unused, typename t4 = tuple_impl::unused, typename t5 = tuple_impl::unused,
+				typename t6 = tuple_impl::unused, typename t7 = tuple_impl::unused, typename t8 = tuple_impl::unused,
+				typename t9 = tuple_impl::unused>
+		class tuple_base;
+		
+		template <>
+		class tuple_base<unused, unused, unused, unused, unused, unused, unused, unused, unused, unused>
+		{};
+		
+		template <typename t0>
+		class tuple_base<t0, unused, unused, unused, unused, unused, unused, unused, unused, unused>
+		{
+		public:
+			static const int count = 1;
+			typedef t0 element0;
+		
+			t0 m0;
+			
+			tuple_base(t0 data0 = t0())
+			 : m0(data0)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0)
+			{}
+			template <typename y_t0>
+			tuple_base(const tuple<y_t0> &y)
+			 : m0(y.m0)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				return *this;
+			}
+			template <typename y_t0>
+			tuple_base &operator=(const tuple_base<y_t0> &y)
+			{
+				m0 = y.m0;
+				return *this;
+			}
+		};
+		
+		template <typename t0, typename t1>
+		class tuple_base<t0, t1, unused, unused, unused, unused, unused, unused, unused, unused>
+		{
+		public:
+			static const int count = 2;
+			typedef t0 element0;
+			typedef t1 element1;
+			
+			t0 m0;
+			t1 m1;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1())
+			 : m0(data0),
+			   m1(data1)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1)
+			{}
+			template <typename y_t0, typename y_t1>
+			tuple_base(const tuple_base<y_t0, y_t1> &y)
+			 : m0(y.m0),
+			   m1(y.m1)
+			{}
+			template <typename y_t0, typename y_t1>
+			tuple_base(const pair<y_t0, y_t1> &y)
+			 : m0(y.first),
+			   m1(y.second)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1>
+			tuple_base &operator=(const pair<y_t0, y_t1> &y)
+			{
+				m0 = y.first;
+				m1 = y.second;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2>
+		class tuple_base<t0, t1, t2, unused, unused, unused, unused, unused, unused, unused>
+		{
+		public:
+			static const int count = 3;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2, typename t3>
+		class tuple_base<t0, t1, t2, t3, unused, unused, unused, unused, unused, unused>
+		{
+		public:
+			static const int count = 4;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2, typename t3, typename t4>
+		class tuple_base<t0, t1, t2, t3, t4, unused, unused, unused, unused, unused>
+		{
+		public:
+			static const int count = 5;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			typedef t4 element4;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			t4 m4;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3(), t4 data4 = t4())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3),
+			   m4(data4)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2, typename t3, typename t4,
+		          typename t5>
+		class tuple_base<t0, t1, t2, t3, t4, t5, unused, unused, unused, unused>
+		{
+		public:
+			static const int count = 6;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			typedef t4 element4;
+			typedef t5 element5;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			t4 m4;
+			t5 m5;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3(), t4 data4 = t4(),
+			           t5 data5 = t5())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3),
+			   m4(data4),
+			   m5(data5)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2, typename t3, typename t4,
+		          typename t5, typename t6>
+		class tuple_base<t0, t1, t2, t3, t4, t5, t6, unused, unused, unused>
+		{
+		public:
+			static const int count = 7;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			typedef t4 element4;
+			typedef t5 element5;
+			typedef t6 element6;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			t4 m4;
+			t5 m5;
+			t6 m6;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3(), t4 data4 = t4(),
+			           t5 data5 = t5(), t6 data6 = t6())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3),
+			   m4(data4),
+			   m5(data5),
+			   m6(data6)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				return *this;
+			}
+		};
+		
+		template <typename t0, typename t1, typename t2, typename t3, typename t4,
+		          typename t5, typename t6, typename t7>
+		class tuple_base<t0, t1, t2, t3, t4, t5, t6, t7, unused, unused>
+		{
+		public:
+			static const int count = 8;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			typedef t4 element4;
+			typedef t5 element5;
+			typedef t6 element6;
+			typedef t7 element7;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			t4 m4;
+			t5 m5;
+			t6 m6;
+			t7 m7;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3(), t4 data4 = t4(),
+			           t5 data5 = t5(), t6 data6 = t6(), t7 data7 = t7())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3),
+			   m4(data4),
+			   m5(data5),
+			   m6(data6),
+			   m7(data7)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6),
+			   m7(y.m7)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6, typename y_t7>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6),
+			   m7(y.m7)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				m7 = y.m7;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6, typename y_t7>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				m7 = y.m7;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2, typename t3, typename t4,
+		          typename t5, typename t6, typename t7, typename t8>
+		class tuple_base<t0, t1, t2, t3, t4, t5, t6, t7, t8, unused>
+		{
+		public:
+			static const int count = 9;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			typedef t4 element4;
+			typedef t5 element5;
+			typedef t6 element6;
+			typedef t7 element7;
+			typedef t8 element8;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			t4 m4;
+			t5 m5;
+			t6 m6;
+			t7 m7;
+			t8 m8;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3(), t4 data4 = t4(),
+			           t5 data5 = t5(), t6 data6 = t6(), t7 data7 = t7(), t8 data8 = t8())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3),
+			   m4(data4),
+			   m5(data5),
+			   m6(data6),
+			   m7(data7),
+			   m8(data8)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6),
+			   m7(y.m7),
+			   m8(y.m8)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6, typename y_t7, typename y_t8>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6),
+			   m7(y.m7),
+			   m8(y.m8)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				m7 = y.m7;
+				m8 = y.m8;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6, typename y_t7, typename y_t8>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				m7 = y.m7;
+				m8 = y.m8;
+				return *this;
+			}
+		};
+
+		template <typename t0, typename t1, typename t2, typename t3, typename t4,
+		          typename t5, typename t6, typename t7, typename t8, typename t9>
+		class tuple_base
+		{
+		public:
+			static const int count = 10;
+			typedef t0 element0;
+			typedef t1 element1;
+			typedef t2 element2;
+			typedef t3 element3;
+			typedef t4 element4;
+			typedef t5 element5;
+			typedef t6 element6;
+			typedef t7 element7;
+			typedef t8 element8;
+			typedef t9 element9;
+			
+			t0 m0;
+			t1 m1;
+			t2 m2;
+			t3 m3;
+			t4 m4;
+			t5 m5;
+			t6 m6;
+			t7 m7;
+			t8 m8;
+			t9 m9;
+			
+			tuple_base(t0 data0 = t0(), t1 data1 = t1(), t2 data2 = t2(), t3 data3 = t3(), t4 data4 = t4(),
+			           t5 data5 = t5(), t6 data6 = t6(), t7 data7 = t7(), t8 data8 = t8(), t9 data9 = t9())
+			 : m0(data0),
+			   m1(data1),
+			   m2(data2),
+			   m3(data3),
+			   m4(data4),
+			   m5(data5),
+			   m6(data6),
+			   m7(data7),
+			   m8(data8),
+			   m9(data9)
+			{}
+			tuple_base(const tuple_base &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6),
+			   m7(y.m7),
+			   m8(y.m8),
+			   m9(y.m9)
+			{}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6, typename y_t7, typename y_t8, typename y_t9>
+			tuple_base(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8, y_t9> &y)
+			 : m0(y.m0),
+			   m1(y.m1),
+			   m2(y.m2),
+			   m3(y.m3),
+			   m4(y.m4),
+			   m5(y.m5),
+			   m6(y.m6),
+			   m7(y.m7),
+			   m8(y.m8),
+			   m9(y.m9)
+			{}
+
+			tuple_base &operator=(const tuple_base &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				m7 = y.m7;
+				m8 = y.m8;
+				m9 = y.m9;
+				return *this;
+			}
+			template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4, 
+			          typename y_t5, typename y_t6, typename y_t7, typename y_t8, typename y_t9>
+			tuple_base &operator=(const tuple_base<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8, y_t9> &y)
+			{
+				m0 = y.m0;
+				m1 = y.m1;
+				m2 = y.m2;
+				m3 = y.m3;
+				m4 = y.m4;
+				m5 = y.m5;
+				m6 = y.m6;
+				m7 = y.m7;
+				m8 = y.m8;
+				m9 = y.m9;
+				return *this;
+			}
+		};
+	}
+	
+	template <typename t0, typename t1, typename t2, typename t3, typename t4, 
+	          typename t5, typename t6, typename t7, typename t8, typename t9>
+	class tuple : public tuple_impl::tuple_base<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9>
+	{
+	private:
+		typedef tuple_impl::tuple_base<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> inherited;
+	
+	public:
+		tuple()
+		 : inherited()
+		{}
+	
+		explicit tuple(t0 data0)
+		 : inherited(data0)
+		{}
+		template <typename y_t0>
+		tuple(const tuple<y_t0> &y)
+		 : inherited(y)
+		{}
+		
+		explicit tuple(t0 data0, t1 data1)
+		 : inherited(data0, data1)
+		{}
+		template <typename y_t0, typename y_t1>
+		tuple(const tuple<y_t0, y_t1> &y)
+		 : inherited(y)
+		{}
+		
+		template <typename y_t0, typename y_t1>
+		tuple(const pair<y_t0, y_t1> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2)
+		 : inherited(data0, data1, data2)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2>
+		tuple(const tuple<y_t0, y_t1, y_t2> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3)
+		 : inherited(data0, data1, data2, data3)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4)
+		 : inherited(data0, data1, data2, data3, data4)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5)
+		 : inherited(data0, data1, data2, data3, data4, data5)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4,
+		          typename y_t5>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6)
+		 : inherited(data0, data1, data2, data3, data4, data5, data6)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4,
+		          typename y_t5, typename y_t6>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6, t7 data7)
+		 : inherited(data0, data1, data2, data3, data4, data5, data6, data7)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4,
+		          typename y_t5, typename y_t6, typename y_t7>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6, t7 data7, t8 data8)
+		 : inherited(data0, data1, data2, data3, data4, data5, data6, data7, data8)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4,
+		          typename y_t5, typename y_t6, typename y_t7, typename y_t8>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8> &y)
+		 : inherited(y)
+		{}
+
+		explicit tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6, t7 data7, t8 data8, t9 data9)
+		 : inherited(data0, data1, data2, data3, data4, data5, data6, data7, data8, data9)
+		{}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4,
+		          typename y_t5, typename y_t6, typename y_t7, typename y_t8, typename y_t9>
+		tuple(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8, y_t9> &y)
+		 : inherited(y)
+		{}
+
+		tuple operator=(const tuple &y)
+		{
+			inherited::operator=(y);
+			return *this;
+		}
+		template <typename y_t0, typename y_t1, typename y_t2, typename y_t3, typename y_t4,
+		          typename y_t5, typename y_t6, typename y_t7, typename y_t8, typename y_t9>
+		tuple operator=(const tuple<y_t0, y_t1, y_t2, y_t3, y_t4, y_t5, y_t6, y_t7, y_t8, y_t9> &y)
+		{
+			inherited::operator=(y);
+			return *this;
+		}
+		template <typename tFirst, typename tSecond>
+		tuple operator=(const pair<tFirst, tSecond> &y)
+		{
+			inherited::operator=(y);
+			return *this;
+		}
+	};
+	
+	template <int index, typename tTuple>
+	struct tuple_element;
+	
+	template <typename tTuple>
+	struct tuple_element<0, tTuple>
+	{
+		typedef typename tTuple::element0 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<1, tTuple>
+	{
+		typedef typename tTuple::element1 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<2, tTuple>
+	{
+		typedef typename tTuple::element2 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<3, tTuple>
+	{
+		typedef typename tTuple::element3 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<4, tTuple>
+	{
+		typedef typename tTuple::element4 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<5, tTuple>
+	{
+		typedef typename tTuple::element5 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<6, tTuple>
+	{
+		typedef typename tTuple::element6 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<7, tTuple>
+	{
+		typedef typename tTuple::element7 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<8, tTuple>
+	{
+		typedef typename tTuple::element8 type;
+	};
+	template <typename tTuple>
+	struct tuple_element<9, tTuple>
+	{
+		typedef typename tTuple::element9 type;
+	};
+
+	template <typename tFirst, typename tSecond>
+	struct tuple_element<0, pair<tFirst, tSecond> >
+	{
+		typedef tFirst type;
+	};
+	template <typename tFirst, typename tSecond>
+	struct tuple_element<1, pair<tFirst, tSecond> >
+	{
+		typedef tSecond type;
+	};
+	
+	template <typename tTuple>
+	struct tuple_size
+	{
+		static const int value = tTuple::count;
+	};
+	template <typename tFirst, typename tSecond>
+	struct tuple_size< pair<tFirst, tSecond> >
+	{
+		static const int value = 2;
+	};
+	
+	namespace tuple_impl
+	{
+		template <int index, typename tTuple>
+		struct real_get;
+
+		template <typename tTuple>
+		struct real_get<0, tTuple>
+		{
+			typedef typename tuple_element<0, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m0;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<1, tTuple>
+		{
+			typedef typename tuple_element<1, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m1;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<2, tTuple>
+		{
+			typedef typename tuple_element<2, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m2;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<3, tTuple>
+		{
+			typedef typename tuple_element<3, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m3;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<4, tTuple>
+		{
+			typedef typename tuple_element<4, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m4;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<5, tTuple>
+		{
+			typedef typename tuple_element<5, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m5;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<6, tTuple>
+		{
+			typedef typename tuple_element<6, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m6;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<7, tTuple>
+		{
+			typedef typename tuple_element<7, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m7;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<8, tTuple>
+		{
+			typedef typename tuple_element<8, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m8;
+			}
+		};
+		template <typename tTuple>
+		struct real_get<9, tTuple>
+		{
+			typedef typename tuple_element<9, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.m9;
+			}
+		};
+		
+		template <int index, typename tTuple>
+		struct pair_get;
+		
+		template <typename tTuple>
+		struct pair_get<0, tTuple>
+		{
+			typedef typename tuple_element<0, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.first;
+			}
+		};
+		template <typename tTuple>
+		struct pair_get<1, tTuple>
+		{
+			typedef typename tuple_element<0, tTuple>::type return_type;
+			inline static return_type &get(tTuple &y)
+			{
+				return y.second;
+			}
+		};
+	}
+	
+	// get<n> functions
+	template <int index, typename t0, typename t1, typename t2, typename t3, typename t4, 
+	                     typename t5, typename t6, typename t7, typename t8, typename t9>
+	inline typename tuple_element<index, tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> >::type 
+		&get(tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> &tup)
+	{
+		return tuple_impl::real_get<index, tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> >::get(tup);
+	}
+	template <int index, typename t0, typename t1, typename t2, typename t3, typename t4, 
+	                     typename t5, typename t6, typename t7, typename t8, typename t9>
+	inline const typename tuple_element<index, tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> >::type 
+		&get(const tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> &tup)
+	{
+		return tuple_impl::real_get<index, const tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> >::get(tup);
+	}
+	
+	template <int index, typename tFirst, typename tSecond>
+	inline typename tuple_element<index, pair<tFirst, tSecond> >::type
+		&get(pair<tFirst, tSecond> &tup)
+	{
+		return tuple_impl::pair_get<index, pair<tFirst, tSecond> >::get(tup);
+	}
+	template <int index, typename tFirst, typename tSecond>
+	inline const typename tuple_element<index, pair<tFirst, tSecond> >::type
+		&get(const pair<tFirst, tSecond> &tup)
+	{
+		return tuple_impl::pair_get<index, pair<tFirst, tSecond> >::get(tup);
+	}
+	
+	// make_tuple() functions
+	template <typename t0>
+	tuple<t0> make_tuple(t0 data0)
+	{
+		return tuple<t0>(data0);
+	}
+	template <typename t0, typename t1>
+	tuple<t0, t1> make_tuple(t0 data0, t1 data1)
+	{
+		return tuple<t0, t1>(data0, data1);
+	}
+	template <typename t0, typename t1, typename t2>
+	tuple<t0, t1, t2> make_tuple(t0 data0, t1 data1, t2 data2)
+	{
+		return tuple<t0, t1, t2>(data0, data1, data2);
+	}
+	template <typename t0, typename t1, typename t2, typename t3>
+	tuple<t0, t1, t2, t3> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3)
+	{
+		return tuple<t0, t1, t2, t3>(data0, data1, data2, data3);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4>
+	tuple<t0, t1, t2, t3, t4> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4)
+	{
+		return tuple<t0, t1, t2, t3, t4>(data0, data1, data2, data3, data4);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5>
+	tuple<t0, t1, t2, t3, t4, t5> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5)
+	{
+		return tuple<t0, t1, t2, t3, t4, t5>(data0, data1, data2, data3, data4, data5);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6>
+	tuple<t0, t1, t2, t3, t4, t5, t6> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6)
+	{
+		return tuple<t0, t1, t2, t3, t4, t5, t6>(data0, data1, data2, data3, data4, data5, data6);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7>
+	tuple<t0, t1, t2, t3, t4, t5, t6, t7> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6, 
+		t7 data7)
+	{
+		return tuple<t0, t1, t2, t3, t4, t5, t6, t7>(data0, data1, data2, data3, data4, data5, data6, data7);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7, typename t8>
+	tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6, 
+		t7 data7, t8 data8)
+	{
+		return tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8>(data0, data1, data2, data3, data4, data5, data6, data7, data8);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7, typename t8, typename t9>
+	tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> make_tuple(t0 data0, t1 data1, t2 data2, t3 data3, t4 data4, t5 data5, t6 data6, 
+		t7 data7, t8 data8, t9 data9)
+	{
+		return tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9>(data0, data1, data2, data3, data4, data5, data6, data7, data8, data9);
+	}
+
+	// tie() functions
+	template <typename t0>
+	tuple<t0&> tie(t0 &data0)
+	{
+		return tuple<t0&>(data0);
+	}
+	template <typename t0, typename t1>
+	tuple<t0&, t1&> tie(t0 &data0, t1 &data1)
+	{
+		return tuple<t0&, t1&>(data0, data1);
+	}
+	template <typename t0, typename t1, typename t2>
+	tuple<t0&, t1&, t2&> tie(t0 &data0, t1 &data1, t2 &data2)
+	{
+		return tuple<t0&, t1&, t2&>(data0, data1, data2);
+	}
+	template <typename t0, typename t1, typename t2, typename t3>
+	tuple<t0&, t1&, t2&, t3&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3)
+	{
+		return tuple<t0&, t1&, t2&, t3&>(data0, data1, data2, data3);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4>
+	tuple<t0&, t1&, t2&, t3&, t4&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3, t4 &data4)
+	{
+		return tuple<t0&, t1&, t2&, t3&, t4&>(data0, data1, data2, data3, data4);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5>
+	tuple<t0&, t1&, t2&, t3&, t4&, t5&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3, t4 &data4, t5 &data5)
+	{
+		return tuple<t0&, t1&, t2&, t3&, t4&, t5&>(data0, data1, data2, data3, data4, data5);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6>
+	tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3, t4 &data4, t5 &data5, t6 &data6)
+	{
+		return tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&>(data0, data1, data2, data3, data4, data5, data6);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7>
+	tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&, t7&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3, t4 &data4, t5 &data5, t6 &data6, 
+		t7 &data7)
+	{
+		return tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&, t7&>(data0, data1, data2, data3, data4, data5, data6, data7);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7, typename t8>
+	tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&, t7&, t8&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3, t4 &data4, t5 &data5, t6 &data6, 
+		t7 &data7, t8 &data8)
+	{
+		return tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&, t7&, t8&>(data0, data1, data2, data3, data4, data5, data6, data7, data8);
+	}
+	template <typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7, typename t8, typename t9>
+	tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&, t7&, t8&, t9&> tie(t0 &data0, t1 &data1, t2 &data2, t3 &data3, t4 &data4, t5 &data5, t6 &data6, 
+		t7 &data7, t8 &data8, t9 &data9)
+	{
+		return tuple<t0&, t1&, t2&, t3&, t4&, t5&, t6&, t7&, t8&, t9&>(data0, data1, data2, data3, data4, data5, data6, data7, data8, data9);
+	}
+	
+	// tie helpers
+	struct swallow_assign
+	{
+		template <typename tVal>
+		const swallow_assign &operator=(const tVal &val) const
+		{
+			return *this;
+		}
+	};
+	const swallow_assign ignore = swallow_assign();
+	
+	// stream stuff
+	namespace tuple_impl
+	{
+		template <typename tChar>
+		struct manip_open
+		{	
+			static const int index = ios_base::xalloc();
+			
+			tChar mChar;
+			manip_open(tChar c)
+			 : mChar(c)
+			{}
+		};
+		template <typename tChar, typename tTraits>
+		basic_istream<tChar, tTraits> &operator>>(basic_istream<tChar, tTraits> &str, const manip_open<tChar> &manip)
+		{
+			str.iword(manip_open<tChar>::index) = manip.mChar;
+		}
+		template <typename tChar, typename tTraits>
+		basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const manip_open<tChar> &manip)
+		{
+			str.iword(manip_open<tChar>::index) = manip.mChar;
+		}
+		template <typename tChar, typename tTraits>
+		tChar get_open(basic_ostream<tChar, tTraits> &str)
+		{
+			return tChar(str.iword(manip_open<tChar>::index));
+		}
+		
+		template <typename tChar>
+		struct manip_close
+		{	
+			static const int index = ios_base::xalloc();
+			
+			tChar mChar;
+			manip_close(tChar c)
+			 : mChar(c)
+			{}
+		};
+		template <typename tChar, typename tTraits>
+		basic_istream<tChar, tTraits> &operator>>(basic_istream<tChar, tTraits> &str, const manip_close<tChar> &manip)
+		{
+			str.iword(manip_close<tChar>::index) = manip.mChar;
+		}
+		template <typename tChar, typename tTraits>
+		basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const manip_close<tChar> &manip)
+		{
+			str.iword(manip_close<tChar>::index) = manip.mChar;
+		}
+		template <typename tChar, typename tTraits>
+		tChar get_close(basic_ostream<tChar, tTraits> &str)
+		{
+			return tChar(str.iword(manip_close<tChar>::index));
+		}
+
+		template <typename tChar>
+		struct manip_delimiter
+		{	
+			static const int index = ios_base::xalloc();
+			
+			tChar mChar;
+			manip_delimiter(tChar c)
+			 : mChar(c)
+			{}
+		};
+		template <typename tChar, typename tTraits>
+		basic_istream<tChar, tTraits> &operator>>(basic_istream<tChar, tTraits> &str, const manip_delimiter<tChar> &manip)
+		{
+			str.iword(manip_delimiter<tChar>::index) = manip.mChar;
+		}
+		template <typename tChar, typename tTraits>
+		basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const manip_delimiter<tChar> &manip)
+		{
+			str.iword(manip_delimiter<tChar>::index) = manip.mChar;
+		}
+		template <typename tChar, typename tTraits>
+		tChar get_delimiter(basic_ostream<tChar, tTraits> &str)
+		{
+			return tChar(str.iword(manip_delimiter<tChar>::index));
+		}
+	}
+	template <typename tChar>
+	tuple_impl::manip_open<tChar> tuple_open(tChar c)
+	{
+		return tuple_impl::manip_open<tChar>(c);
+	}
+	template <typename tChar>
+	tuple_impl::manip_close<tChar> tuple_close(tChar c)
+	{
+		return tuple_impl::manip_close<tChar>(c);
+	}
+	template <typename tChar>
+	tuple_impl::manip_delimiter<tChar> tuple_delimiter(tChar c)
+	{
+		return tuple_impl::manip_delimiter<tChar>(c);
+	}
+	
+	template <typename tChar, typename tTraits>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<> &o)
+	{
+		str << tuple_impl::get_open<tChar>(str) << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0> &o)
+	{
+		str << tuple_impl::get_open<tChar>(str) << get<0>(o) << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1> &o)
+	{
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << tuple_impl::get_delimiter<tChar>(str) << get<1>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3, typename t4>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3, t4> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o) << delim << get<4>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3, t4, t5> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o) << delim << get<4>(o) << delim
+		    << get<5>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3, t4, t5, t6> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o) << delim << get<4>(o) << delim
+		    << get<5>(o) << delim << get<6>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3, t4, t5, t6, t7> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o) << delim << get<4>(o) << delim
+		    << get<5>(o) << delim << get<6>(o) << delim << get<7>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7, typename t8>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o) << delim << get<4>(o) << delim
+		    << get<5>(o) << delim << get<6>(o) << delim << get<7>(o) << delim << get<8>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+	template <typename tChar, typename tTraits,
+	          typename t0, typename t1, typename t2, typename t3, typename t4,
+	          typename t5, typename t6, typename t7, typename t8, typename t9>
+	basic_ostream<tChar, tTraits> &operator<<(basic_ostream<tChar, tTraits> &str, const tuple<t0, t1, t2, t3, t4, t5, t6, t7, t8, t9> &o)
+	{
+		tChar delim = tuple_impl::get_delimiter<tChar>(str);
+		
+		str << tuple_impl::get_open<tChar>(str) 
+		    << get<0>(o) << delim << get<1>(o) << delim << get<2>(o) << delim << get<3>(o) << delim << get<4>(o) << delim
+		    << get<5>(o) << delim << get<6>(o) << delim << get<7>(o) << delim << get<8>(o) << delim << get<9>(o)
+		    << tuple_impl::get_close<tChar>(str);
+	}
+}}
+
+#endif

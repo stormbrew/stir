@@ -1,0 +1,11 @@
+#ifndef _SSTL_CSTDIO_
+# define _SSTL_CSTDIO_
+
+namespace std
+{
+	extern "C"
+	{
+# include <stdio.h>
+	}
+}
+#endif

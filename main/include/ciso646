@@ -1,0 +1,11 @@
+#ifndef _SSTL_CISO646_
+# define _SSTL_CISO646_
+
+namespace std
+{
+	extern "C"
+	{
+# include <iso646.h>
+	}
+}
+#endif

@@ -1,0 +1,348 @@
+#ifndef _SSTL_LOCALE_
+#define _SSTL_LOCALE_
+
+#include <vector>
+#include <string>
+// we include the tr1 memory header directly so we can use shared_ptr even if the user doesn't
+// want it.
+#include "tr1/memory"
+// we include the tr1 functional header for hash (used by the collate facet)
+#include "tr1/functional"
+
+// This locale implementation will be absolutely bare bones, doing as little as possible.
+// It's something that will have to be returned to later.
+namespace std
+{
+	// forward declarations
+	class locale;
+
+	template <typename tFacet>
+	bool has_facet(const locale &loc);
+
+	template <typename tFacet>
+	const tFacet &use_facet(const locale &loc);
+
+	template <typename tElem>
+	class collate;
+
+	class locale
+	{
+	public:
+		class facet;
+		class id;
+
+		typedef int category;
+
+		static const category none      = 0;
+		static const category collate   = 1<<1;
+		static const category ctype     = 1<<2;
+		static const category monetary  = 1<<3;
+		static const category numeric   = 1<<4;
+		static const category time      = 1<<5;
+		static const category messages  = 1<<6;
+		static const category all       = collate | ctype | monetary | numeric | time | messages;
+
+	private:
+		// it would be nice to use a shared_ptr for the facet, but that does not 
+		// seem possible the way it's required to be implemented (protected virtual destructor in the base class)
+		typedef facet                        *facet_ptr;
+		typedef vector<facet_ptr>             locale_list;
+		typedef tr1::shared_ptr<locale_list>  locale_ptr;
+
+		string                          mName;
+		locale_ptr                      mFacets;
+
+	protected:
+		// this function assumes the loader sets the id's members to zero,
+		// and if so sets it to mCount++;
+		// (note, f is advisory in order to make it so you don't have to pass the template argument.
+		// it may be null)
+		template <typename tFacet>
+		static void initfacet(tFacet *f)
+		{
+			if (tFacet::id.mIndex == 0)
+				tFacet::id.mIndex = id::mCount++;
+		}
+
+		template <typename tFacet>
+		tFacet * const findfacet() const
+		{
+			if (mFacets->size() <= tFacet::id.mIndex || (*mFacets)[tFacet::id.mIndex] == 0)
+				return 0;
+			else
+				return static_cast<tFacet*const>((*mFacets)[tFacet::id.mIndex]);
+		}
+
+		void removefacet(size_t id);
+		void removefacets(category cats);
+
+		// this function first expands the vector to support the facet,
+		// then erases a facet at the same id if any, then sets that facet to the one given.
+		void setfacet(size_t id, facet *to);
+		template <typename tFacet>
+		void setfacet(tFacet *to)
+		{
+			initfacet(to);
+			setfacet(tFacet::id.mIndex, to);
+		}
+		void setfacets(const locale &loc, category cats);
+			
+
+	public:
+		locale() throw()
+		 : mName("*"),
+		   mFacets(new locale_list)
+		{}
+		
+		locale(const locale &y) throw()
+		 : mName(y.mName),
+		   mFacets(y.mFacets)
+		{}
+		
+		explicit locale(const char *name)
+		 : mName(name),
+		   mFacets(new locale_list)
+		{
+			if (name == string("C"))
+				(*this) = classic();
+			else if (name != string(""))
+				throw runtime_error("std::locale unknown locale (only supports C or unnamed)");
+		}
+		
+		locale(const locale &y, const char *name, category cats);		
+		locale(const locale &y, const locale &from, category cats);
+
+		template <typename tFacet>
+		locale(const locale &y, tFacet *pFacet)
+		 : mName("*"),
+		   mFacets(new locale_list(*y.mFacets)) // modifying, so copy.
+		{
+			setfacet(pFacet);
+		}
+
+		inline bool operator==(const locale &y) const
+		{
+			return ((mName != "*" && mName == y.mName) ||
+			        mFacets == y.mFacets);
+		}
+		inline bool operator!=(const locale &y) const
+		{
+			return !operator==(y);
+		}
+
+		template <typename tElement, typename tTraits, typename tAllocator>
+		inline bool operator()(const basic_string<tElement, tTraits, tAllocator> &x,
+		                       const basic_string<tElement, tTraits, tAllocator> &y)
+		{
+			return use_facet< collate<tElement> >(*this).compare(&*x.begin(), &*x.end(), &*y.begin(), &*y.end()) < 0;
+		}
+
+		template <typename tFacet>
+		locale combine(const locale &y) const
+		{
+			tFacet *fac = y.findfacet<tFacet>();
+
+			if (fac == 0)
+				throw runtime_error("std::locale::combine attempted to combine with a locale that did not have the correct facet.");
+
+			return locale(*this, fac);
+		}
+
+		const string &name() const
+		{
+			return mName;
+		}
+
+		static locale classic();
+		static locale global();
+		static locale global(const locale &loc);
+
+		template <typename tFacet>
+		friend const tFacet &use_facet(const locale &loc);
+		template <typename tFacet>
+		friend bool has_facet(const locale &loc);
+	};
+
+	class locale::facet
+	{
+	private:
+		size_t mCount;
+
+		facet *acquire_ref() throw()
+		{
+			mCount++;
+			return this;
+		}
+		facet *release_ref() throw()
+		{
+			if (mCount-- == 0) // postincrement because a) we don't want to compare with 0xffffffff, and b) we don't care if it underflows
+				delete this;
+
+			return 0;
+		}
+
+		// block these from being default defined
+		facet(const facet &y);
+		void operator=(const facet &y);
+
+	protected:
+		explicit facet(size_t refs = 0)
+		 : mCount(refs)
+		{}
+		virtual ~facet()
+		{}
+
+		// extension:
+		// derived facets that are part of the standard library and are in a category should return their
+		// category here. This is only for this library's benefit, however. Derived libs should not use it.
+		virtual locale::category getcat() const
+		{
+			return locale::none;
+		}
+
+		friend class locale;
+	};
+
+	class locale::id
+	{
+		size_t         mIndex;
+		static size_t  mCount;
+
+		friend class locale;
+	};
+
+	inline locale::locale(const locale &y, const locale &from, locale::category cats)
+	 : mName(y.mName),
+	   mFacets(new locale_list(*y.mFacets)) // modifying, so copy.
+	{
+		removefacets(cats);
+		setfacets(from, cats);
+	}
+
+	// exactly like the previous constructor, only we get locale(from) from a name.
+	inline locale::locale(const locale &y, const char *name, locale::category cats)
+	 : mName(y.mName),
+	   mFacets(new locale_list(*y.mFacets)) // we will be modifying this, so copy it.
+	{
+		locale from(name);
+
+		removefacets(cats);
+		setfacets(from, cats);
+	}
+
+	inline void locale::removefacet(size_t id)
+	{
+		if ((*mFacets)[id] != 0)
+			(*mFacets)[id] = (*mFacets)[id]->release_ref();
+	}
+	inline void locale::removefacets(locale::category cats)
+	{
+		// eliminate all matching facets from this locale object
+		for (locale_list::iterator it = mFacets->begin(); it != mFacets->end(); it++)
+		{
+			if (cats & (*it)->getcat())
+				*it = (*it)->release_ref(); // release and blank the facet
+		}
+	}
+
+	inline void locale::setfacet(size_t id, locale::facet *to)
+	{
+		if (mFacets->size() <= id) // resize the array to accomadate
+			mFacets->resize(id + 1, 0);
+		else
+			removefacet(id); // obviously we only need to do this if we already had room for the facet anyways.
+
+		// acquire a reference and add it.
+		(*mFacets)[id] = to->acquire_ref();
+	}
+
+	inline void locale::setfacets(const locale &from, locale::category cats)
+	{
+		// find all the matching facets and set them. Note that we have to 'guess' the id
+		// from the index into the array.
+		for (locale_list::const_iterator itOther = from.mFacets->begin(); itOther != from.mFacets->begin(); itOther++)
+		{
+			if (cats & (*itOther)->getcat())
+				setfacet(itOther - from.mFacets->begin(), *itOther);
+		}
+	}
+
+	template <typename tFacet>
+	bool has_facet(const locale &loc)
+	{
+		return (loc.template findfacet<tFacet>() != 0);
+	}
+
+	template <typename tFacet>
+	const tFacet &use_facet(const locale &loc)
+	{
+		tFacet *fac = loc.template findfacet<tFacet>();
+		if (fac == 0)
+			throw bad_cast("std::use_facet no such facet in locale");
+
+		return *fac;
+	}
+
+	template <typename tChar>
+	class collate : public locale::facet
+	{
+	public:
+		static locale::id id;
+
+		typedef tChar                    char_type;
+		typedef basic_string<tChar>      string_type;
+
+		explicit collate(size_t refs)
+		 : locale::facet(refs)
+		{}
+
+		inline int compare(const char_type *begin1, const char_type *end1, const char_type begin2, const char_type end2) const
+		{
+			return do_compare(begin1, end1, begin2, end2);
+		}
+		inline string_type transform(const char_type *begin, const char_type *end) const
+		{
+			return do_transform(begin, end);
+		}
+		inline long hash(const char_type *begin, const char_type *end) const
+		{
+			return do_hash(begin, end);
+		}
+
+	protected:
+		virtual int do_compare(const char_type *begin1, const char_type *end1, const char_type begin2, const char_type end2) const
+		{
+			std::ptrdiff_t diff = (end1 - begin1) - (end2 - begin2);
+			if (diff != 0)
+			{
+				if (diff < 0)
+					return -1;
+				else
+					return 1;
+			}
+			while (begin1 != end1)
+			{
+				diff = *begin1++ - *begin2++;
+				if (diff != 0)
+				{
+					if (diff < 0)
+						return -1;
+					else
+						return 1;
+				}
+			}
+			return 0;
+		}
+		virtual string_type do_transform(const char_type *begin, const char_type *end) const
+		{
+			// we just return the same string. Could probably be done better, though.
+			return string_type(begin, end);
+		}
+		virtual long do_hash(const char_type *begin, const char_type *end) const
+		{
+			return long(tr1::hash(string_type(begin, end)));
+		}
+	};
+}
+
+#endif

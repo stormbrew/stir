@@ -1,0 +1,11 @@
+#ifndef _SSTL_CSTRING_
+# define _SSTL_CSTRING_
+
+namespace std
+{
+	extern "C"
+	{
+# include <string.h>
+	}
+}
+#endif

@@ -1,0 +1,48 @@
+This library was designed to meet the following design criteria:
+- Code that is explicit wherever possible
+- Code that is inlined wherever possible (compile time loses, performance and ease of debugging theoretically win).
+  This could be considered forced on the library, given that templates limit you greatly in this regard.
+- Code that uses macros as sparingly as possible, and never to obfuscate code. Even to avoid extra typing.
+- Drop in usable. This follows from the inlined design goal. It is expected that users should be able to switch to this library by simply switching their include path to that of stir's.
+  Unfortunately, a library *is* needed for iostreams. Iostreams use extern static objects, and so must have a translation unit to work from.
+  It should also be noted that headers in this library include *only* other standard headers. Where they include implementation details and TR1 headers, they do so explicitly, and those headers are forbidden to include anything that might override another implementation's version of the library. As such, you could use this library's map or vector without using the rest. Unfortunately, other libraries don't play so nicely, and they may not allow this to happen.
+  The only exception to this rule to date is <stdexcept> and <string>. If you use one from stir, you must use the other, as they have a circular dependancy (string throws stdexcepts, and stdexcepts hold contain a string). Efficient ways around this are being investigated.
+- No dependancies except when expressly needed, and easily replaced. In particular, C library functions are only used in certain cases, like stdio FILE handles for filebuf. Mem* and str* may also be used when speed is important, this is still being decided.
+
+Using Extensions
+----------------
+Extensions, both from the Library Technical Report as well as native only to this library, are provided in their own namespaces (std::tr1 and std::ext) 
+respectively.
+
+Functions and objects used for implementation details must go in a namespace named as follows:
+std::<headername>_impl
+
+TR1 extensions are included by their standard headers by default, but may be turned off altogether by #defining _SSTL_NO_TR1, or individually by 
+#defining _SSTL_NO_TR1_<headername> (eg, _SSTL_NO_TR1_MEMORY to not get shared_ptr). If a standard header that includes ONLY TR1 extensions is included 
+with either of the above directives defined for it, #error will be called to prevent compilation. This ensures that you can't accidentally use a 
+non-standard feature.
+
+#defining _SSTL_USE_TR1 causes a using directive to fold the std::tr1 namespace to be folded into the std namespace.
+
+The same rules as above apply for Stir-specific extensions using EXT in place of TR1 in the above preprocessing macros. Note that the EXT preprocessor 
+macros are inclusive of TR1.
+
+Also note that some headers use extensions in their private code, and these will override your expectations. They will never, however, force inclusion 
+of the extensions into the std namespace.
+
+Together these rules allow implicit use of TR1 and Stir-specific extensions without allowing them to interfere with the operation of the standard 
+library, and also allowing you to explicitly refuse any extensions.
+
+Coding Style
+------------
+All code should follow the following guidelines:
+- Where an argument is to be passed on unchanged to another function, it should be passed as a const reference.
+- Where a function describes direct interactions between two objects (such as binary operator overloads or std::swap), the arguments must be named x 
+and y. In the case of a binary operator overload inlined to a class, the single remaining argument must be named y for consistancy.
+- Template parameters that describe types must always use the word typename over class. This improves clarity of meaning.
+- Template parameters that describe types absolutely must be named descriptively, and by prefixed with the letter t. Example: tValue as opposed to some 
+other library implementations T or _T
+- All member variables must be declared private, unless otherwise stated by the standard.
+- Member variables must be named descriptively and should use the letter m as a prefix rather than an underscore at the end.
+- Curly braces starting a block must follow the line that describes their scope (function declaration, if statement, etc). else and catch statements 
+are exempt and must have the close curly brace of the previous block at the beginning of the line and the open at the end.

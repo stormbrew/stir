@@ -1,0 +1,276 @@
+#ifndef _SSTL_STREAMBUF_
+# define _SSTL_STREAMBUF_
+
+#include <iosfwd>
+#include <locale>
+#include <algorithm>
+
+namespace std
+{
+	template <typename tElement, typename tTraits>
+	class basic_streambuf
+	{
+	public:
+		typedef tElement                          char_type;
+		typedef tTraits                           traits_type;
+		typedef typename traits_type::int_type    int_type;
+		typedef typename traits_type::pos_type    pos_type;
+		typedef typename traits_type::off_type    off_type;
+
+	private:
+		typedef tElement                         *pointer;
+		typedef const tElement                   *const_pointer;
+		typedef basic_ios<tElement, tTraits>      ios_type;
+
+		pointer mGetBegin;
+		pointer mGetNext;
+		pointer mGetEnd;
+
+		pointer mPutBegin;
+		pointer mPutNext;
+		pointer mPutEnd;
+
+		locale  mLocale;
+
+	public:
+		virtual ~basic_streambuf() throw()
+		{}
+
+		locale pubimbue(const locale &loc)
+		{
+			imbue(loc);
+			swap(mLocale, loc);
+			return loc;
+		}
+		inline locale getloc() const
+		{
+			return mLocale;
+		}
+
+		inline basic_streambuf *pubsetbuf(pointer buffer, streamsize count)
+		{
+			return setbuf(buffer, count);
+		}
+		inline pos_type pubseekoff(off_type off, typename ios_type::seekdir way, 
+			typename ios_type::openmode which = ios_type::in | ios_type::out)
+		{
+			return seekoff(off, way, which);
+		}
+		inline pos_type pubseekpos(pos_type pos, typename ios_type::openmode which = ios_type::in | ios_type::out)
+		{
+			return seekpos(pos, which);
+		}
+		inline int pubsync()
+		{
+			return sync();
+		}
+
+		streamsize in_avail()
+		{
+			pointer pos = gptr(), end = egptr();
+			if (pos != 0 && pos != end)
+				return end - pos;
+			else
+				return showmanyc();
+		}
+		int_type snextc()
+		{
+			if (sbumpc() == traits_type::eof())
+				return traits_type::eof();
+			else
+				return sgetc();
+		}
+		int_type sbumpc()
+		{
+			pointer pos = gptr();
+			if (pos != 0 && pos != egptr())
+			{
+				gbump(1); // we increment before hand because we already have pos, which we can dereference.
+				return traits_type::to_int_type(*pos);
+			} else
+				return uflow();
+		}
+		int_type sgetc()
+		{
+			pointer pos = gptr();
+			if (pos != 0 && pos != egptr())
+				return traits_type::to_int_type(*pos);
+			else
+				return underflow();
+		}
+		inline streamsize sgetn(pointer str, streamsize count)
+		{
+			return xsgetn(str, count);
+		}
+
+		int_type sputbackc(char_type elem)
+		{
+			// if we can derive a valid putback position and it's the same as elem:
+			pointer pos = gptr();
+			if ( pos != 0 && pos > eback() && traits_type::eq(elem, *(pos - 1)) )
+			{
+				// bump the input pointer backwards and return the character
+				gbump(-1);
+				return traits_type::to_int_type(*(pos - 1));
+			} else
+				return pbackfail(traits_type::to_int_type(elem));
+		}
+		int_type sungetc()
+		{
+			// like sputbackc, except we don't need to check if it's the right character
+			pointer pos = gptr();
+			if (pos != 0 && pos > eback())
+			{
+				// bump backwards and return the character there.
+				gbump(-1);
+				return traits_type::to_int_type(*pos - 1);
+			} else
+				return pbackfail();
+		}
+
+		int_type sputc(char_type c)
+		{
+			pointer pos = pptr();
+			if (pos != 0 && pos != epptr())
+			{
+				*pos = c;
+				pbump(1);
+				return traits_type::to_int_type(c);
+			} else
+				return overflow(traits_type::to_int_type(c));
+		}
+		inline streamsize sputn(const_pointer str, streamsize count)
+		{
+			return xsputn(str, count);
+		}
+
+
+	protected:
+		basic_streambuf()
+		 : mGetBegin(0),
+		   mGetNext(0),
+		   mGetEnd(0),
+		   mPutBegin(0),
+		   mPutNext(0),
+		   mPutEnd(0)
+		{}
+
+		inline pointer eback() const
+		{
+			return mGetBegin;
+		}
+		inline pointer gptr() const
+		{
+			return mGetNext;
+		}
+		inline pointer egptr() const
+		{
+			return mGetEnd;
+		}
+		inline void gbump(int count)
+		{
+			mGetNext += min(count, egptr() - gptr());
+		}
+		inline void setg(pointer begin, pointer next, pointer end)
+		{
+            mGetBegin = begin;
+			mGetNext = next;
+			mGetEnd = end;
+		}
+
+		inline pointer pbase() const
+		{
+			return mPutBegin;
+		}
+		inline pointer pptr() const
+		{
+			return mPutNext;
+		}
+		inline pointer epptr() const
+		{
+			return mPutEnd;
+		}
+		inline void pbump(int count)
+		{
+			mPutNext += min(count, epptr() - pptr());
+		}
+		inline void setp(pointer begin, pointer next, pointer end)
+		{
+			mPutBegin = begin;
+			mPutNext = next;
+			mPutEnd = end;
+		}
+
+		virtual void imbue(const locale &loc)
+		{}
+
+		virtual basic_streambuf *setbuf(pointer begin, streamsize count)
+		{
+			return this;
+		}
+		virtual pos_type seekoff(off_type count, typename ios_type::seekdir way, 
+			typename ios_type::openmode which = ios_type::in | ios_type::out)
+		{
+			return streampos(-1);
+		}
+		virtual pos_type seekpos(pos_type count, typename ios_type::openmode which = ios_type::in | ios_type::out)
+		{
+			return streampos(-1);
+		}
+		virtual int sync()
+		{
+			return 0;
+		}
+
+		virtual int showmanyc()
+		{
+			return 0;
+		}
+		virtual streamsize xsgetn(pointer ptr, streamsize count)
+		{
+			streamsize total = 0;
+			int_type c;
+			while (count != 0 && (c = sbumpc()) != traits_type::eof())
+			{
+				traits_type::assign(*ptr++, c);
+				total++;
+				count--;
+			}
+			return total;
+		}
+		virtual int_type underflow()
+		{
+			return traits_type::eof();
+		}
+		virtual int_type uflow()
+		{
+			if (underflow() == traits_type::eof())
+				return traits_type::eof();
+			else
+				return sbumpc();
+		}
+
+		virtual int_type pbackfail(int_type c = traits_type::eof())
+		{
+			return traits_type::eof();
+		}
+
+		virtual streamsize xsputn(const_pointer ptr, streamsize count)
+		{
+			streamsize total = 0;
+			int_type c;
+			while (count != 0 && (c = sputc(*ptr++)) != traits_type::eof())
+			{
+				total++;
+				count--;
+			}
+			return total;
+		}
+		virtual int_type overflow(int_type c = traits_type::eof())
+		{
+			return traits_type::eof();
+		}
+	};
+}
+
+#endif

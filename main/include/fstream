@@ -1,0 +1,86 @@
+#ifndef _SSTL_FSTREAM_
+# define _SSTL_FSTREAM_
+
+# include <string>
+# include <ios>
+# include <cstdio>
+
+namespace std
+{
+	// this version of filebuf is not a great performer. It essentially *always* exists in an underflow/overflow
+	// condition, and simply forwards all behavior on to the FILE* functions.
+	template <typename tElement, typename tTraits>
+	class basic_filebuf : public basic_streambuf<tElement, tTraits>
+	{
+	public:
+		typedef tElement                                 char_type;
+		typedef tTraits                                  traits_type;
+		typedef typename traits_type::int_type           int_type;
+		typedef typename traits_type::pos_type           pos_type;
+		typedef typename traits_type::off_type           off_type;
+
+	private:
+		std::FILE *mFile;
+
+	public:
+		basic_filebuf()
+		 : mFile(0)
+		{}
+		~basic_filebuf()
+		{
+			close();
+		}
+
+		bool is_open() const
+		{
+			return mFile != 0;
+		}
+		basic_filebuf<char_type, traits_type> *open(const char *fname, ios_base::openmode mode)
+		{
+			std::string modestr;
+			bool seekend = (mode & ios_base::ate) != 0,
+			     binary = (mode & ios_base::binary) != 0;
+			mode &= ~(ios_base::ate | ios_base::binary); // we know whether we need to seekend or if it's binary, so drop it from the mask.
+			switch (mode)
+			{
+			case (ios_base::out):
+			case (ios_base::out | ios_base::trunc):
+				modestr = "w";
+				break;
+			case (ios_base::out | ios_base::app):
+				modestr = "a";
+				break;
+			case (ios_base::in):
+				modestr = "r";
+				break;
+			case (ios_base::in | ios_base::out):
+				modestr = "r+";
+				break;
+			case (ios_base::in | ios_base::out | ios_base::trunc):
+				modestr = "w+";
+				break;
+			default:
+				return NULL;
+			}
+
+			if (binary)
+				modestr += 'b';
+
+			mFile = std::fopen(fname, modestr.c_str());
+			if ( mFile != 0 && (!seekend || (pubseekoff(0, ios_base::end)) != streampos(-1)) )
+				return this;
+			else {
+				close();
+				return 0;
+			}
+		}
+		basic_filebuf *close()
+		{
+			if (is_open())
+				std::fclose(mFile);
+		}
+
+	};
+}
+
+#endif

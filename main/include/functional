@@ -1,0 +1,439 @@
+#ifndef _SSTL_FUNCTIONAL_
+#define _SSTL_FUNCTIONAL_
+
+namespace std
+{
+	template <typename tArg, typename tReturn>
+	struct unary_function
+	{
+		typedef tArg argument_type;
+		typedef tReturn result_type;
+	};
+
+	template <typename tArg1, typename tArg2, typename tReturn>
+	struct binary_function
+	{
+		typedef tArg1 first_argument_type;
+		typedef tArg2 second_argument_type;
+		typedef tReturn result_type;
+	};
+
+	template <typename tFunc>
+	class unary_negate : 
+		public unary_function<typename tFunc::argument_type, bool>
+	{
+	private:
+		tFunc mFunc;
+
+	public:
+		explicit unary_negate(const tFunc &func)
+		 : mFunc(func)
+		{}
+
+		bool operator()(const typename tFunc::argument_type &x)
+		{
+			return !mFunc(x);
+		}
+	};
+
+	template <typename tFunc>
+	unary_negate<tFunc> not1(const tFunc &func)
+	{
+		return unary_negate<tFunc>(func);
+	}
+
+	template <typename tFunc>
+	class binary_negate : 
+		public binary_function<typename tFunc::first_argument_type,
+		                       typename tFunc::second_argument_type,
+		                       bool>
+	{
+	private:
+		tFunc mFunc;
+
+	public:
+		explicit binary_negate(const tFunc &func)
+		 : mFunc(func)
+		{}
+
+		bool operator()(const typename tFunc::first_argument_type &x, const typename tFunc::second_argument_type &y)
+		{
+			return !mFunc(x, y);
+		}
+	};
+
+	template <typename tFunc>
+	binary_negate<tFunc> not2(const tFunc &func)
+	{
+		return binary_negate<tFunc>(func);
+	}
+
+	template <typename tFunc>
+	class binder1st :
+		public unary_function<typename tFunc::second_argument_type,
+		                      typename tFunc::result_type>
+	{
+	private:
+		typedef typename tFunc::first_argument_type bound_argument_type;
+
+		tFunc mFunc;
+		bound_argument_type mArg;
+
+	public:
+		typedef typename tFunc::result_type result_type;
+		typedef typename tFunc::second_argument_type argument_type;
+
+		binder1st(const tFunc &func, const bound_argument_type &arg)
+		 : mFunc(func),
+		   mArg(arg)
+		{}
+
+		result_type operator()(const argument_type &y)
+		{
+			return mFunc(mArg, y);
+		}
+	};
+
+	template <typename tFunc, typename tArg>
+	binder1st<tFunc> bind1st(const tFunc &func, const tArg &arg)
+	{
+		return binder1st<tFunc>(func, arg);
+	}
+
+	template <typename tFunc>
+	class binder2nd :
+		public unary_function<typename tFunc::first_argument_type,
+		                      typename tFunc::result_type>
+	{
+	private:
+		typedef typename tFunc::second_argument_type bound_argument_type;
+
+		tFunc mFunc;
+		bound_argument_type mArg;
+
+	public:
+		typedef typename tFunc::result_type result_type;
+		typedef typename tFunc::first_argument_type argument_type;
+
+		binder2nd(const tFunc &func, const bound_argument_type &arg)
+		 : mFunc(func),
+		   mArg(arg)
+		{}
+
+		result_type operator()(const argument_type &x)
+		{
+			return mFunc(x, mArg);
+		}
+	};
+
+	template <typename tFunc, typename tArg>
+	binder2nd<tFunc> bind2nd(const tFunc &func, const tArg &arg)
+	{
+		return binder2nd<tFunc>(func, arg);
+	}
+
+	template <typename tArg, typename tReturn>
+	class pointer_to_unary_function :
+		public unary_function<tArg, tReturn>
+	{
+	private:
+		typedef tReturn (*function_type)(tArg);
+		function_type mFunc;
+
+	public:
+		explicit pointer_to_unary_function(function_type func)
+		 : mFunc(func)
+		{}
+
+		tReturn operator()(const tArg &x)
+		{
+			return mFunc(x);
+		}
+	};
+
+	template <typename tArg, typename tReturn>
+	pointer_to_unary_function<tArg, tReturn> 
+		ptr_fun(tReturn (*func)(tArg))
+	{
+		return pointer_to_unary_function<tArg, tReturn>(func);
+	}
+
+	template <typename tArg1, typename tArg2, typename tReturn>
+	class pointer_to_binary_function :
+		public binary_function<tArg1, tArg2, tReturn>
+	{
+	private:
+		typedef tReturn (*function_type)(tArg1, tArg2);
+		function_type mFunc;
+
+	public:
+		explicit pointer_to_binary_function(function_type func)
+		 : mFunc(func)
+		{}
+
+		tReturn operator()(const tArg1 &x, const tArg2 &y)
+		{
+			return mFunc(x, y);
+		}
+	};
+
+	template <typename tArg1, typename tArg2, typename tReturn>
+	pointer_to_binary_function<tArg1, tArg2, tReturn>
+		ptr_fun(tReturn (*func)(tArg1, tArg2))
+	{
+		return pointer_to_binary_function<tArg1, tArg2, tReturn>(func);
+	}
+
+	template <typename tReturn, typename tClass>
+	class mem_fun_t :
+		public unary_function<tClass *, tReturn>
+	{
+	private:
+		typedef tReturn (tClass::*function_type)();
+		function_type mFunc;
+
+	public:
+		explicit mem_fun_t(function_type func)
+		 : mFunc(func)
+		{}
+
+		tReturn operator()(tClass *obj)
+		{
+			return obj->*mFunc();
+		}
+	};
+
+	template <typename tReturn, typename tClass>
+	mem_fun_t<tReturn, tClass>
+		mem_fun(tReturn (tClass::*func)())
+	{
+		return mem_fun_t<tReturn, tClass>(func);
+	}
+
+	template <typename tReturn, typename tClass, typename tArg>
+	class mem_fun1_t :
+		public binary_function<tClass *, tArg, tReturn>
+	{
+	private:
+		typedef tReturn (tClass::*function_type)(tArg);
+		function_type mFunc;
+
+	public:
+		explicit mem_fun1_t(function_type func)
+		 : mFunc(func)
+		{}
+
+		tReturn operator()(tClass *obj, const tArg &x)
+		{
+			return obj->*mFunc(x);
+		}
+	};
+
+	template <typename tReturn, typename tClass, typename tArg>
+	mem_fun1_t<tReturn, tClass, tArg>
+		mem_fun1(tReturn (tClass::*func)(tArg))
+	{
+		return mem_fun1_t<tReturn, tClass, tArg>(func);
+	}
+
+	template <typename tReturn, typename tClass>
+	class mem_fun_ref_t :
+		public unary_function<tClass, tReturn>
+	{
+	private:
+		typedef tReturn (tClass::*function_type)();
+		function_type mFunc;
+
+	public:
+		explicit mem_fun_ref_t(function_type func)
+		 : mFunc(func)
+		{}
+
+		tReturn operator()(tClass &func)
+		{
+			return obj.*mFunc();
+		}
+	};
+	
+	template <typename tReturn, typename tClass>
+	mem_fun_ref_t<tReturn, tClass>
+		mem_fun_ref(tReturn (tClass::*func)())
+	{
+		return mem_fun_ref_t<tReturn, tClass>(func);
+	}
+
+	template <typename tReturn, typename tClass, typename tArg>
+	class mem_fun1_ref_t :
+		public binary_function<tClass, tArg, tReturn>
+	{
+	private:
+		typedef tReturn (tClass::*function_type)(tArg);
+		function_type mFunc;
+
+	public:
+		explicit mem_fun1_ref_t(function_type func)
+		 : mFunc(func)
+		{}
+
+		tReturn operator()(tClass &func, const tArg &x)
+		{
+			return obj.*mFunc(x);
+		}
+	};
+
+	template <typename tReturn, typename tClass, typename tArg>
+	mem_fun1_ref_t<tReturn, tClass, tArg>
+		mem_fun1_ref(tReturn (tClass::*func)(tArg))
+	{
+		return mem_fun1_ref_t<tReturn, tClass, tArg>(func);
+	}
+
+	template <typename tArg>
+	struct plus : public binary_function<tArg, tArg, tArg>
+	{
+		tArg operator()(const tArg &x, const tArg &y)
+		{
+			return x + y;
+		}
+	};
+
+	template <typename tArg>
+	struct minus : public binary_function<tArg, tArg, tArg>
+	{
+		tArg operator()(const tArg &x, const tArg &y)
+		{
+			return x - y;
+		}
+	};
+
+	template <typename tArg>
+	struct multiplies : public binary_function<tArg, tArg, tArg>
+	{
+		tArg operator()(const tArg &x, const tArg &y)
+		{
+			return x * y;
+		}
+	};
+
+	template <typename tArg>
+	struct divides : public binary_function<tArg, tArg, tArg>
+	{
+		tArg operator()(const tArg &x, const tArg &y)
+		{
+			return x / y;
+		}
+	};
+
+	template <typename tArg>
+	struct modulus : public binary_function<tArg, tArg, tArg>
+	{
+		tArg operator()(const tArg &x, const tArg &y)
+		{
+			return x % y;
+		}
+	};
+
+	template <typename tArg>
+	struct negate : public unary_function<tArg, tArg>
+	{
+		tArg operator()(const tArg &x)
+		{
+			return -x;
+		}
+	};
+
+	template <typename tArg>
+	struct equal_to : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x == y;
+		}
+	};
+
+	template <typename tArg>
+	struct not_equal_to : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x != y;
+		}
+	};
+
+	template <typename tArg>
+	struct greater : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x > y;
+		}
+	};
+
+	template <typename tArg>
+	struct less : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x < y;
+		}
+	};
+
+	template <typename tArg>
+	struct greater_equal : public binary_function<tArg, tArg, bool>
+	{
+		tArg operator()(const tArg &x, const tArg &y)
+		{
+			return x >= y;
+		}
+	};
+
+	template <typename tArg>
+	struct less_equal : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x <= y;
+		}
+	};
+
+	template <typename tArg>
+	struct logical_and : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x && y;
+		}
+	};
+
+	template <typename tArg>
+	struct logical_or : public binary_function<tArg, tArg, bool>
+	{
+		bool operator()(const tArg &x, const tArg &y)
+		{
+			return x || y;
+		}
+	};
+
+	template <typename tArg>
+	struct logical_not : public unary_function<tArg, bool>
+	{
+		bool operator()(const tArg &x)
+		{
+			return !x;
+		}
+	};		
+}
+
+# if !defined(_SSTL_NO_EXT) && !defined(_SSTL_NO_EXT_FUNCTIONAL) && \
+    !defined(_SSTL_NO_TR1) && !defined(_SSTL_NO_TR1_FUNCTIONAL)
+#  include "tr1/functional"
+
+// if we're supposed to include the tr1 extensions into the normal namespace, do so.
+#  if defined(_SSTL_USE_TR1)
+namespace std {
+	using namespace tr1;
+}
+#  endif
+# endif
+
+#endif

@@ -1,0 +1,21 @@
+subproject stltest ;
+
+local CPP_FILES = accum1 accum2 adjdiff0 adjdiff1 adjdiff2 adjfind0 adjfind1 adjfind2 advance alg1 alg2 alg3 alg4 alg5 bind1st1 bind1st2 bind2nd1 bind2nd2 binsert1 binsert2 binsrch1 binsrch2 bitset1 bnegate1 bnegate2 bvec1 copy1 copy2 copy3 copy4 copyb copyb0 count0 count1 countif1 deque1 divides dummy eqlrnge0 eqlrnge1 eqlrnge2 equal0 equal1 equal2 equalto fill1 filln1 find0 find1 findif0 findif1 finsert1 finsert2 foreach0 foreach1 func1 func2 func3 gener1 gener2 genern1 genern2 greateq greater incl0 incl1 incl2 inplmrg1 inplmrg2 inrprod0 inrprod1 inrprod2 insert1 insert2 iota1 istmit1 iter1 iter2 iter3 iter4 iterswp0 iterswp1 less lesseq lexcmp1 lexcmp2 list1 list2 list3 list4 logicand logicnot logicor lwrbnd1 lwrbnd2 map1 max1 max2 maxelem1 maxelem2 merge0 merge1 merge2 min1 min2 minelem1 minelem2 minus mismtch0 mismtch1 mismtch2 mkheap0 mkheap1 mmap1 mmap2 modulus mset1 mset3 mset4 mset5 negate nequal nextprm0 nextprm1 nextprm2 nthelem0 nthelem1 nthelem2 ostmit pair0 pair1 pair2 parsrt0 parsrt1 parsrt2 parsrtc0 parsrtc1 parsrtc2 partsrt0 partsum0 partsum1 partsum2 pheap1 pheap2 plus pqueue1 prevprm0 prevprm1 prevprm2 ptition0 ptition1 ptrbinf1 ptrbinf2 ptrunf1 ptrunf2 queue1 rawiter remcopy1 remcpif1 remif1 remove1 repcpif1 replace0 replace1 replcpy1 replif1 revbit1 revbit2 revcopy1 reverse1 reviter1 reviter2 rndshuf0 rndshuf1 rndshuf2 rotate0 rotate1 rotcopy0 rotcopy1 search0 search1 search2 set1 set2 setdiff0 setdiff1 setdiff2 setintr0 setintr1 setintr2 setsymd0 setsymd1 setsymd2 setunon0 setunon1 setunon2 sort1 sort2 stack1 stack2 stat stblptn0 stblptn1 stblsrt1 stblsrt2 stl_test string1 swap1 swprnge1 times trnsfrm1 trnsfrm2 unegate1 unegate2 uniqcpy1 uniqcpy2 unique1 unique2 uprbnd1 uprbnd2 vec1 vec2 vec3 vec4 vec5 vec6 vec7 vec8 ;
+
+if ( $(SINGLES) = "yes" )
+{
+	for file in $(CPP_FILES) 
+	{
+		lib $(file) : $(file).cpp
+			: <sysinclude>$(GLOBAL_INCLUDES) <define>MAIN
+			: debug ;
+		exe $(file) : <lib>$(file)
+			: : debug ;
+	}
+}
+
+exe stltest : $(CPP_FILES).cpp
+        :
+        : debug ;
+
+

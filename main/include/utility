@@ -1,0 +1,116 @@
+#ifndef _SSTL_UTILITY_
+#define _SSTL_UTILITY_
+
+namespace std {
+
+	template <typename tFirst, typename tSecond>
+	struct pair
+	{
+		typedef tFirst first_type;
+		typedef tSecond second_type;
+
+		first_type first;
+		second_type second;
+
+		pair()
+		{}
+
+		pair(const tFirst &x, const tSecond &y)
+		 : first(x),
+		   second(y)
+		{}
+
+		template <typename tfFirst, typename tfSecond>
+		pair(const pair<tfFirst, tfSecond> &other)
+		 : first(other.first),
+		   second(other.second)
+		{}
+	};
+
+	template <typename tFirst, typename tSecond>
+	pair<tFirst, tSecond> make_pair(const tFirst &first, const tSecond &second)
+	{
+		return pair<tFirst, tSecond>(first, second);
+	}
+
+	template <typename tFirst, typename tSecond>
+	bool operator==(const pair<tFirst, tSecond> &x, const pair<tFirst, tSecond> &y)
+	{
+		return (x.first == y.first) && (x.second == y.second);
+	}
+
+	template <typename tFirst, typename tSecond>
+	bool operator!=(const pair<tFirst, tSecond> &x, const pair<tFirst, tSecond> &y)
+	{
+		return (x.first != y.first) && (x.second != y.second);
+	}
+
+	template <typename tFirst, typename tSecond>
+	bool operator<(const pair<tFirst, tSecond> &x, const pair<tFirst, tSecond> &y)
+	{
+		return (x.first < y.first) && (x.second < y.second);
+	}
+
+	template <typename tFirst, typename tSecond>
+	bool operator>(const pair<tFirst, tSecond> &x, const pair<tFirst, tSecond> &y)
+	{
+		return (x.first > y.first) && (x.second < y.second);
+	}
+
+	template <typename tFirst, typename tSecond>
+	bool operator<=(const pair<tFirst, tSecond> &x, const pair<tFirst, tSecond> &y)
+	{
+		return (x.first <= y.first) && (x.second <= y.second);
+	}
+
+	template <typename tFirst, typename tSecond>
+	bool operator>=(const pair<tFirst, tSecond> &x, const pair<tFirst, tSecond> &y)
+	{
+		return (x.first >= y.first) && (x.second >= y.second);
+	}
+
+	namespace rel_ops
+	{
+		template <typename tArg>
+		bool operator!=(const tArg &x, const tArg &y)
+		{
+			return !(x == y);
+		}
+
+		template <typename tArg>
+		bool operator<=(const tArg &x, const tArg &y)
+		{
+			return (x < y) || (x == y);
+		}
+
+		template <typename tArg>
+		bool operator>(const tArg &x, const tArg &y)
+		{
+			return !(x <= y); // defined above
+		}
+
+		template <typename tArg>
+		bool operator>=(const tArg &x, const tArg &y)
+		{
+			return !(x < y);
+		}
+	}
+}
+
+// Include the TR1 memory header unless explicitly told not to.
+// Note that it should not be necessary to do this, as the classes in the tr1 header are in the std::tr1 namespace.
+# if !defined(_SSTL_NO_EXT) && !defined(_SSTL_NO_EXT_UTILITY) && \
+	!defined(_SSTL_NO_TR1) && !defined(_SSTL_NO_TR1_UTILITY)
+
+#  include "tr1/utility"
+
+// if we're supposed to bring tr1 into the std namespace, do so.
+#  if defined(_SSTL_USE_TR1)
+namespace std
+{
+	using tr1;
+}
+#  endif
+# endif
+
+#endif

@@ -1,0 +1,45 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "sstl", "sstl.vcproj", "{C01CA418-8091-47BC-8ADB-9C200B9DB75A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5237FC66-361B-4955-912D-D90650E264A4} = {5237FC66-361B-4955-912D-D90650E264A4}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "stirlib", "stirlib\stirlib.vcproj", "{5237FC66-361B-4955-912D-D90650E264A4}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SourceCodeControl) = preSolution
+		SccNumberOfProjects = 3
+		SccProjectName0 = Perforce\u0020Project
+		SccLocalPath0 = .
+		SccProvider0 = MSSCCI:Perforce\u0020SCM
+		CanCheckoutShared = true
+		SolutionUniqueID = {BBC7E9B0-F09E-491E-A570-67E105C53016}
+		SccProjectUniqueName1 = sstl.vcproj
+		SccLocalPath1 = .
+		CanCheckoutShared = true
+		SccProjectUniqueName2 = stirlib\\stirlib.vcproj
+		SccLocalPath2 = .
+		CanCheckoutShared = true
+		SccProjectFilePathRelativizedFromConnection2 = stirlib\\
+	EndGlobalSection
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{C01CA418-8091-47BC-8ADB-9C200B9DB75A}.Debug.ActiveCfg = Debug|Win32
+		{C01CA418-8091-47BC-8ADB-9C200B9DB75A}.Debug.Build.0 = Debug|Win32
+		{C01CA418-8091-47BC-8ADB-9C200B9DB75A}.Release.ActiveCfg = Release|Win32
+		{C01CA418-8091-47BC-8ADB-9C200B9DB75A}.Release.Build.0 = Release|Win32
+		{5237FC66-361B-4955-912D-D90650E264A4}.Debug.ActiveCfg = Debug|Win32
+		{5237FC66-361B-4955-912D-D90650E264A4}.Debug.Build.0 = Debug|Win32
+		{5237FC66-361B-4955-912D-D90650E264A4}.Release.ActiveCfg = Release|Win32
+		{5237FC66-361B-4955-912D-D90650E264A4}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

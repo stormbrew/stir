@@ -1,0 +1,11 @@
+subproject mytests ;
+
+local COMPILE_FILES = utility functional iterator memory iosfwd string vector type_traits tuple ;
+
+lib compile_test : $(COMPILE_FILES).cpp
+	: <sysinclude>$(GLOBAL_INCLUDES)
+	: debug ;
+
+exe run_test : <lib>compile_test main.cpp
+	: <sysinclude>$(GLOBAL_INCLUDES)
+	: debug ;

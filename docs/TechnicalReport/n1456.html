@@ -1,0 +1,2338 @@
+<html>
+<head>
+  <title>A Proposal to Add Hash Tables to the Standard Library</title>
+</head>
+<body>
+
+<font size=-1>
+Matthew Austern &lt;austern@apple.com&gt;
+<br>
+9 Apr 2003
+<br>
+Doc number N1456=03-0039
+</font>
+
+<h1>A Proposal to Add Hash Tables to the Standard Library (revision 4)</h1>
+
+<h2>I. Motivation</h2>
+
+<p>
+Unordered associative containers&mdash;hash tables&mdash;are one of the most
+frequently requested additions to the standard C++ library.  Although
+hash tables have poorer worst-case performance than containers based
+on balanced trees, their performance is better in many real-world
+applications.
+</p>
+
+<p>
+Hash tables are appropriate for this TR because they plug an obvious
+hole in the existing standard library.  They are not intended for any
+one specific problem domain, style of programming, or community of
+programmers.  I expect them to be used by a wide range of programmers.
+</p>
+
+<p>
+There is extensive experience with hash tables implemented in C++ in
+the style of standard containers.  Hash tables were proposed for the
+C++ standard in 1995; the proposal was rejected for reasons of timing.
+Three independently written libraries, SGI, Dinkumware, and
+Metrowerks, now provide hashed associative containers as an extension.
+(The GNU C++ library includes hash tables derived from SGI's.)
+</p>
+
+<p>
+The three shipping hash table implementations are similar, but not
+identical; this proposal is not identical to any of them.  Some of the
+differences will be discussed in section III.
+</p>
+
+<h2>II. Impact On the Standard</h2>
+
+<p>
+This proposal is a pure extension.  It proposes a minor change to an
+existing header (a new function object in &lt;functional&gt;), but it
+does not require changes to any standard classes or functions and it
+does not require changes to any of the standard requirement tables.
+It does not require any changes in the core language, and it has been
+implemented in standard C++.
+</p>
+
+<p>
+This proposal does not depend on any other library extensions.  The
+initial implementation does use some nonstandard components, but
+they're part of the implementation rather than the interface and they
+aren't part of this proposal.
+</p>
+
+
+<h2>III. Design Decisions</h2>
+
+<h3>A. Packaging Issues</h3>
+
+<p>
+The three implementations in current use, as well as the
+Barreiro/Fraley/Musser proposal, all used the names <tt>hash_set</tt>,
+<tt>hash_map</tt>, <tt>hash_multiset</tt>, <tt>hash_multimap</tt>.
+Existing practice suggests that these names should be retained.
+</p>
+
+<p>Unfortunately, existing practice is also a strong argument for choosing a different
+  name.  Reusing a name that's already in common use, and applying it to a class with a
+  similar but not identical interface, has too great a potential for confusion.
+  Additionally, since several vendors have defined classes in namespace <tt>std</tt> with
+  the <tt>hash_*</tt> names, defining a standard class with that name would introduce a
+  nasty backward compatibility problem.  Vendors would have to figure out a transition
+  strategy for going from the pre-standard classes to the standard ones.</p>
+
+<p>Accordingly, this proposal instead chooses the names <tt>unordered_set</tt>, <tt>unordered_map</tt>,
+  <tt>unordered_multiset</tt>, and <tt>unordered_multimap</tt>.  These names have the
+  further advantage that they may alert users to the most important way in which
+  (say) <tt>unordered_set</tt> differs from <tt>set</tt>: the former lacks the latter's
+  ordering guarantee.
+
+<p>This naming choice was suggested by the Library Working Group.  The working group
+  considered and rejected several other potential solutions to the name collision
+  problem:</p>
+<ul>
+<li><i>The same general approach, but with slightly different names.</i>  Two other names
+  that were considered were <tt>bag_set</tt> and <tt>unsorted_set</tt>.  The LWG believed
+  that <tt>unordered_set</tt> was clearer than those two, because it comes closest to
+  expressing the essential way in which these containers differ from the existing
+  associative containers.</li>
+<li><i>Minor changes to the earlier names</i>, such as <tt>hashset</tt>
+  or <tt>hashed_set</tt>.  The LWG rejected this approach because it was believed that
+  having two almost-identical classes with almost-identical names would be too likely to
+  cause user confusion.</li>
+<li><i>An extra namespace</i>, so that the names might look like <tt>std::hash::hash_set</tt>
+  or <tt>std::hash_table::set</tt>.  The LWG rejected this approach for two reasons.
+  First, there is no precedent in the existing Standard Library for using namespaces in
+  this way.  Second, since using directives are common and naive users often gloss over
+  the question of which namespace a class is in, namespace segregation would probably not
+  suffice to avoid user confusion.</li>
+<li><i>Reusing the existing associative container names</i>, <tt>set</tt>, <tt>map</tt>, 
+  <tt>multiset</tt>, and <tt>multimap</tt>, and giving those classes extra policy
+  parameters so users can select between the existing usage as sorted associative
+  containers, and the new usage as hash tables.  This is certainly implementable.
+  However, the LWG believes that it would be even more confusing than the other two
+  options: it's hard to know how we would document a class whose interface (member
+  functions, nested types, and class invariants) would completely change depending on the
+  presence of a template parameter.  We might equally well imagine having a single
+  policy-based class, <tt>container</tt>, instead of the separate
+  containers <tt>vector</tt>, <tt>deque</tt>, and <tt>list</tt>.</li>
+<li><i>Keep the earlier names</i>, and find a way for implementers to make it work.  One
+  might imagine, for example, using metaprogramming techniques  where 
+  <tt>hash_set&lt;&gt;</tt> would examine its template arguments and whether the user
+  indended to use it with the old or the new interface.  Again, while "do what I mean"
+  machinery is certainly implementable, the LWG believed that it was likely to be fragile
+  or confusing.</i>
+</ul>
+
+<p>
+The distinction between the four unordered containers is the same as the
+distinction between the four standard associative containers.  All
+four unordered containers allow lookup of elements by key.
+In <tt>unordered_set</tt> and <tt>unordered_multiset</tt> the elements are the
+keys; modification of elements is not allowed.  In <tt>unordered_map</tt>
+and <tt>unordered_multimap</tt> the elements are of type <tt>pair&lt;const
+Key, Value&gt;</tt>.  The key part can't be modified, but the value
+part can.  In <tt>unordered_set</tt> and <tt>unordered_map</tt>, no two elements
+may have the same key; in <tt>unordered_multiset</tt>
+and <tt>unordered_multimap</tt> there may be any number of elements with
+the same key.
+</p>
+
+<p>
+This proposal defines the <tt>unordered_set</tt> and <tt>unordered_multiset</tt> classes
+within a new <tt>&lt;unordered_set&gt;</tt> header, and <tt>unordered_map</tt>
+and <tt>unordered_multimap</tt> within <tt>&lt;unordered_map&gt;</tt>.  It defines a
+default hash function, <tt>hash&lt;&gt;</tt>, within the standard
+header <tt>&lt;functional&gt;</tt>; see III.D for a discussion of the decision to define
+a <tt>hash&lt;&gt;</tt> within
+<tt>&lt;functional&gt;</tt>.
+</p>
+
+<p>
+This proposal defines a set of Unordered Associative Container
+requirements, and then separately describes four classes that conform to
+those requirements.  In that respect this proposal follows the lead of
+the standard and of the Barreiro/Fraley/Musser proposal.  However,
+Barreiro, Fraley, and Musser proposed more extensive changes to the
+container requirements.  They proposed two new requirements tables,
+not one: Sorted Associative Container, satisfied by the existing
+standard associative containers, and Hashed Associative Container.
+They then modified the existing Associative Container requirements
+(table 69 in the C++ standard) so that both sorted associative
+containers and hashed associative containers would satisfy the new
+Associative Container requirements.  The difference is shown in Figure
+1.
+</p>
+
+<pre>
+      <b>Figure 1: Container taxonomy as described by this proposal and 
+                by Barreiro, Fraley, and Musser</b>
+
+
+  <i>This proposal:</i>
+
+                 /-- Sequence
+                /
+      Container ---- Associative Container
+                \
+                 \-- Unordered Associative Container
+
+
+
+  <i>Barreiro, Fraley, and Musser:</i>
+
+                 /-- Sequence
+                /
+      Container                             /-- Sorted Associative Container
+                \                          /
+                 \-- Associative Container
+                                           \
+                                            \-- Hashed Associative Container
+</pre>
+
+<p>
+I believe that the Barreiro/Fraley/Musser taxonomy is better: the
+generality of the name "Associative Container", and the specificity of
+table 69, aren't a good match.  However, that proposal was made before
+the C++ standard was finalized.  The superiority of the Barreiro/
+Fraley/Musser taxonomy isn't so great as to justify changing an
+existing requirements table that users may be relying on.
+</p>
+
+<p>
+The three hash table implementations in current use are not identical,
+but they are similar enough that for simple uses they are
+interchangeable.  This proposal attempts to maintain a similar level
+of compatibility.
+</p>
+
+
+<h3>B. Chaining Versus Open Addressing</h3>
+
+<p>
+Knuth (section 6.4 of <i>The Art of Computer Programming</i>)
+distinguishes between two kinds of hash tables: "chaining", where a
+hash code is associated with the head of a linked list, and "open
+addressing", where a hash code is associated with an index into an
+array.
+</p>
+
+<p>
+I'm not aware of any satisfactory implementation of open addressing in
+a generic framework.  Open addressing presents a number of problems:
+</p>
+
+<ul>
+<li> It's necessary to distinguish between a vacant position and an
+   occupied one.</li>
+<li> It's necessary either to restrict the hash table to types with a
+   default constructor, and to construct every array element ahead of
+   time, or else to maintain an array some of whose elements are 
+   objects and others of which are raw memory.</li>
+<li> Open addressing makes collision management difficult: if you're 
+   inserting an element whose hash code maps to an already-occupied
+   location, you need a policy that tells you where to try next.  This
+   is a solved problem, but the best known solutions are complicated.</li>
+<li> Collision management is especially complicated when erasing 
+   elements is allowed.  (See Knuth for a discussion.)  A container 
+   class for the standard library ought to allow erasure.</li>
+<li> Collision management schemes for open addressing tend to assume
+   a fixed size array that can hold up to N elements.  A container
+   class for the standard library ought to be able to grow as
+   necessary when new elements are inserted, up to the limit of 
+   available memory.</li>
+</ul>
+
+<p>
+Solving these problems could be an interesting research project, but,
+in the absence of implementation experience in the context of C++, it
+would be inappropriate to standardize an open-addressing container
+class.
+</p>
+
+<p>
+All further discussion will assume chaining.  Each linked list within
+a hash table is called a "bucket".  The average number of elements per
+bucket is called the "load factor", or <i>z</i>.
+</p>
+
+<h3>C. Lookup Within a Bucket</h3>
+
+<p>
+When looking up an item in a hash table by key k, the general strategy
+is to find the bucket that corresponds to k and then to perform a
+linear search within that bucket.  The first step uses the hash
+function; the second step must use something else.
+</p>
+
+<p>
+The most obvious technique is to use <tt>std::find()</tt> or the equivalent:
+look for an item whose key is equal to k.  Naturally, it would be
+wrong for operator== to be hard-wired in; it should be possible for
+the user to provide a function object with semantics of equality.  As
+an example where some predicate other than operator== is useful,
+suppose the user is storing C-style strings, i.e. pointers to
+null-terminated arrays of characters.  In this case equality of keys
+k1 and k2 shouldn't mean pointer comparison; it should mean testing
+that strcmp(k1, k2) == 0.
+</p>
+
+<p>
+This proposal takes such an approach.  Unordered associative containers
+are parameterized by two function objects, a hash function and an
+equality function.  Both have defaults.
+</p>
+
+<p>
+An alternative technique is possible: instead of testing for equality,
+sort each bucket in ascending order by key.  Linear search for a key k
+would mean searching for a key k' such that k &lt; k' and k' &lt; k are both
+false.  Again, this shouldn't be taken to mean that operator&lt; would
+literally be hard-wired in; users could provide their own comparison
+function, so long as that function has less-than semantics.
+</p>
+
+<p>
+The performance characteristics of the two techniques are slightly
+different.  The following table shows the average number of
+comparisons required for a search through a bucket of n elements:
+</p>
+
+<table border>
+<tr> <td>&nbsp;</td><td>Using equality</td><td>Using less-than</td> </tr>
+
+<tr> <td>Failed search</td>     <td>n</td>   <td>n/2</td>      </tr>
+<tr> <td>Successful search</td> <td>n/2</td> <td>n/2 + 1</td>  </tr>
+</table>
+
+<p>
+The difference for a failed search is because with less-than you can
+tell that a search has failed as soon as you see a key that's larger
+than k; with equal-to you have to get to the end of the bucket.  The
+difference for a successful search is because with equal-to you can
+tell that a search has succeeded as soon as you see a key that's equal
+to k; with less-than all you know when you find a key that's not less
+than k is that the search has terminated, and you need an extra
+comparison to tell whether it has terminated in success or failure.
+</p>
+
+<p>
+I do not see a clear-cut performance advantage from either technique.
+Which technique is faster depends on usage pattern: the load factor,
+and the relative frequency of failed and successful searches.  There
+are also performance implications for insertion, but I expect those
+differences to be smaller because in most cases I expect insertion to
+be dominated by the cost of memory allocation or element construction,
+not by the cost of lookup.
+</p>
+
+<p>
+For users, it's sometimes important for a container to present its
+elements as a sorted range; sorting elements by inserting them into an
+<tt>std::set</tt>, for example, is a common idiom.  However, I see no value (other than
+the performance issues discussed above) in sorting elements within a single bucket.  If
+the hash function is well chosen, after all, elements will be distributed between buckets
+in a seemingly random way.  I believe it is more helpful to tell users that they should
+use the existing associative containers (<tt>set</tt>, <tt>map</tt>, <tt>multiset</tt>,
+<tt>multimap</tt>) when they need useful guarantees on element ordering.  The choice of
+names like <tt>unordered_set</tt> and <tt>unordered_map</tt> should help with that guidance.
+</p>
+
+<p>
+From the point of view of user convenience, there isn't a huge
+difference between the two alternatives of equal-to and less-than.  I
+view equality as slightly more convenient, since it's common to define
+data types that have equality operations but not less-than operations,
+and rather less common to do the reverse.  There are some types where
+less-than is not a natural operation, and users would have to define a
+somewhat arbitrary less-than operation for no reason other than to put
+the objects in a hash table.  One obvious example is <tt>std::complex&lt;&gt;</tt>.
+</p>
+
+<p>
+Existing implementations differ.  The SGI and Metrowerks
+implementations use equal-to, and the Dinkumware implementation uses
+less-than.
+</p>
+
+<p>
+An aside: in principle, linear search isn't strictly necessary.  A
+bucket doesn't have to be structured as a linked list; it could be
+structured as a binary tree, or as some other data structure.  This
+proposal assumes linked lists, partly for reasons of existing practice
+(all of the C++ hash table implementations in widespread use are
+implemented in terms of linked lists) and partly because I believe
+that in practice a tree structure would hurt performance more often
+than it would help.  Balanced trees have large per-node space
+overhead, and binary tree lookup is faster than linear search only
+when the number of elements is large.  If the hash table's load factor
+is small and the hash function well chosen, trees have no advantage
+over linear lists.
+</p>
+
+<h3>D. The Hash Function Interface</h3>
+
+<p>
+Abstractly, a hash function is a function f(k) that takes an argument
+of type Key and returns an integer in the range [0, B), where B is the
+number of buckets in the hash table.  A hash function must have the
+property that f(k1) == f(k2) when k1 and k2 are the same.  A good hash
+function should also have the property that f(k1) and f(k2) are
+unlikely to be the same when k1 and k2 are different.
+</p>
+
+<p>
+It is impossible to write a fully general hash function that's valid
+for all types.  (You can't just convert an object to raw memory and
+hash the bytes; among other reasons, that idea fails because of
+padding.)  Because of that, and also because a good hash function is
+only good in the context of a specific usage pattern, it's essential
+to allow users to provide their own hash functions.
+</p>
+
+<p>
+There can be a default hash function for a selected set of types;
+ideally, it should include the most commonly used types.
+</p>
+
+<p>There are two design decisions involving non-default hash functions:</p>
+<ol>
+<li>How can a user-written function return an integer in the range
+    [0, B) for arbitrary B, especially since B may vary at runtime?</li>
+<li>Should the hash function be a standalone function object, or part
+    of a larger package that controls other aspects of the hash policy?</li>
+</ol>
+
+<p>
+In principle there are two possible answers to the first question.
+First, the hash function could take two arguments instead of one,
+where the second argument is B.  The hash function would have the
+responsibility of returning some number in the range [0, B).  Second,
+the hash function could return a number in a very large range, say
+[0, <tt>std::numeric_limits&lt;std::size_t&gt;::max()</tt>).  The hash
+table class would be responsible for converting the hash code (the
+value returned by the hash function) into a bucket index in the range
+[0, B).
+</p>
+
+<p>This proposal uses a single-argument hash function.  The reasons are:</p>
+<ul>
+<li> Existing practice.  The three shipping hash table implementations
+     all use single-argument hash functions.</li>
+<li> The main advantage of a two-argument hash function is that
+     a user-written hash function might make good use of the bucket
+     count; it might, for example, involve multiplication modulo B.
+     However, this advantage is weaker than it might seem, since
+     a user-written hash function that took B as an argument would
+     have to cope with arbitrary B.  (B is chosen by the hash table
+     class, not the user.)  This is a significant restriction, 
+     because it means a user-written hash function couldn't rely on
+     any special numerical properties of B.</li>
+<li> As discussed in section III.E, the bucket count won't always
+     remain the same during the lifetime of a hash table.  This means
+     that, for a particular key k, the hash table class may need the
+     bucket index for two different bucket counts B1 and B2.  With
+     a double-argument hash function, the hash table class would have
+     to call the hash function twice.  With a single-argument hash
+     function, the hash table class only has to invoke the hash
+     function once.</li>
+</ul>
+
+<p>
+If the hash table should be packaged along with other aspects of hash
+policy, what should those aspects be?  There are two obvious
+candidates.  First, it could be packaged along with the the function
+object that tests for key equality, or perhaps, even more generally,
+with a function object that specifies a policy for linear search
+within a bucket.  (See section III.C.)  Second, it could be packaged
+along with the parameters that govern changing the bucket count.  (See
+section III.E.)
+</p>
+
+<p>
+This proposal uses a standalone hash function, rather than a hash
+function that's part of a policy package.  This is mostly a
+consequence of other design decisions.  First, bucket resizing is
+determined by floating-point parameters that can be changed at runtime
+(see III.E), so there is no advantage in putting them in a policy
+class.  Second, linear search within a bucket uses equality (see
+III.C), and equality is such a common operation that in most cases I
+expect that a user-supplied equality predicate will have been written
+for some other purpose, and will be reused as a hash table template
+argument.  Making equality part of a larger policy class would make
+such reuse harder.
+</p>
+
+<p>
+This proposal includes a function object hash&lt;&gt;, with an
+operator() that takes a single argument and returns an std::size_t.
+The hash&lt;&gt; template is an incomplete type; it is specialized,
+and declared as a complete type, for a few common types.  I've chosen
+all of the built-in integer types, all floating-point types, all
+pointer types, and std::basic_string&lt;charT, traits, Allocator&gt;.
+I believe that std::basic_string is especially important, because hash
+tables are often used for strings.  Beyond that, the list is fairly
+arbitrary.
+</p>
+
+<p>
+Some earlier hash table implementations gave char* special treatment: it specialized the
+default hash function to look at character array being pointed to, rather than the pointer
+itself.  This proposal removes that special treatment.  Special treatment makes it
+slightly easier to use hash tables for C string, but at the cost of removing uniformity
+and making it harder to write generic code.  Since naive users would generally be expected
+to use std::basic_string instead of C strings, the cost of special treatment outweighs the
+benefit.</p>
+
+
+<p>
+The hash&lt;&gt; function object is defined in the &lt;functional&gt;
+header.  Another sensible alternative would have been to declare it in
+both &lt;unordered_set&gt; and &lt;unordered_map&gt;.  Implementers would have
+to arrange for there to be only a single definition when both headers
+are used, but that's straightforward.  The main reason I chose to put
+it in &lt;functional&gt; is that authors of user-defined types may
+need to specialize hash&lt;&gt; (which means they need the
+declaration) even if they have no need to use any of the hashed
+containers.</p>
+
+<p>
+Trivial as it may seem, hash function packaging may be the most
+contentious part of this proposal.  Existing implementations differ.
+The SGI and Metrowerks implementations use hash functions that aren't
+bundled with anything else, but the Dinkumware implementation uses a
+more general hash policy class.  Since this is an interface issue, a
+decision is necessary.
+</p>
+
+<h3>E. Control of Hash Resizing</h3>
+
+<p>
+The time required for looking up an element by key k is c<sub><font
+size="-1">1</font></sub> + c<sub><font size="-1">2</font></sub> n,
+where c<sub><font size="-1">1</font></sub> and c<sub><font
+size="-1">2</font></sub> are constants, and where n is the number of
+elements in the bucket indexed by k's hash code.  If the hash function
+is well chosen, and elements are evenly distributed between buckets,
+this is approximately c<sub><font size="-1">1</font></sub> +
+c<sub><font size="-1">2</font></sub> N/B, where N is the number of
+elements in the container and B is the bucket count.  If the bucket
+count is taken as a constant, then the asymptotic complexity for
+element lookup is O(N).
+</p>
+
+<p>
+To maintain average case complexity O(1) for lookup, the bucket count
+must grow as elements are added to the hash table; on average the
+bucket count must be proportional to N.  Another way of putting this
+is that the load factor, N/B, must be approximately constant.
+</p>
+
+<p>
+Two methods of maintaining a roughly constant load factor are in
+current use.
+</p>
+
+<p>First is traditional rehashing. When the load factor becomes too
+large, choose a new and larger bucket count, B'.  Then go through
+every element in the hash table, computing a new bucket index based on
+B'.  This is an expensive operation.  Since we want the amortized
+complexity of element insertion to be constant, we must use
+exponential growth; that is, B' = &gamma; B, where the growth factor,
+&gamma;, is larger than 1.  In general this proportionality can only be
+approximate, since many hashing schemes require B to have special
+numerical properties&mdash;primality, for example.</p>
+
+<p>
+Second is a newer technique, incremental hashing.  (See [Plauger
+1998].)  Incremental rehashing structures the hash table in such a way
+that it is possible to add a single bucket at a time.  When adding a
+bucket it is only necessary to examine the elements of a single old
+bucket, distributing some of them to the new one.</p>
+
+<p>
+The advantage of incremental hashing is that insertion time becomes
+more predictable: there's no longer a large time difference between
+insertions that do trigger rehashing and insertions that don't.  The
+disadvantage is that incremental hashing makes lookup slightly slower.
+The slowdown is for two reasons.  First, the logic to determine a
+bucket index from a hash code is slightly more complicated: it
+requires one extra test.  Second, incremental hashing results in a
+somewhat less uniform distribution of elements within buckets.  It
+relies on a construction where there are conceptually B buckets, of
+which U are in current use; B is a power of 2, and U &gt; B/2.  We first
+find a bucket index i in the range [0, B), and then find a bucket
+index j in the range [0, U) by subtracting U from i if necessary.  If
+the original hash codes are evenly distributed, a bucket in the range
+[0, B-U) will on average have twice the number of elements as a bucket
+in the range [B-U, U).</p>
+
+<p>
+Because of this tradeoff, there is not a clear choice between
+incremental hashing and traditional rehashing; both are legitimate
+implementation techniques.  A standard, of course, need not and should
+not dictate implementation technique.  The goal of this proposal is to
+allow both.
+</p>
+
+<p>
+From a user's perspective, all of this is invisible in normal use.
+It's visible when users want to do one of these things:</p>
+<ul>
+<li> Examine the number of buckets, or the distribution of elements
+   between buckets.  (See III.G.)</li>
+<li> Request a rehash even when the load factor isn't yet large enough
+   so that one would be triggered automatically.  Suppose, for
+   example, that a hash table currently contains 100 elements, and a
+   user is about to add 1000000 elements.  A user would save a lot of
+   time by requesting a rehash before performing those insertions.</li>
+<li> Control the parameters that govern automatic rehashing.</li>
+</ul>
+
+<p>
+What are those parameters?  The most obvious is the maximum load
+factor, since that's what triggers an automatic rehash.  There's also
+a second parameter, which can be thought of in two different ways: as
+a growth factor (the constant of proportionality by which the bucket
+count grows in a rehash) or as a minimum load factor.  
+</p>
+
+<p>Letting users control that second parameter is more complicated than 
+it seems at first.</p>
+<ul>
+<li> For incremental hashing, it makes no sense to talk about a 
+   growth factor; incremental hashing doesn't work by exponential
+   growth.</li>
+<li> Even if we regard the second parameter as a minimum load factor, 
+   it's not clear how it would be used in an incremental-rehashing
+   implementation.  The natural strategy for incremental rehashing 
+   is to add one bucket whenever the load factor exceeds the maximum;
+   this automatically keeps the load factor within a tight range.</li>
+<li> The interactions between a minimum load factor and manual rehash
+   are tricky.  Again, consider the example where a hash table has
+   100 elements, and the user, anticipating a large insertion,
+   requests that the table rehash itself for 1000000 elements.  In
+   between the rehash and the insertion, the load factor will be very
+   small&mdash;probably below reasonable values of the minimum.</li>
+
+<li> A minimum load factor presents difficulties for the hash table's
+   initial state.  An empty hash table&mdash;one that has a nonzero bucket
+   count, but zero elements&mdash;has a load factor of zero.  If we impose
+   an invariant that the load factor always lie between
+   z<sub><font size="-1">min</font></sub> and z<sub><font
+   size="-1">max</font></sub>, an empty hash table would fail to
+   satisfy that invariant.</li>
+<li> The second parameter, however it's expressed, would probably have 
+   to be interpreted in some approximate or asymptotic sense.  The
+   number of buckets must always be an integer, and in some implementations
+   it has to obey other constraints. (e.g. primality) If we specify an 
+   exact growth factor, or a tight minimum and maximum, then there 
+   might simply be no suitable number available.</li>
+</ul>
+
+<p>
+I don't know how to specify invariants that are precise enough to be
+meaningful and normative, but loose enough to accommodate traditional
+and incremental hashing, empty hash tables, hash tables with bucket
+counts that are restricted to prime numbers, manual rehashing, and
+empty hash tables.  We could include a member function for setting the
+growth factor (or minimum load factor) but not say exactly how that
+number is used.  However, I see very little value in such a vacuous
+requirement.  This proposal provides user control of the maximum load
+factor, but not of growth factor or minimum load factor.
+</p>
+
+<p>
+One implication is that this proposal says what happens as the number
+of elements in a hash table increase, but doesn't say what happens as
+the number decreases.  This is unfortunate.  An unnecessarily low load
+factor wastes space (the magnitude of the load factor is a time/space
+tradeoff), and can lead to unnecessarily slow iteration.
+</p>
+
+<p>
+There's still one last question about the maximum load factor: how
+should the user specify it?  An integer is an unnecessarily
+restrictive choice, since fractional values (especially, ones in the
+range 0 &lt; z<sub><font size="-1">max</font></sub> &lt; 1) are
+sensible.  There are three reasonable options: as a rational number
+(perhaps an ad hoc rational number, where the user provides the
+numerator and denominator separately), as an enum (the user may select
+one of a small number of predetermined values, such as 1/4, 1/2, 1,
+3/2, 2), or as a floating-point number.
+</p>
+
+<p>
+This proposal provides a member function that allows the user to set
+the maximum load factor at runtime, using a floating-point number.
+The reasons are:
+</p>
+<ul>
+<li> In my opinion, there is no compelling performance advantage gained
+   from setting the maximum load factor at compile time rather than
+   at runtime.  The cost of a runtime floating-point parameter is
+   one floating-point multiplication at every rehash (<i>not</i> every
+   insertion).  Even with incremental hashing, this is almost certain
+   to be dwarfed by the cost of a rehash.  And, except when using
+   a compile-time constant of 1, the costs of an integer or rational
+   limit only slightly less in any case.</li>
+<li> An enum is less flexible from the user's point of view, because a
+   user might want a load factor that's not in the predetermined list.
+   Ad hoc rational numbers are just clumsy, both for the user and for 
+   the implementer.</li>
+</ul>
+
+<p>Should the floating-point parameter be of type <tt>float</tt>, or of
+type <tt>double</tt>?  It makes very little difference.  On the one hand, <tt>double</tt>
+is typically the "natural" floating-point type that is used in the absence of a strong
+reason to the contrary.  On the other hand, <tt>float</tt> may allow the hash table
+implementation to save some space, and may alert users to the fact that the value will
+not be used in any context that involves high precision.  I have chosen <tt>float</tt>.
+</p>
+
+<p>
+The Dinkumware hash table implementation uses a compile-time integer constant (part of a
+hash traits class) to control the maximum load factor, and the Metrowerks implementation
+uses a runtime floating-point parameter.  The SGI implementation does not provide any
+mechanism for controlling the maximum load factor.
+</p>
+
+
+<h3>F. Iterators</h3>
+
+<p>
+There is one basic decision to be made about hash table iterators,
+which can be expressed either from the implementer's or the user's
+point of view.  From the implementer's point of view: are the buckets
+singly linked lists, or doubly linked lists?  From the user's point of
+view: are the iterators forward iterators, or bidirectional iterators?
+</p>
+
+<p>
+From the implementer's point of view, there's no question that doubly
+linked lists are much easier to work with.  One advantage is that you
+don't have to maintain a separate list for each bucket.  You can keep
+a single long list, taking care that elements within a bucket remain
+adjacent; a bucket is then just a pair of pointers into the list.
+This is nice for the implementer, because a hash table iterator can
+just be a recycled std::list&lt;&gt;::iterator.  It's nice for the user,
+because iteration is fast.  I don't know of a way to make the
+single-long-list technique work for singly linked lists: some
+operations that ought to be constant time would require a linear search
+through buckets.  (The sticking point turns out to be that erasing a
+node in a singly linked list requires access to the node before it.
+It's possible to get around this problem, but every technique I know
+of ends up introducing linear time behavior somewhere else.)
+</p>
+
+<p>
+From the user's point of view, the choice is a tradeoff.  Singly
+linked lists have slower iterators, because an iterator first steps
+within a bucket and then, upon reaching the end of a bucket, steps to
+the next.  Additionally, users may sometimes want to apply algorithms
+that require bidirectional iterators.  If a hash table supplies
+bidirectional iterators, it's easier for users to switch between (say)
+unordered_set&lt;&gt; and std::set&lt;&gt;.  (But "easier" still doesn't
+mean easy.  Some applications use the standard associative containers
+because of those containers' ordering guarantees, which, as the name 
+suggests, aren't preserved by unordered associative containers.)
+</p>
+
+<p>
+For the user, the disadvantage of bidirectional iterators is greater
+space overhead.  The space overhead for singly linked lists is N + B
+words, where N is the number of elements and B is the bucket count,
+and the space overhead for doubly linked lists is 2N + 2B.  This is an
+important consideration, because the main reason for using hashed
+associative containers is performance.
+</p>
+
+<p>
+The SGI and Metrowerks implementations provide forward iterators.  The
+Dinkumware implementation provides bidirectional iterators.
+</p>
+
+<p>
+This proposal allows both choices.  It requires hashed associative
+containers to provide forward iterators.  An implementation that
+provides bidirectional iterators is conforming, because bidirectional
+iterators are forward iterators.
+</p>
+
+<h3>G. Bucket Interface</h3>
+
+<p>
+Like all standard containers, each of the hashed containers has member
+function begin() and end().  The range [c.begin(), c.end()) contains
+all of the elements in the container, presented as a flat range.
+Elements within a bucket are adjacent, but the iterator interface
+presents no information about where one bucket ends and the next
+begins.
+</p>
+
+<p>
+It's also useful to expose the bucket structure, for two reasons.
+First, it lets users investigate how well their hash function
+performs: it lets them test how evenly elements are distributed within
+buckets, and to look at the elements within a bucket to see if they
+have any common properties.  Second, if the iterators have an
+underlying segmented structure (as they do in existing singly linked
+list implementations), algorithms that exploit that structure, with an
+explicit nested loop, can be more efficient than algorithms that view the
+elements as a flat range.
+</p>
+
+<p>
+The most important part of the bucket interface is an overloading of
+begin() and end().  If n is an integer, [begin(n), end(n)) is a range
+of iterators pointing to the elements in the nth bucket.  These member
+functions return iterators, of course, but not of type X::iterator or
+X::const_iterator.  Instead they return iterators of type
+X::local_iterator or X::const_local_iterator.  A local iterator is
+able to iterate within a bucket, but not necessarily between buckets;
+in some implementations it's possible for X::local_iterator to be a
+simpler data structure than X::iterator.  X::iterator and
+X::local_iterator are permitted to be the same type; implementations
+that use doubly linked lists will probably take advantage of that
+freedom.
+</p>
+
+<p>
+It is likely that the bucket interface will change in the future.  Other segmented
+containers may also want to define an interface that exposes the underlying segmentation,
+and greater experience with segmented containers may give us more insight into what a
+uniform interface should look like.  We can't define a uniform interface for segmented
+containers until we've done it at least twice.
+</p>
+
+<p>
+This bucket interface is not provided by the SGI, Dinkumware, or
+Metrowerks implementations.  It is inspired partly by the Metrowerks
+collision-detection interface, and partly by earlier work (see
+[Austern 1998]) on algorithms for segmented containers.
+</p>
+
+<h3>H. Exception guarantees</h4>
+
+<p>The C++ Standard gives a minimum set of exceptions guarantees for
+  library components.  (Roughly: exceptions don't corrupt data
+  structures or cause memory leaks.)  There are two important
+  questions we have to answer.  First: which operations on hash
+  tables, if any, provide a stronger guarantee?  Second: what
+  restrictions, if any, do we need to impose on the user-defined
+  function objects, the hash function and the equality function,
+  used to instantiate hash tables.</p>
+
+<p>In practice, I believe there are only two interesting operations:
+  erase and insert.  Erase is an interesting operation because in
+  general it must invoke both of these function objects and may
+  therefore throw exceptions. We have to say something about the
+  circumstances in which it may throw exceptions (answer: only when
+  they're thrown from one of these function objects), and we need to
+  say that <tt>clear</tt> may not throw exceptions even though it's
+  defined in terms of erase.</p>
+
+</p>Insert is interesting because we have to decide whether it's
+practical for the single-element insert to provide the stronger
+success-or-no-effect guarantee.  I believe it is not.
+</p>
+
+<p>In the simple case (no rehash is necessary), the strong guarantee
+is easy: we can invoke the hash code and find the appropriate bucket
+before performing any allocations.  After that point, there isn't any
+need to modify any list pointers until all comparisons have been
+performed and the insertion point is known.  The trouble comes if a
+rehash is necessary, and if the user-provided hash function throws an
+exception during the rehash.  At that point it's likely that the data
+structures will have been modified in unrecoverable ways (the only way
+to recover would involve invoking the hash function again), and the
+only way to ensure integrity of the data structures is to lose some or
+all elements.</p>
+
+<p>What we can say is that single-element insert provides the strong
+  guarantee if the hash function is guaranteed not to throw
+  exceptions.  Note that this is true for the default hash
+  functions.</p>
+
+<h3>I. Stored hash codes</h3>
+
+<p>There is an interesting space/time tradeoff for hash table
+  implementers: along with an element, should one store the element's
+  hash code?  This can improve speed in two ways.  First, it makes
+  rehashes faster, because there's no need to recompute the hash code
+  of every element.  Second, it may make searches faster: when
+  searching through a bucket the implementation can compare hash
+  codes before doing a full element comparison.  This is two tests
+  instead of one, but integer comparisons are inexpensive and full
+  element comparisons may sometimes (for strings, for example) be
+  expensive.</p>
+
+<p>Again, my goal is neither to require nor to forbid stored hash
+  codes.  I don't know of an implementation that currently stores hash
+  codes, but I also don't know of anything in this proposal that would
+  forbid it.</p>
+
+<p>One might imagine trying to achieve greater flexibility: allowing
+  users to control whether or not hash codes are stored and used for
+  searches, so that they're only stored in cases where the user
+  believes that this would be a performance benefit.  (One might
+  imagine using a policy class, for example.)  I haven't tried to
+  provide that kind of flexibility, because I don't think the extra
+  gain would be justified by the increased complexity of the
+  interface.</p>
+
+<h2>IV. Proposed Text</h2>
+
+<h3>A. Requirements</h3>
+
+<h4>1. To be added as a separate requirements section, following 
+clause 23.1.2</h4>
+
+<p>Unordered associative containers provide an ability for fast retrieval
+of data based on keys.  The worst-case complexity for most operations
+is linear, but the average case is much faster.  The library provides
+four basic kinds of hashed associative containers: <tt>unordered_set</tt>,
+<tt>unordered_map</tt>, <tt>unordered_multiset</tt>, and
+<tt>unordered_multimap</tt>. </p>
+
+<p>Each hashed associative container is parameterized by <tt>Key</tt>,
+by a function object <tt>Hash</tt> that acts as a hash function for
+values of type <tt>Key</tt>, and on a binary predicate <tt>Pred</tt>
+that induces an equivalence relation on values of type <tt>Key</tt>.
+Additionally, <tt>unordered_map</tt> and <tt>unordered_multimap</tt> associate
+an arbitrary <i>mapped type</i> <tt>T</tt> with the <tt>Key</tt>.</p>
+
+<p>A hash function is a function object that takes a single argument
+of type <tt>Key</tt> and returns a value of type <tt>std::size_t</tt>
+in the range <tt>[0, std::numeric_limits&lt;std::size_t&gt;::max())</tt>.
+</p>
+
+<p>
+Two values <tt>k1</tt> and <tt>k2</tt> of type <tt>Key</tt> are
+considered equal if the container's equality function object returns
+<tt>true</tt> when passed those values.  If <tt>k1</tt> and
+<tt>k2</tt> are equal, the hash function must return the same value
+for both.
+</p>
+
+<p>A hashed associative container supports <i>unique keys</i> if it
+may contain at most one element for each key.  Otherwise, it supports
+<i>equivalent keys</i>.  <tt>unordered_set</tt> and <tt>unordered_map</tt>
+support unique keys. <tt>unordered_multiset</tt> and <tt>unordered_multimap</tt>
+support equivalent keys.  In containers that support equivalent keys,
+elements with equivalent keys are adjacent to each other.</p>
+
+<p>For <tt>unordered_set</tt> and <tt>unordered_multiset</tt> the value type is
+the same as the key type.  For <tt>unordered_map</tt> and
+<tt>unordered_multimap</tt> it is equal to <tt>std::pair&lt;const Key,
+T&gt;</tt>.</p>
+
+<p>The elements of a hashed associative container are organized into
+<i>buckets</i>.  Keys with the same hash code appear in the same
+bucket.  The number of buckets is automatically increased as elements
+are added to a hashed associative container, so that the average
+number of elements per bucket is kept below a bound.  Rehashing
+invalidates iterators, changes ordering between elements, and changes
+which buckets elements appear in, but does not invalidate pointers or
+references to elements.
+</p>
+
+<p>In the following table, 
+
+<tt>X</tt> is a hashed associative container class, 
+
+<tt>a</tt> is an object of type <tt>X</tt>,
+
+<tt>b</tt> is a possibly const object of type <tt>X</tt>,
+
+<tt>a_uniq</tt> is an object of type <tt>X</tt> when <tt>X</tt>
+supports unique keys, 
+
+<tt>a_eq</tt> is an object of type <tt>X</tt> when <tt>X</tt> 
+supports equivalent keys, 
+
+<tt>i</tt> and <tt>j</tt>
+are input iterators that refer to <tt>value_type</tt>, 
+<tt>[i, j)</tt> is a valid range,
+
+<tt>p</tt> and <tt>q2</tt> are valid iterators to <tt>a</tt>,
+<tt>q</tt> and <tt>q1</tt> are valid dereferenceable iterators to
+<tt>a</tt>, <tt>[q1, q2)</tt> is a valid range in <tt>a</tt>,
+
+<tt>r</tt> and <tt>r1</tt> are valid dereferenceable const iterators
+to <tt>a</tt>, <tt>r2</tt> is a valid const iterator to <tt>a</tt>,
+<tt>[r1, r2)</tt> is a valid range in <tt>a</tt>,
+
+<tt>t</tt> is a value of type <tt>X::value_type</tt>, 
+
+<tt>k</tt> is a value of type <tt>key_type</tt>,
+
+<tt>hf</tt> is a possibly const value of type <tt>hasher</tt>,
+
+<tt>eq</tt> is a possibly const value of type <tt>key_equal</tt>,
+
+<tt>n</tt> is a value of type <tt>size_type</tt>,
+
+and <tt>z</tt> is a value of type <tt>float</tt>.
+</p>
+
+<div align="center"><table border>
+<caption>Unordered associative container requirements (in addition to
+container)</caption>
+<tr>
+<th>Expression</th>
+<th>Return type</th>
+<th>assertion/note<br>pre/post-condition</th>
+<th>complexity</th>
+</tr>
+
+<tr>
+<td><tt>X::key_type</tt></td>
+<td><tt>Key</tt></td>
+<td><tt>Key</tt> is <tt>Assignable</tt> and <tt>CopyConstructible</tt></td>
+<td>compile time</td>
+</tr>
+
+<tr>
+<td><tt>X::hasher</tt></td>
+<td><tt>Hash</tt></td>
+<td><tt>Hash</tt> is a unary function object that take an argument of
+    type <tt>Key</tt> and returns a value of type
+    <tt>std::size_t</tt>.</td>
+<td>compile time</td>
+</tr>
+
+<tr>
+<td><tt>X::key_equal</tt></td>
+<td><tt>Pred</tt></td>
+<td><tt>Pred</tt> is a binary predicate that takes two arguments
+    of type <tt>Key</tt>.  <tt>Pred</tt> is an equivalence relation.</td>
+<td>compile time</td>
+</tr>
+
+<tr>
+<td><tt>X::local_iterator</tt></td>
+<td>An iterator type whose category, value type, difference type, and
+    pointer and reference types are the same as
+    <tt>X::iterator</tt>'s.
+</td>
+<td>A <tt>local_iterator</tt> object may be used to iterate through a
+    single bucket, but may not be used to iterated across
+    buckets.</td>
+<td>compile time</td>
+</tr>
+
+<tr>
+<td><tt>X::const_local_iterator</tt></td>
+<td>An iterator type whose category, value type, difference type, and
+    pointer and reference types are the same as
+    <tt>X::const_iterator</tt>'s.
+</td>
+<td>A <tt>const_local_iterator</tt> object may be used to iterate through a
+    single bucket, but may not be used to iterated across
+    buckets.</td>
+<td>compile time</td>
+</tr>
+
+<tr>
+<td><tt>X(n, hf, eq) <br> X a(n, hf, eq)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with at least <tt>n</tt> buckets,
+using <tt>hf</tt> as the hash function and <tt>eq</tt> as the key
+equality predicate.</td>
+<td>O(n)</td>
+</tr>
+
+<tr>
+<td><tt>X(n, hf) <br> X a(n, hf)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with at least <tt>n</tt> buckets,
+using <tt>hf</tt> as the hash function and <tt>key_equal()</tt> as the key
+equality predicate.</td>
+<td>O(n)</td>
+</tr>
+
+<tr>
+<td><tt>X(n) <br> X a(n)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with at least <tt>n</tt> buckets,
+using <tt>hasher()</tt> as the hash function and <tt>key_equal()</tt>
+as the key equality predicate.</td>
+<td>O(n)</td>
+</tr>
+
+<tr>
+<td><tt>X() <br> X a</tt></td>
+<td>X</td>
+<td>Constructs an empty container with an unspecified number of
+buckets, using <tt>hasher()</tt> as the hash function and
+<tt>key_equal</tt> as the key equality predicate.</td>
+<td>constant</td>
+</tr>
+
+<tr>
+<td><tt>X(i, j, n, hf, eq) <br> X a(i, j, n, hf, eq)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with at least <tt>n</tt> buckets,
+using <tt>hf</tt> as the hash function and <tt>eq</tt> as the key
+equality predicate, and inserts elements from <tt>[i, j)</tt> into it.</td>
+<td>Average case O(N) (N is <tt>std::distance(i, j)</tt>), worst case
+O(N<sup>2</sup>)</td>
+</tr>
+
+<tr>
+<td><tt>X(i, j, n, hf) <br> X a(i, j, n, hf)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with at least <tt>n</tt> buckets,
+using <tt>hf</tt> as the hash function and <tt>key_equal()</tt> as the key
+equality predicate, and inserts elements from <tt>[i, j)</tt> into it.</td>
+<td>Average case O(N) (N is <tt>std::distance(i, j)</tt>), worst case
+O(N<sup>2</sup>)</td>
+</tr>
+
+<tr>
+<td><tt>X(i, j, n) <br> X a(i, j, n)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with at least <tt>n</tt> buckets,
+using <tt>hasher()</tt> as the hash function and <tt>key_equal()</tt>
+as the key equality predicate, and inserts elements from <tt>[i, j)</tt> 
+into it.</td>
+<td>Average case O(N) (N is <tt>std::distance(i, j)</tt>), worst case
+O(N<sup>2</sup>)</td>
+</tr>
+
+<tr>
+<td><tt>X(i, j) <br> X a(i, j)</tt></td>
+<td>X</td>
+<td>Constructs an empty container with an unspecified number of
+buckets, using <tt>hasher()</tt> as the hash function and
+<tt>key_equal</tt> as the key equality predicate, and inserts elements 
+from <tt>[i, j)</tt> into it.</td>
+<td>Average case O(N) (N is <tt>std::distance(i, j)</tt>), worst case
+O(N<sup>2</sup>)</td>
+</tr>
+
+<tr>
+<td><tt>X(b) <br> X a(b)</tt></td>
+<td><tt>X</tt></td>
+<td>Copy constructor.  In addition to the contained elements, the
+  hash function, predicate, and maximum load factor are copied.</td>
+<td>Average case linear in <tt>b.size()</tt>, worst case quadratic.</td>
+</tr>
+
+<tr>
+<td><tt>a = b</tt></td>
+<td><tt>X</tt></td>
+<td>Copy assignment operator.  In addition to the contained elements, the
+  hash function, predicate, and maximum load factor are copied.</td>
+<td>Average case linear in <tt>b.size()</tt>, worst case quadratic.</td>
+</tr>
+
+<tr>
+<td><tt>b.hash_function()</tt></td>
+<td><tt>hasher</tt></td>
+<td>Returns the hash function out of which <tt>a</tt> was constructed.</td>
+<td>constant</td>
+</tr>
+
+<tr>
+<td><tt>b.key_eq()</tt></td>
+<td><tt>key_equal</tt></td>
+<td>Returns the key equality function out of which <tt>a</tt> 
+    was constructed.</td>
+<td>constant</td>
+</tr>
+
+<tr>
+<td><tt>a_uniq.insert(t)</tt></td>
+<td><tt>std::pair&lt;iterator, bool&gt;</tt></td>
+<td>Inserts <tt>t</tt> if and only if there is no element in the container
+    with key equivalent to the key of <tt>t</tt>.  The <tt>bool</tt>
+    component of the returned pair indicates whether the insertion
+    takes place, and the <tt>iterator</tt> component points to the element
+    with key equivalent to the key of <tt>t</tt>.
+</td>
+<td>Average case O(1), worst case O(<tt>a_uniq.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>a_eq.insert(t)</tt></td>
+<td><tt>iterator</tt></td>
+<td>Inserts <tt>t</tt>, and returns an iterator pointing to the newly
+    inserted element.
+</td>
+<td>Average case O(1), worst case O(<tt>a_uniq.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>a.insert(r, t)</tt></td>
+<td><tt>iterator</tt></td>
+<td>Equivalent to a.insert(t).  Return value is an iterator pointing 
+to the element with the key equivalent to that of <tt>t</tt>.  The
+const iterator <tt>r</tt> is a hint pointing to where the search should
+start.  Implementations are permitted to ignore the hint.
+</td>
+<td>Average case O(1), worst case O(<tt>a_uniq.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>a.insert(i, j)</tt></td>
+<td><tt>void</tt></td>
+<td>Pre: <tt>i</tt> and <tt>j</tt> are not iterators in <tt>a</tt>.  <br>
+    Equivalent to <tt>a.insert(t)</tt> for each element in <tt>[i,j)</tt>.
+</td>
+<td>Average case O(N), where N is <tt>std::distance(i, j)</tt>.  Worst
+    case O(N * <tt>a.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>a.erase(k)</tt></td>
+<td><tt>size_type</tt></td>
+<td>Erases all elements with key equivalent to <tt>k</tt>.  Returns
+the number of elements erased.</td>
+<td>Average case O(<tt>a.count(k)</tt>).  Worst case 
+    O(<tt>a.size())</tt>.</td>
+</tr>
+
+<tr>
+<td><tt>a.erase(r)</tt></td>
+<td><tt>void</tt></td>
+<td>Erases the element pointed to by <tt>r</tt>.</td>
+<td>Average case O(1), worst case O(<tt>a.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>a.erase(r1, r2)</tt></td>
+<td><tt>void</tt></td>
+<td>Erases all elements in the range <tt>[r1, t2)</tt>.</td>
+<td>Average case O(<tt>std::distance(r1, r2)</tt>), worst case
+O(<tt>a.size()</tt>).
+</tr>
+
+<tr>
+<td><tt>a.clear()</tt></td>
+<td><tt>void</tt></td>
+<td>Erases all elements in the container.  <br> 
+    Post: <tt>a.size() == 0</tt>
+</td>
+<td>Linear.</td>
+</tr>
+
+<tr>
+<td><tt>b.find(k)</tt></td>
+<td><tt>iterator</tt>; <br> <tt>const_iterator</tt> for const <tt>a</tt>.</td>
+<td>Returns an iterator pointing to an element with key equivalent to 
+    <tt>k</tt>, or <tt>a.end()</tt> if no such element exists.</td>
+<td>Average case O(1), worst case O(<tt>a.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>b.count(k)</tt></td>
+<td><tt>size_type</tt></td>
+<td>Returns the number of elements with key equivalent to <tt>k</tt>.</td>
+<td>Average case O(1), worst case O(<tt>a.size()</tt>).</td>
+</tr>
+
+<tr>
+<td><tt>b.equal_range(k)</tt></td>
+<td><tt>std::pair&lt;iterator, iterator&gt;</tt>; <br>
+    <tt>std::pair&lt;const_iterator, const_iterator&gt;</tt>
+    for const <tt>b</tt>.
+</td>
+<td>Returns a range containing all elements with keys equivalent to
+    <tt>k</tt>.  Returns <tt>std::make_pair(a.end(), a.end())</tt> if
+    no such elements exist.</td>
+<td>Average case O(<tt>a.count(k)</tt>).  Worst case 
+    O(<tt>a.size())</tt>.</td>
+</tr>
+
+<tr>
+<td><tt>b.bucket_count()</tt></td>
+<td><tt>size_type</tt></td>
+<td>Returns the number of buckets that <tt>b</tt> contains.</td>
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>b.max_bucket_count()</tt></td>
+<td><tt>size_type</tt></td>
+<td>Returns an upper bound on the number of buckets that <tt>b</tt> might
+    ever contain.
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>b.bucket(k)</tt></td>
+<td><tt>size_type</tt></td>
+<td>Returns the index of the bucket in which elements with keys equivalent
+    to <tt>k</tt> would be found, if any such element existed.  <br>
+    Post: the return value is in the range <tt>[0, b.bucket_count())</tt>. 
+</td>
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>b.bucket_size(n)</tt></td>
+<td><tt>size_type</tt></td>
+<td>Pre: <tt>n</tt> is in the range <tt>[0, b.bucket_count())</tt>. <br>
+    Returns the number of elements in the <tt>n</tt><sup>th</sup> bucket.</td>
+<td>O(<tt>a.bucket_size(n)</tt>)</td>
+</tr>
+
+<tr>
+<td><tt>b.begin(n)</tt></td>
+<td><tt>local_iterator</tt>;     <br>
+    <tt>const_local_iterator</tt> for const <tt>b</tt></td>
+<td>Pre: <tt>n</tt> is in the range <tt>[0, b.bucket_count())</tt>. <br>
+    Note: <tt>[b.begin(n), b.end(n))</tt> is a valid range containing
+    all of the elements in the <tt>n</tt><sup>th</sup> bucket.
+</td>
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>b.end(n)</tt></td>
+<td><tt>local_iterator</tt>;     <br>
+    <tt>const_local_iterator</tt> for const <tt>b</tt></td>
+<td>Pre: <tt>n</tt> is in the range <tt>[0, b.bucket_count())</tt>.
+</td>
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>b.load_factor()</tt></td>
+<td><tt>float</tt></td>
+<td>Returns the average number of elements per bucket.</td>
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>b.max_load_factor()</tt></td>
+<td><tt>float</tt></td>
+<td>Returns a number that the container attempts to keep the load factor
+    less than or equal to. The container automatically increases the 
+    number of buckets as necessary to keep the load factor below this
+    number.  <br>
+    Post: return value is positive.</td>
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>a.max_load_factor(z)</tt></td>
+<td><tt>void</tt></td>
+<td>Pre: <tt>z</tt> is positive.   <br>
+    Changes the container's maximum load load factor, using <tt>z</tt> as a hint.
+<td>Constant</td>
+</tr>
+
+<tr>
+<td><tt>a.rehash(n)</tt></td>
+<td><tt>void</tt></td>
+<td>Pre: <tt>n &gt; a.size() / a.max_load_factor()</tt>.    <br>
+    Changes the number of buckets so that it is at least <tt>n</tt>.
+</td>
+<td>Average case linear in <tt>a.size()</tt>, worst case quadratic.</td>
+</tr>
+
+</table></div>
+
+<p>Unordered associative containers are not required to support the expressions <tt>a ==
+    b</tt> or <tt>a != b</tt>. [<i>Note:</i> This is because the container requirements define
+    operator equality in terms of equality of ranges.  Since the elements of an unordered
+    associative container appear in an arbitrary order, range equality is not a useful
+    operation.]</p>
+
+<p>The iterator types <tt>iterator</tt> and <tt>const_iterator</tt> of
+a hashed associative container are of at least the forward iterator
+category.  For hashed associative containers where the key type and
+value type are the same, both <tt>iterator</tt> and
+<tt>const_iterator</tt> are const iterators.</p>
+
+<p>The insert members shall not affect the validity of references to
+  container elements, but may invalidate all iterators to the
+  container.  The erase members shall invalidate only iterators and
+  references to the erased elements.</p>
+
+<h4>2. Exception safety guarantees</h4>
+
+<p>
+Add the following bullet items to the list of exception safety
+guarantees in clause 23.1, paragraph 10:
+</p>
+
+<ul>
+<li>
+For hashed associative containers, no <tt>clear()</tt> function
+throws an exception.  No <tt>erase()</tt> function throws an
+exception unless that exception is thrown by the container's Hash or
+Pred object (if any).
+</li>
+
+<li>
+For hashed associative containers, if an exception is thrown by an
+insert() function while inserting a single element other than by the
+container's hash function, the insert() function has no effects.
+</li>
+
+<li>
+For hashed associative containers, no <tt>swap</tt> function throws
+an exception unless that exception is thrown by the copy constructor
+or copy assignment operator of the container's Hash or Pred object
+(if any).
+</li>
+
+</ul>
+
+<h3>B. Hash Function</h3>
+
+<h4>1. To be added to the &lt;functional&gt; synopsis</h4>
+
+<pre>
+    // Hash function base template
+    template &lt;class T&gt; struct hash;
+
+    // Hash function specializations
+
+    template &lt;&gt; struct hash&lt;bool&gt;;
+    template &lt;&gt; struct hash&lt;char&gt;;
+    template &lt;&gt; struct hash&lt;signed char&gt;;
+    template &lt;&gt; struct hash&lt;unsigned char&gt;;
+    template &lt;&gt; struct hash&lt;wchar_t&gt;;
+    template &lt;&gt; struct hash&lt;short&gt;;
+    template &lt;&gt; struct hash&lt;int&gt;;
+    template &lt;&gt; struct hash&lt;long&gt;;
+    template &lt;&gt; struct hash&lt;unsigned short&gt;;
+    template &lt;&gt; struct hash&lt;unsigned int&gt;;
+    template &lt;&gt; struct hash&lt;unsigned long&gt;;
+
+    template &lt;&gt; struct hash&lt;float&gt;;
+    template &lt;&gt; struct hash&lt;double&gt;;
+    template &lt;&gt; struct hash&lt;long double&gt;;
+
+    template&lt;class T&gt;
+    struct hash&lt;T*&gt;
+
+    template &lt;class charT, class traits, class Allocator&gt;
+    struct hash&lt;std::basic_string&lt;charT, traits, Allocator&gt; &gt;;
+</pre>
+
+<h4>2. Class template <tt>hash</tt></h4>
+
+<p>The function object <tt>hash</tt> is used as the default hash
+function by the <i>hashed associative containers</i>.  This class
+template is only required to be instantiable for integer types
+(3.9.1), floating point types (3.9.1), pointer types (8.3.1), and (for
+any valid set of <tt>charT</tt>, <tt>traits</tt>, and <tt>Alloc</tt>)
+<tt>std::basic_string&lt;charT, traits, Alloc&gt;</tt>.
+
+
+<pre>
+    template &lt;class T&gt;
+    struct hash : public std::unary_function&lt;T, std::size_t&gt;
+    {
+      std::size_t operator()(T val) const;
+    };
+</pre>
+
+<p>
+The return value of <tt>operator()</tt> is unspecified, except that equal arguments yield
+the same result.  <tt>operator()</tt> shall not throw exceptions.
+</p>
+
+<h3>C. Unordered Associative Containers</h3>
+
+<h4>1. Header &lt;unordered_set&gt; synopsis</h4>
+
+<pre>
+namespace std {
+  template &lt;class Value,
+            class Hash = hash&lt;Value&gt;,
+            class Pred = std::equal_to&lt;Value&gt;,
+            class Alloc = std::allocator&lt;Value&gt; &gt;
+  class unordered_set;
+
+  template &lt;class Value,
+            class Hash = hash&lt;Value&gt;,
+            class Pred = std::equal_to&lt;Value&gt;,
+            class Alloc = std::allocator&lt;Value&gt; &gt;
+  class unordered_multiset;
+}
+</pre>
+
+<h4>2. Header &lt;unordered_map&gt; synopsis</h4>
+
+<pre>
+namespace std {
+  template &lt;class Key,
+            class T,
+            class Hash = hash&lt;Key&gt;,
+            class Pred = std::equal_to&lt;Key&gt;,
+            class Alloc = std::allocator&lt;std::pair&lt;const Key, T&gt; &gt; &gt;
+  class unordered_map;
+
+  template &lt;class Key,
+            class T,
+            class Hash = hash&lt;Key&gt;,
+            class Pred = std::equal_to&lt;Key&gt;,
+            class Alloc = std::allocator&lt;std::pair&lt;const Key, T&gt; &gt; &gt;
+  class unordered_multiset;
+}
+</pre>
+
+<h4>3. Class template <tt>unordered_set</tt></h4>
+
+<p>An <tt>unordered_set</tt> is a kind of hashed associative container that
+supports unique keys (an <tt>unordered_set</tt> contains at most one of each
+key value) and in which the elements' keys are the elements
+themselves.</p>
+
+<p>An <tt>unordered_set</tt> satisfies all of the requirements of a
+container and of a hashed associative container.  It provides the
+operations described in the preceding requirements table for unique
+keys; that is, an <tt>unordered_set</tt> supports the <tt>a_uniq</tt>
+operations in that table, not the <tt>a_eq</tt> operations.  For a
+<tt>unordered_set&lt;Value&gt;</tt> the <tt>key type</tt> and the value
+type are both <tt>Value</tt>.  The <tt>iterator</tt> and
+<tt>const_iterator</tt> types are both const iterator types.  It is
+unspecified whether or not they are the same type.</p>
+
+<p>This section only describes operations on <tt>unordered_set</tt> that
+are not described in one of the requirement tables, or for which there
+is additional semantic information.</p>
+
+<pre>
+  namespace std {
+    template &lt;class Value, 
+              class Hash  = hash&lt;Value&gt;,
+              class Pred  = std::equal_to&lt;Value&gt;,
+              class Alloc = std::allocator&lt;Value&gt; &gt;
+    class unordered_set
+    {
+    public:
+      // types
+      typedef Value                                    key_type;
+      typedef Value                                    value_type;
+      typedef Hash                                     hasher;
+      typedef Pred                                     key_equal;
+      typedef Alloc                                    allocator_type;
+      typedef typename allocator_type::pointer         pointer;
+      typedef typename allocator_type::const_pointer   const_pointer;
+      typedef typename allocator_type::reference       reference;
+      typedef typename allocator_type::const_reference const_reference;
+      typedef <b>implementation defined</b>                   size_type;
+      typedef <b>implementation defined</b>                   difference_type;
+
+      typedef <b>implementation defined</b>                   iterator;
+      typedef <b>implementation defined</b>                   const_iterator;
+      typedef <b>implementation defined</b>                   local_iterator;
+      typedef <b>implementation defined</b>                   const_local_iterator;
+
+
+      // construct/destroy/copy
+      explicit unordered_set(size_type n = <b>implementation defined</b>,
+                             const hasher&amp; hf = hasher(),
+                             const key_equal&amp; eql = key_equal(),
+                             const allocator_type&amp; a = allocator_type());
+      template &lt;class InputIterator&gt;
+        unordered_set(InputIterator f, InputIterator l,
+                      size_type n = <b>implementation defined</b>,
+                      const hasher&amp; hf = hasher(),
+                      const key_equal&amp; eql = key_equal(),
+                      const allocator_type&amp; a = allocator_type());
+      unordered_set(const unordered_set&amp;);
+      ~unordered_set();
+      unordered_set&amp; operator=(const unordered_set&amp;);
+      allocator_type get_allocator() const;
+
+      // size and capacity
+      bool empty() const;
+      size_type size() const;
+      size_type max_size() const;
+
+      // iterators
+      iterator       begin();
+      const_iterator begin() const;
+      iterator       end();
+      const_iterator end() const;
+
+      // modifiers
+      std::pair&lt;iterator, bool&gt; insert(const value_type&amp; obj);
+      iterator insert(const_iterator hint, const value_type&amp; obj);
+      template &lt;class InputIterator&gt;
+        void insert(InputIterator first, InputIterator last);
+
+      void erase(const_iterator position);
+      size_type erase(const key_type&amp; k);
+      void erase(const_iterator first, const_iterator last);
+      void clear();
+
+      void swap(unordered_set&amp;);
+
+      // observers
+      hasher hash_function() const;
+      key_equal key_eq() const;
+
+      // lookup
+      iterator       find(const key_type&amp; k);
+      const_iterator find(const key_type&amp; k) const;
+      size_type count(const key_type&amp; k) const;
+      std::pair&lt;iterator, iterator&gt; 
+        equal_range(const key_type&amp; k);
+      std::pair&lt;const_iterator, const_iterator&gt;
+        equal_range(const key_type&amp; k) const;
+
+      // bucket interface
+      size_type bucket_count() const;
+      size_type max_bucket_count() const;
+      size_type bucket_size(size_type n);
+      size_type bucket(const key_type&amp; k);
+      local_iterator begin(size_type n);
+      const_local_iterator begin(size_type n) const;
+      local_iterator end(size_type n);
+      const_local_iterator end(size_type n) const;  
+
+      // hash policy
+      float load_factor() const;
+      float max_load_factor() const;
+      void max_load_factor(float z);
+      void rehash(size_type n);
+    };
+
+    template &lt;class Value, class Hash, class Pred, class Alloc&gt;
+      void swap(const unordered_set&lt;Value, Hash, Pred, Alloc&gt;&amp; x,
+                const unordered_set&lt;Value, Hash, Pred, Alloc&gt;&amp; y);
+
+  }
+</pre>
+
+<p><b>a. <tt>unordered_set</tt> constructors</b></p>
+
+<pre>
+      explicit unordered_set(size_type n = <b>implementation defined</b>,
+                             const hasher&amp; hf = hasher(),
+                             const key_equal&amp; eql = key_equal(),
+                             const allocator_type&amp; a = allocator_type());
+</pre>
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_set</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation
+defined.  <tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Constant.
+
+<pre>
+      template &lt;class InputIterator&gt;
+        unordered_set(InputIterator f, InputIterator l,
+                 size_type n = <b>implementation defined</b>,
+                      const hasher&amp; hf = hasher(),
+                      const key_equal&amp; eql = key_equal(),
+                      const allocator_type&amp; a = allocator_type());
+</pre>                 
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_set</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  (If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.)  Then
+inserts elements from the range <tt>[<i>first</i>, <i>last</i>)</tt>.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Average case linear, worst case quadratic.</p>
+
+<p><b>b. <tt>unordered_set</tt> <tt>swap</tt></b></p>
+
+<pre>
+      template &lt;class Value, class Hash, class Pred, class Alloc&gt;
+        void swap(const unordered_set&lt;Value, Hash, Pred, Alloc&gt;&amp; x,
+                  const unordered_set&lt;Value, Hash, Pred, Alloc&gt;&amp; y);
+</pre>
+
+<p><b>Effects:</b> 
+<pre>
+          x.swap(y);
+</pre>
+
+<h4>4. Class template <tt>unordered_map</tt></h4>
+
+<p>An <tt>unordered_map</tt> is a kind of hashed associative container that
+supports unique keys (an <tt>unordered_map</tt> contains at most one of each
+key value) and that associates values of another type
+<tt>mapped_type</tt> with the keys.</p>
+
+<p>An <tt>unordered_map</tt> satisfies all of the requirements of a
+container and of a hashed associative container.  It provides the
+operations described in the preceding requirements table for unique
+keys; that is, an <tt>unordered_map</tt> supports the <tt>a_uniq</tt>
+operations in that table, not the <tt>a_eq</tt> operations.  For a
+<tt>unordered_map&lt;Key, T&gt;</tt> the <tt>key type</tt> is <tt>Key</tt>,
+the mapped type is <tt>T</tt>, and the value type is
+<tt>std::pair&lt;const Key, T&gt;</tt>.
+
+<p>This section only describes operations on <tt>unordered_map</tt> that
+are not described in one of the requirement tables, or for which there
+is additional semantic information.</p>
+
+<pre>
+  namespace std {
+    template &lt;class Key,
+              class T,
+              class Hash  = hash&lt;Key&gt;,
+              class Pred  = std::equal_to&lt;Key&gt;,
+              class Alloc = std::allocator&lt;std::pair&lt;const Key, T&gt; &gt; &gt;
+    class unordered_map
+    {
+    public:
+      // types
+      typedef Key                                      key_type;
+      typedef std::pair&lt;const Key, T&gt;                  value_type;
+      typedef T                                        mapped_type;
+      typedef Hash                                     hasher;
+      typedef Pred                                     key_equal;
+      typedef Alloc                                    allocator_type;
+      typedef typename allocator_type::pointer         pointer;
+      typedef typename allocator_type::const_pointer   const_pointer;
+      typedef typename allocator_type::reference       reference;
+      typedef typename allocator_type::const_reference const_reference;
+      typedef <b>implementation defined</b>                   size_type;
+      typedef <b>implementation defined</b>                   difference_type;
+
+      typedef <b>implementation defined</b>                   iterator;
+      typedef <b>implementation defined</b>                   const_iterator;
+      typedef <b>implementation defined</b>                   local_iterator;
+      typedef <b>implementation defined</b>                   const_local_iterator;
+
+      // construct/destroy/copy
+      explicit unordered_map(size_type n = <b>implementation defined</b>,
+                             const hasher&amp; hf = hasher(),
+                             const key_equal&amp; eql = key_equal(),
+                             const allocator_type&amp; a = allocator_type());
+      template &lt;class InputIterator&gt;
+        unordered_map(InputIterator f, InputIterator l,
+                      size_type n = <b>implementation defined</b>,
+                      const hasher&amp; hf = hasher(),
+                      const key_equal&amp; eql = key_equal(),
+                      const allocator_type&amp; a = allocator_type());
+      unordered_map(const unordered_map&amp;);
+      ~unordered_map();
+      unordered_map&amp; operator=(const unordered_map&amp;);
+      allocator_type get_allocator() const;
+
+      // size and capacity
+      bool empty() const;
+      size_type size() const;
+      size_type max_size() const;
+
+      // iterators
+      iterator       begin();
+      const_iterator begin() const;
+      iterator       end();
+      const_iterator end() const;
+
+      // modifiers
+      std::pair&lt;iterator, bool&gt; insert(const value_type&amp; obj);
+      iterator insert(const_iterator hint, const value_type&amp; obj);
+      template &lt;class InputIterator&gt;
+        void insert(InputIterator first, InputIterator last);
+
+      void erase(const_iterator position);
+      size_type erase(const key_type&amp; k);
+      void erase(const_iterator first, const_iterator last);
+      void clear();
+
+      void swap(unordered_map&amp;);
+
+      // observers
+      hasher hash_function() const;
+      key_equal key_eq() const;
+
+      // lookup
+      iterator       find(const key_type&amp; k);
+      const_iterator find(const key_type&amp; k) const;
+      size_type count(const key_type&amp; k) const;
+      std::pair&lt;iterator, iterator&gt; 
+        equal_range(const key_type&amp; k);
+      std::pair&lt;const_iterator, const_iterator&gt;
+        equal_range(const key_type&amp; k) const;
+
+      mapped_type&amp; operator[](const key_type&amp; k);
+
+      // bucket interface
+      size_type bucket_count() const;
+      size_type max_bucket_count() const;
+      size_type bucket_size(size_type n);
+      size_type bucket(const key_type&amp; k);
+      local_iterator begin(size_type n);
+      const_local_iterator begin(size_type n) const;
+      local_iterator end(size_type n);
+      const_local_iterator end(size_type n) const;  
+
+      // hash policy
+      float load_factor() const;
+      float max_load_factor() const;
+      void max_load_factor(float z);
+      void rehash(size_type n);
+    };
+
+    template &lt;class Key, class T, class Hash, class Pred, class Alloc&gt;
+      void swap(const unordered_map&lt;Key, T, Hash, Pred, Alloc&gt;&amp; x,
+                const unordered_map&lt;Key, T, Hash, Pred, Alloc&gt;&amp; y);
+  }
+</pre>
+
+<p><b>a. <tt>unordered_map</tt> constructors</b></p>
+
+<pre>
+      explicit unordered_map(size_type n = <b>implementation defined</b>,
+                             const hasher&amp; hf = hasher(),
+                             const key_equal&amp; eql = key_equal(),
+                             const allocator_type&amp; a = allocator_type());
+</pre>
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_map</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Constant.
+
+<pre>
+      template &lt;class InputIterator&gt;
+        unordered_map(InputIterator f, InputIterator l,
+                      size_type n = <b>implementation defined</b>,
+                      const hasher&amp; hf = hasher(),
+                      const key_equal&amp; eql = key_equal(),
+                      const allocator_type&amp; a = allocator_type());
+</pre>                 
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_map</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  (If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.)  Then
+inserts elements from the range <tt>[<i>first</i>, <i>last</i>)</tt>.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Average case linear, worst case quadratic.</p>
+
+<p><b>b. <tt>unordered_map</tt> element access</b></p>
+
+<pre>
+      mapped_type&amp; operator[](const key_type&amp; k);
+</pre>                 
+
+<p><b>Effects:</b> If the <tt>unordered_map</tt> does not already contain
+an element whose key is equivalent to <tt><i>k</i></tt>, inserts 
+<tt>std::pair&lt;const key_type, mapped_type&gt;(k, mapped_type())</tt>.</p>
+
+<p><b>Returns:</b> A reference to <tt>x.second</tt>, where <tt>x</tt>
+is the (unique) element whose key is equivalent to <tt><i>k</i></tt>.
+
+<p><b>c. <tt>unordered_map</tt> <tt>swap</tt></b></p>
+
+
+<pre>
+      template &lt;class Value, class Hash, class Pred, class Alloc&gt;
+        void swap(const unordered_map&lt;Value, Hash, Pred, Alloc&gt;&amp; x,
+                  const unordered_map&lt;Value, Hash, Pred, Alloc&gt;&amp; y);
+</pre>
+
+<p><b>Effects:</b> 
+<pre>
+          x.swap(y);
+</pre>
+
+
+<h4>5. Class template <tt>unordered_multiset</tt></h4>
+
+<p>An <tt>unordered_multiset</tt> is a kind of hashed associative container
+that supports equivalent keys (an <tt>unordered_multiset</tt> may contain
+multiple copies of the same key value) and in which the elements' keys
+are the elements themselves.</p>
+
+<p>An <tt>unordered_multiset</tt> satisfies all of the requirements of a
+container and of a hashed associative container.  It provides the
+operations described in the preceding requirements table for equivalent
+keys; that is, an <tt>unordered_multiset</tt> supports the <tt>a_eq</tt>
+operations in that table, not the <tt>a_uniq</tt> operations.  For a
+<tt>unordered_multiset&lt;Value&gt;</tt> the <tt>key type</tt> and the value
+type are both <tt>Value</tt>.  The <tt>iterator</tt> and
+<tt>const_iterator</tt> types are both const iterator types.  It is
+unspecified whether or not they are the same type.</p>
+
+<p>This section only describes operations on <tt>unordered_multiset</tt> that
+are not described in one of the requirement tables, or for which there
+is additional semantic information.</p>
+
+<pre>
+  namespace std {
+    template &lt;class Value, 
+              class Hash  = hash&lt;Value&gt;,
+              class Pred  = std::equal_to&lt;Value&gt;,
+              class Alloc = std::allocator&lt;Value&gt; &gt;
+    class unordered_multiset
+    {
+    public:
+      // types
+      typedef Value                                    key_type;
+      typedef Value                                    value_type;
+      typedef Hash                                     hasher;
+      typedef Pred                                     key_equal;
+      typedef Alloc                                    allocator_type;
+      typedef typename allocator_type::pointer         pointer;
+      typedef typename allocator_type::const_pointer   const_pointer;
+      typedef typename allocator_type::reference       reference;
+      typedef typename allocator_type::const_reference const_reference;
+      typedef <b>implementation defined</b>                   size_type;
+      typedef <b>implementation defined</b>                   difference_type;
+
+      typedef <b>implementation defined</b>                   iterator;
+      typedef <b>implementation defined</b>                   const_iterator;
+      typedef <b>implementation defined</b>                   local_iterator;
+      typedef <b>implementation defined</b>                   const_local_iterator;
+
+
+      // construct/destroy/copy
+      explicit unordered_multiset(size_type n = <b>implementation defined</b>,
+                                  const hasher&amp; hf = hasher(),
+                                  const key_equal&amp; eql = key_equal(),
+                                  const allocator_type&amp; a = allocator_type());
+      template &lt;class InputIterator&gt;
+        unordered_multiset(InputIterator f, InputIterator l,
+                      size_type n = <b>implementation defined</b>,
+                      const hasher&amp; hf = hasher(),
+                      const key_equal&amp; eql = key_equal(),
+                      const allocator_type&amp; a = allocator_type());
+      unordered_multiset(const unordered_multiset&amp;);
+      ~unordered_multiset();
+      unordered_multiset&amp; operator=(const unordered_multiset&amp;);
+      allocator_type get_allocator() const;
+
+      // size and capacity
+      bool empty() const;
+      size_type size() const;
+      size_type max_size() const;
+
+      // iterators
+      iterator       begin();
+      const_iterator begin() const;
+      iterator       end();
+      const_iterator end() const;
+
+      // modifiers
+      iterator insert(const value_type&amp; obj);
+      iterator insert(const_iterator hint, const value_type&amp; obj);
+      template &lt;class InputIterator&gt;
+        void insert(InputIterator first, InputIterator last);
+
+      void erase(const_iterator position);
+      size_type erase(const key_type&amp; k);
+      void erase(const_iterator first, const_iterator last);
+      void clear();
+
+      void swap(unordered_multiset&amp;);
+
+      // observers
+      hasher hash_function() const;
+      key_equal key_eq() const;
+
+      // lookup
+      iterator       find(const key_type&amp; k);
+      const_iterator find(const key_type&amp; k) const;
+      size_type count(const key_type&amp; k) const;
+      std::pair&lt;iterator, iterator&gt; 
+        equal_range(const key_type&amp; k);
+      std::pair&lt;const_iterator, const_iterator&gt;
+        equal_range(const key_type&amp; k) const;
+
+      // bucket interface
+      size_type bucket_count() const;
+      size_type max_bucket_count() const;
+      size_type bucket_size(size_type n);
+      size_type bucket(const key_type&amp; k);
+      local_iterator begin(size_type n);
+      const_local_iterator begin(size_type n) const;
+      local_iterator end(size_type n);
+      const_local_iterator end(size_type n) const;  
+
+      // hash policy
+      float load_factor() const;
+      float max_load_factor() const;
+      void max_load_factor(float z);
+      void rehash(size_type n);
+    };
+
+    template &lt;class Value, class Hash, class Pred, class Alloc&gt;
+      void swap(const unordered_multiset&lt;Value, Hash, Pred, Alloc&gt;&amp; x,
+                const unordered_multiset&lt;Value, Hash, Pred, Alloc&gt;&amp; y);
+  }
+</pre>
+
+<p><b>a. <tt>unordered_multiset</tt> constructors</b></p>
+
+<pre>
+      explicit unordered_multiset(size_type n = <b>implementation defined</b>,
+                                  const hasher&amp; hf = hasher(),
+                                  const key_equal&amp; eql = key_equal(),
+                                  const allocator_type&amp; a = allocator_type());
+</pre>
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_multiset</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Constant.
+
+<pre>
+      template &lt;class InputIterator&gt;
+        unordered_multiset(InputIterator f, InputIterator l,
+                           size_type n = <b>implementation defined</b>,
+                           const hasher&amp; hf = hasher(),
+                           const key_equal&amp; eql = key_equal(),
+                           const allocator_type&amp; a = allocator_type());
+</pre>                 
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_multiset</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  (If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.)  Then
+inserts elements from the range <tt>[<i>first</i>, <i>last</i>)</tt>.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Average case linear, worst case quadratic.</p>
+
+<p><b>b. <tt>unordered_multiset</tt> <tt>swap</tt></b></p>
+
+<pre>
+      template &lt;class Value, class Hash, class Pred, class Alloc&gt;
+        void swap(const unordered_multiset&lt;Value, Hash, Pred, Alloc&gt;&amp; x,
+                  const unordered_multiset&lt;Value, Hash, Pred, Alloc&gt;&amp; y);
+</pre>
+
+<p><b>Effects:</b> 
+<pre>
+          x.swap(y);
+</pre>
+
+<h4>6. Class template <tt>unordered_multimap</tt></h4>
+
+<p>An <tt>unordered_multimap</tt> is a kind of hashed associative container
+that supports equivalent keys (an <tt>unordered_multimap</tt> may contain
+multiple copies of each key value) and that associates values of
+another type <tt>mapped_type</tt> with the keys.</p>
+
+<p>An <tt>unordered_multimap</tt> satisfies all of the requirements of a
+container and of a hashed associative container.  It provides the
+operations described in the preceding requirements table for
+equivalent keys; that is, an <tt>unordered_multimap</tt> supports the
+<tt>a_eq</tt> operations in that table, not the <tt>a_uniq</tt>
+operations.  For an <tt>unordered_multimap&lt;Key, T&gt;</tt> the <tt>key
+type</tt> is <tt>Key</tt>, the mapped type is <tt>T</tt>, and the
+value type is <tt>std::pair&lt;const Key, T&gt;</tt>.
+
+<p>This section only describes operations on <tt>unordered_multimap</tt>
+that are not described in one of the requirement tables, or for which
+there is additional semantic information.</p>
+
+<pre>
+  namespace std {
+    template &lt;class Key,
+              class T,
+              class Hash  = hash&lt;Key&gt;,
+              class Pred  = std::equal_to&lt;Key&gt;,
+              class Alloc = std::allocator&lt;std::pair&lt;const Key, T&gt; &gt; &gt;
+    class unordered_multimap
+    {
+    public:
+      // types
+      typedef Key                                      key_type;
+      typedef std::pair&lt;const Key, T&gt;                  value_type;
+      typedef T                                        mapped_type;
+      typedef Hash                                     hasher;
+      typedef Pred                                     key_equal;
+      typedef Alloc                                    allocator_type;
+      typedef typename allocator_type::pointer         pointer;
+      typedef typename allocator_type::const_pointer   const_pointer;
+      typedef typename allocator_type::reference       reference;
+      typedef typename allocator_type::const_reference const_reference;
+      typedef <b>implementation defined</b>                   size_type;
+      typedef <b>implementation defined</b>                   difference_type;
+
+      typedef <b>implementation defined</b>                   iterator;
+      typedef <b>implementation defined</b>                   const_iterator;
+      typedef <b>implementation defined</b>                   local_iterator;
+      typedef <b>implementation defined</b>                   const_local_iterator;
+
+      // construct/destroy/copy
+      explicit unordered_multimap(size_type n = <b>implementation defined</b>,
+                                  const hasher&amp; hf = hasher(),
+                                  const key_equal&amp; eql = key_equal(),
+                                  const allocator_type&amp; a = allocator_type());
+      template &lt;class InputIterator&gt;
+        unordered_multimap(InputIterator f, InputIterator l,
+                           size_type n = <b>implementation defined</b>,
+                           const hasher&amp; hf = hasher(),
+                           const key_equal&amp; eql = key_equal(),
+                           const allocator_type&amp; a = allocator_type());
+      unordered_multimap(const unordered_multimap&amp;);
+      ~unordered_multimap();
+      unordered_multimap&amp; operator=(const unordered_multimap&amp;);
+      allocator_type get_allocator() const;
+
+      // size and capacity
+      bool empty() const;
+      size_type size() const;
+      size_type max_size() const;
+
+      // iterators
+      iterator       begin();
+      const_iterator begin() const;
+      iterator       end();
+      const_iterator end() const;
+
+      // modifiers
+      iterator insert(const value_type&amp; obj);
+      iterator insert(const_iterator hint, const value_type&amp; obj);
+      template &lt;class InputIterator&gt;
+        void insert(InputIterator first, InputIterator last);
+
+      void erase(const_iterator position);
+      size_type erase(const key_type&amp; k);
+      void erase(const_iterator first, const_iterator last);
+      void clear();
+
+      void swap(unordered_multimap&amp;);
+
+      // observers
+      hasher hash_function() const;
+      key_equal key_eq() const;
+
+      // lookup
+      iterator       find(const key_type&amp; k);
+      const_iterator find(const key_type&amp; k) const;
+      size_type count(const key_type&amp; k) const;
+      std::pair&lt;iterator, iterator&gt; 
+        equal_range(const key_type&amp; k);
+      std::pair&lt;const_iterator, const_iterator&gt;
+        equal_range(const key_type&amp; k) const;
+
+      mapped_type&amp; operator[](const key_type&amp; k);
+
+      // bucket interface
+      size_type bucket_count() const;
+      size_type max_bucket_count() const;
+      size_type bucket_size(size_type n);
+      size_type bucket(const key_type&amp; k);
+      local_iterator begin(size_type n);
+      const_local_iterator begin(size_type n) const;
+      local_iterator end(size_type n);
+      const_local_iterator end(size_type n) const;  
+
+      // hash policy
+      float load_factor() const;
+      float max_load_factor() const;
+      void max_load_factor(float z);
+      void rehash(size_type n);
+    };
+
+    template &lt;class Key, class T, class Hash, class Pred, class Alloc&gt;
+      void swap(const unordered_multimap&lt;Key, T, Hash, Pred, Alloc&gt;&amp; x,
+                const unordered_multimap&lt;Key, T, Hash, Pred, Alloc&gt;&amp; y);
+  }
+</pre>
+
+<p><b>a. <tt>unordered_multimap</tt> constructors</b></p>
+
+<pre>
+      explicit unordered_multimap(size_type n = <b>implementation defined</b>,
+                                  const hasher&amp; hf = hasher(),
+                                  const key_equal&amp; eql = key_equal(),
+                                  const allocator_type&amp; a = allocator_type());
+</pre>
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_multimap</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Constant.
+
+<pre>
+      template &lt;class InputIterator&gt;
+        unordered_multimap(InputIterator f, InputIterator l,
+                           size_type n = <b>implementation defined</b>,
+                           const hasher&amp; hf = hasher(),
+                           const key_equal&amp; eql = key_equal(),
+                           const allocator_type&amp; a = allocator_type());
+</pre>                 
+
+<p><b>Effects:</b> Constructs an empty <tt>unordered_multimap</tt> using the
+specified hash function, key equality function, and allocator, and
+using at least <i><tt>n</tt></i> buckets.  (If <i><tt>n</tt></i> is not
+provided, the number of buckets is implementation defined.)  Then
+inserts elements from the range <tt>[<i>first</i>, <i>last</i>)</tt>.
+<tt>max_load_factor()</tt> is 1.0.</p>
+
+<p><b>Complexity:</b> Average case linear, worst case quadratic.</p>
+
+
+<p><b>b. <tt>unordered_multimap</tt> <tt>swap</tt></b></p>
+
+<pre>
+      template &lt;class Value, class Hash, class Pred, class Alloc&gt;
+        void swap(const unordered_multimap&lt;Value, Hash, Pred, Alloc&gt;&amp; x,
+                  const unordered_multimap&lt;Value, Hash, Pred, Alloc&gt;&amp; y);
+</pre>
+
+<p><b>Effects:</b> 
+<pre>
+          x.swap(y);
+</pre>
+
+<h2>V. Unresolved issues</h2>
+
+<p>The following issues have been raised and not addressed, or have
+  been addressed in a way that some people may consider
+  inadequate.</p>
+
+<p>1. Naming: Howard proposes changing the name <tt>rehash</tt> to 
+   an overload of <tt>bucket_count</tt>.  Should we do that?  I've chosen not to,
+   because I believe it would be too misleading: this operation does not necessarily
+   change the bucket count to the value the user requests.  Besides, "rehash" is a
+   commonly used name for this operation.</p>
+<p>2. Naming: what should be the name for <tt>hash_function</tt>'s
+  return type?  This proposal, following the original
+  Barreiro/Fraley/Musser proposal, chooses "hasher".  That sounds
+  funny.  Do we care?  If so, is there a better choice?</p>
+<p>3. Hash table equality.  From the container requirements, we know that two hash tables
+  x and y are equal if and only if the expression <tt>std::equal(x.begin(), x.end(),
+  y.begin())</tt> returns true.  This is not a useful definition for hash tables, so this
+  proposal leaves out operator== altogether.  As a consequence, this proposal does not
+  satisfy the container requirements.  Do we care?</p>
+<p>4. Interface: should we have policy classes (or some other mechanism) to affect (a)
+   whether hash codes are stored; and/or (b) whether the hash table uses forward iterators
+   or bidirectional iterators?
+</p>
+<p>5. Iterator complexity.  The container requirements specify that x.begin()
+   is <i>O(1)</i>.  Implementations can do this, but it's a burden.  Is it worth requiring
+   them to do that?  (Note that we're implicitly making that requirement just by saying
+   that a hash table is a container.)  This is an annoying problem: on the one hand, we
+   don't want to impose a requirement that may be widely ignored.  On the other hand, we
+   don't want to do something so drastic as changing the container requirements.</p>
+<p>7. Pairs and combining.  Should we define a general hash combiner, that takes two hash
+  codes and gives a hash code for the combination? Should we define a default hash
+  function for std::pair&lt;T,U&gt;?  (A 'yes' answer to the latter question essentially
+  implies a 'yes' answer to the former.)</p>
+<p>7. Default hash function.  What, if anything, should the generic hash&lt;T&gt; do?  In
+   this proposal it's left as an incomplete type.</p>
+<p>8. Bucket interface.  Should it be kept as is, or should it be changed to a more
+   container-like interface?  (<i>e.g.</i> <tt>bucket(n)</tt> might have a return
+   type <tt>const bucket_type&amp;</tt>, where <tt>bucket_type</tt> is an implementation
+   defined container type.
+</p>
+
+<h2>VI. Revision history</h2>
+
+<p>Differences from revision 3:</li>
+<ul>
+<li>Changed the name of the container classes from hash_* to unordered_*, and included an
+  extensive definition of that choice in section III.A.  Similarly, changed the header
+  names to &lt;unordered_set&gt; and &lt;unordered_map&gt;, and the name of the concept
+  from Hashed Associative Container to Unordered Associative Container.</li>
+<li>Removed the equality operator.</li>
+<li>Changed load factor operations to use <tt>float</tt> instead of <tt>double</tt>, and
+  removed the postcondition that appeared to promise that setting the max load factor was
+  something more than just a hint.</li>
+</ul>
+
+<p>Differences from revision 2:</p>
+<ul>
+<li>Explicitly said which functions may invalidate iterators and
+references.</li>
+<li>Changed exceptions guarantees: we don't provide the strong
+  guarantee for single-element insert except when the hash function
+  is nothrow.</li>
+<li>Increased the number of types that we've defined a default hash
+  function for.  It's now defined for all integer types, all pointers
+  (not just char*, wchar_t*, and void*), and all floating-point
+  types.</li>
+<li>Removed special treatement for char*, const char*, wchar_t*,
+    const wchar_t*.</li>
+</ul>
+
+<p>Differences from revision 1:</p>
+<ul>
+<li>Some changes in naming, to reflect comments at and after the
+  Redmond meeting.</li>
+<li>Added wchar_t* and const wchar_t* specializations for std::hash.</li>
+<li>Specified 1.0 as the default maximum load factor.  (Not in the
+  requirements table, but in the documentation for the predefined
+  hashed associative containers.</li>
+<li>Changed requirements table to clarify which operations can be
+performed on a const hash table</li>
+<li>Clarified that copy constructor and copy assignment operator copy
+  the hash function, equality predicate, and max load factor.
+  Deliberately did not answer the question of whether they copy the
+  bucket count; I have left that as an unresolved issue.</li>
+<li>Changed rehash complexity.  I hope I've gotten it right this time...</li>
+<li>Added notes on exception guarantees.</li>
+<li>Added list of unresolved issues.</li>
+<li>Minor changes in wording, typo correction, etc.</li>
+
+</ul>
+
+<h2>VII. References</h2>
+
+<ul>
+
+<li>
+M. H. Austern, A Proposal to Add Hash Tables to the Standard Library, 
+J16/01-0040 = WG21/N1326, 2001.
+</li>
+
+<li>
+M. H. Austern, "Segmented Iterators and Hierarchical Algorithms", 1998,
+in M. Jazayeri, R. G. K. Loos, and D. R. Musser, ed., <i>Generic
+Programming: International Seminar on Generic Programming, Castle
+Dagstuhl</i>, Springer, 2001.
+</li>
+
+<li>
+J. Barreiro, R. Fraley, D. R. Musser, "Hash Tables for the Standard
+Template Library", X3J16/94-0218 = WG21/N0605, 1995.
+</li>
+
+<li>
+Dinkumware, "Dinkum C++ Library Reference",
+http://www.dinkumware.com/htm_cpl/index.html.
+</li>
+
+<li>
+Howard Hinnant, "Hashing with Pro 6",
+<a href="http://home.twcny.rr.com/hinnant/tip_archive/MSL%20C++%20Tip%20%2310">http://home.twcny.rr.com/hinnant/tip_archive/MSL%20C++%20Tip%20%2310</a>
+</li>
+
+<li>
+Metrowerks, "Metrowerks CodeWarrior Pro 7 MSL C++ Reference Manual".
+</li>
+
+<li>
+P. J. Plauger, "State of the Art: Hash It", <i>Embedded Systems
+Programming</i>, September, 1998.
+</li>
+
+<li>
+SGI, "Standard Template Library Programmer's Guide",
+<a href="http://www.sgi.com/tech/stl">http://www.sgi.com/tech/stl</a>
+</li>
+
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,11 @@
+#ifndef _SSTL_CERRNO_
+# define _SSTL_CERRNO_
+
+namespace std
+{
+	extern "C"
+	{
+# include <errno.h>
+	}
+}
+#endif

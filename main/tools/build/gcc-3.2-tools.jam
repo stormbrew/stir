@@ -1,0 +1,6 @@
+# this is simply an extension to the gcc toolset. 
+extends-toolset gcc ;
+
+# use g++32 and gcc32 instead of the no32 versions
+GCC = gcc32 ;
+GXX = g++32 ;

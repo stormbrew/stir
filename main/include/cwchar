@@ -1,0 +1,11 @@
+#ifndef _SSTL_CWCHAR_
+# define _SSTL_CWCHAR_
+
+namespace std
+{
+	extern "C"
+	{
+# include <wchar.h>
+	}
+}
+#endif
