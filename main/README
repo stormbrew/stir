@@ -31,7 +31,7 @@ Also note that some headers use extensions in their private code, and these will
 of the extensions into the std namespace.
 
 Together these rules allow implicit use of TR1 and Stir-specific extensions without allowing them to interfere with the operation of the standard 
-library, and also allowing you to explicitly refuse any extensions.
+library, but also allowing you to explicitly refuse any extensions.
 
 Coding Style
 ------------
