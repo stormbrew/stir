@@ -1,0 +1,507 @@
+#ifndef _SSTL_IOS_
+# define _SSTL_IOS_
+
+#include <iosfwd>
+#include <string>
+#include <vector>
+#include <algorithm>
+#include <locale>
+#include <streambuf>
+
+namespace std
+{
+	template <typename tStateType>
+	class fpos
+	{
+	private:
+		fpos_t		mPos;
+		tStateType	mState;
+
+	public:
+		typedef tStateType state_type;
+
+		fpos(streamoff off = 0, state_type state = state_type())
+		 : mPos(off),
+		   mState(state)
+		{}
+
+		inline void state(state_type state)
+		{
+			mState = state;
+		}
+		inline state_type state() const
+		{
+			return mState;
+		}
+
+		inline fpos &operator+=(streamoff off)
+		{
+			// no way to verify if it's past the end of the stream. Can check if it brings us below 0 though
+			if (-off > mPos)
+				mPos += off; 
+			else
+				mPos = 0;
+			return *this;
+		}
+		inline fpos &operator-=(streamoff off)
+		{
+			if (off > mPos)
+				mPos -= off;
+			else
+				mPos = 0;
+			return *this;
+		}
+
+		inline fpos &operator+(streamoff off)
+		{
+			return (fpos(mPos, mState) += off);
+		}
+		inline fpos &operator-(streamoff off)
+		{
+			return (fpos(mPos, mState) -= off);
+		}
+
+		inline bool operator==(const fpos &y)
+		{
+			return (mPos == y.mPos && mState == y.mState);
+		}
+		inline bool operator!=(const fpos &y)
+		{
+			return (mPos != y.mPos || mState != y.mState);
+		}
+	};
+
+	class ios_base
+	{
+	public:
+		class failure;
+		class Init;
+
+		typedef unsigned int fmtflags;
+		static const fmtflags boolalpha         = 1<< 1;
+		static const fmtflags dec               = 1<< 2;
+		static const fmtflags fixed             = 1<< 3;
+		static const fmtflags hex               = 1<< 4;
+		static const fmtflags internal          = 1<< 5;
+		static const fmtflags left              = 1<< 6;
+		static const fmtflags oct               = 1<< 7;
+		static const fmtflags right             = 1<< 8;
+		static const fmtflags scientific        = 1<< 9;
+		static const fmtflags showbase          = 1<<10;
+		static const fmtflags showpoint         = 1<<11;
+		static const fmtflags showpos           = 1<<12;
+		static const fmtflags skipws            = 1<<13;
+		static const fmtflags unitbuf           = 1<<14;
+		static const fmtflags uppercase         = 1<<15;
+
+		static const fmtflags adjustfield       = left | right | internal;
+		static const fmtflags basefield         = dec | hex | oct;
+		static const fmtflags floatfield        = scientific | fixed;
+
+		typedef unsigned int iostate;
+		static const iostate badbit             = 1<< 1;
+		static const iostate eofbit             = 1<< 2;
+		static const iostate failbit            = 1<< 3;
+		static const iostate goodbit            = 0;
+
+		typedef unsigned int openmode;
+		static const openmode app               = 1<< 1;
+		static const openmode ate               = 1<< 2;
+		static const openmode binary            = 1<< 3;
+		static const openmode in                = 1<< 4;
+		static const openmode out               = 1<< 5;
+		static const openmode trunc             = 1<< 6;
+
+		typedef int seekdir;
+		static const seekdir begin              = -1;
+		static const seekdir cur                = 0;
+		static const seekdir end                = 1;
+
+		enum event
+		{
+			erase_event = 0,
+			imbue_event = 0,
+			copyfmt_event = 0
+		};
+		typedef void (*event_callback)(event, ios_base &, int);
+
+	private:
+		fmtflags mFlags;
+		streamsize mPrecision;
+		streamsize mWidth;
+
+		static int mXAllocCount;
+
+		typedef vector<void*> pword_vector;
+		pword_vector mPWords;
+		typedef vector<long> iword_vector;
+		iword_vector mIWords;
+
+		typedef pair<event_callback, int> callback_obj;
+		typedef vector<callback_obj> callback_list;
+
+		callback_list mCallbacks;
+
+		struct call_callback
+		{
+			event mEvent;
+			ios_base &mThis;
+			call_callback(ios_base &io, event ev)
+			 : mEvent(ev),
+			   mThis(io)
+			{}
+
+			void operator()(const callback_obj &callback)
+			{
+				(*callback.first)(mEvent, mThis, callback.second);
+			}
+		};
+
+		locale mLocale;
+
+	protected:
+		ios_base()
+		 : mFlags(dec | skipws),
+		   mPrecision(6),
+		   mWidth(0)
+		{}
+
+		void clearwords()
+		{
+			mPWords.clear();
+			mIWords.clear();
+		}
+		void copywords(ios_base &y)
+		{
+			mPWords = y.mPWords;
+			mIWords = y.mIWords;
+		}
+
+		void report(ios_base &call, event ev)
+		{
+			for_each(mCallbacks.begin(), mCallbacks.end(), call_callback(call, ev));
+		}
+		void report(event ev)
+		{
+			report(*this, ev);
+		}
+
+	public:
+		virtual ~ios_base()
+		{
+			report(erase_event);
+		}
+
+		fmtflags flags() const
+		{
+			return mFlags;
+		}
+		fmtflags flags(fmtflags set)
+		{
+			swap(mFlags, set);
+			return set;
+		}
+		fmtflags setf(fmtflags set)
+		{
+			fmtflags old = mFlags;
+			mFlags |= set;
+			return old;
+		}
+		fmtflags setf(fmtflags set, fmtflags mask)
+		{
+			fmtflags old = mFlags;
+			mFlags &= ~mask;
+			set &= mask;
+			mFlags |= set;
+			return old;
+		}
+		void unsetf(fmtflags unset)
+		{
+			setf(0, unset);
+		}
+
+		streamsize precision() const
+		{
+			return mPrecision;
+		}
+		streamsize precision(streamsize set)
+		{
+			swap(mPrecision, set);
+			return set;
+		}
+		streamsize width() const
+		{
+			return mWidth;
+		}
+		streamsize width(streamsize set)
+		{
+			swap(mWidth, set);
+			return set;
+		}
+
+		static int xalloc()
+		{
+			return mXAllocCount++;
+		}
+		long &iword(int index)
+		{
+			if (mIWords.size() <= iword_vector::size_type(index))
+				mIWords.resize(index + 1, 0); // fill extra with 0s
+			return mIWords[index];
+		}
+		void* &pword(int index)
+		{
+			if (mPWords.size() <= pword_vector::size_type(index))
+				mPWords.resize(index + 1, 0); // fill extra with 0s
+			return mPWords[index];
+		}
+
+		locale imbue(locale loc)
+		{
+			swap(mLocale, loc);
+			return loc;
+		}
+		locale getloc() const
+		{
+			return mLocale;
+		}
+		
+		void register_callback(event_callback func, int index)
+		{
+			mCallbacks.push_back(make_pair(func, index));
+		}
+
+		static bool sync_with_stdio(bool sync)
+		{
+			// we always do in this (default) implementation
+			return true;
+		}		
+	};
+
+	class ios_base::failure : public exception
+	{
+	private:
+		string mMessage;
+
+	public:
+		explicit failure(const string &msg)
+		 : mMessage(msg)
+		{}
+		virtual ~failure() throw()
+		{}
+		virtual const char *what() throw()
+		{
+			return mMessage.c_str();
+		}
+	};
+
+	// XXX init unimplemented. I have some concerns over how it's implemented :/ XXX
+
+	template <typename tChar, typename tTraits>
+	class basic_ios : public ios_base
+	{
+	public:
+		typedef tChar                             char_type;
+		typedef tTraits                           traits_type;
+
+		typedef typename traits_type::int_type    int_type;
+		typedef typename traits_type::pos_type    pos_type;
+		typedef typename traits_type::off_type    off_type;
+
+	private:
+		iostate mState;
+		iostate mExceptionMask;
+		basic_streambuf<char_type, traits_type> *mStream;
+		basic_ostream<char_type, traits_type> *mTie;
+
+		char_type mFill;
+
+	public:
+		explicit basic_ios(basic_streambuf<char_type, traits_type> *stream)
+		 : mExceptionMask(goodbit),
+		   mState(badbit),
+		   mStream(0),
+		   mTie(0),
+		   mFill(widen(' '))
+		{
+			init(stream);
+		}
+		virtual ~basic_ios()
+		{
+			if (mStream)
+				delete mStream;
+		}
+
+		basic_ostream<char_type, traits_type> *tie() const
+		{
+			return mTie;
+		}
+		basic_ostream<char_type, traits_type> *tie(basic_ostream<char_type, traits_type> *with)
+		{
+			swap(mTie, with);
+			return with;
+		}
+
+		basic_streambuf<char_type, traits_type> *rdbuf() const
+		{
+			return mStream;
+		}
+		basic_streambuf<char_type, traits_type> *rdbuf(basic_streambuf<char_type, traits_type> *buf)
+		{
+			swap(mBuf, buf);
+			return buf;
+		}
+
+		char narrow(char_type c, char dfault) const
+		{
+			// need locale stuff to do this properly.
+			return static_cast<char>(c);
+		}
+		char_type widen(char c)
+		{
+			// need locale stuff to do this properly.
+			return static_cast<char_type>(c);
+		}
+
+		char_type fill() const
+		{
+			return mFill;
+		}
+		char_type fill(char_type ch)
+		{
+			swap(mFill, ch);
+			return ch;
+		}
+
+		basic_ios &copyfmt(basic_ios &y)
+		{
+			report(erase_event);
+			fill(y.fill());
+			tie(y.tie());
+			flags(y.flags());
+			copywords(y);
+			width(y.width());
+			precision(y.precision());
+			y.report(*this, copyfmt_event);
+			exceptions(y.exceptions());
+
+			return *this;
+		}
+
+		locale imbue(const locale &loc)
+		{
+			if (rdbuf() != 0)
+				rdbuf()->pubimbue(loc);
+
+			return ios_base::imbue(loc);
+		}
+
+		iostate rdstate() const
+		{
+			return mState;
+		}
+		void clear(iostate state)
+		{
+			if (rdbuf() != 0)
+				mState = state;
+			else
+				mState = state | badbit;
+
+			if (rdstate() & exceptions())
+				throw failure("basic_ios::clear() exception bit set");
+		}
+		void setstate(iostate state)
+		{
+			clear(rdstate() | state);
+		}
+
+		iostate exceptions() const
+		{
+			return mExceptionMask;
+		}
+		iostate exceptions(iostate mask)
+		{
+			swap(mExceptionMask, mask);
+			clear(rdstate());
+			return mask;
+		}
+
+		bool good() const
+		{
+			return rdstate() == 0;
+		}
+		bool fail() const
+		{
+			return rdstate() & (failbit | badbit);
+		}
+		bool eof() const
+		{
+			return rdstate() & (eofbit);
+		}
+		bool bad() const
+		{
+			return rdstate() & (badbit);
+		}
+
+		operator void*() const
+		{
+			if (fail())
+				return 0;
+			else
+				return this;
+		}
+
+		bool operator!() const
+		{
+			return fail();
+		}
+
+	protected:
+		basic_ios()
+		 : mExceptionMask(goodbit),
+		   mState(badbit),
+		   mStream(0),
+		   mTie(0),
+		   mFill(widen(' '))
+		{}
+
+		void init(basic_streambuf<char_type, traits_type> *stream)
+		{
+			rdbuf(stream);
+			tie(0);
+			exceptions(goodbit);
+			clear();
+			flags(skipws | dec);
+			width(0);
+			precision(0);
+			fill(widen(' '));
+			clearwords();
+		}		
+	};
+
+	// these get called by the iostream inserters that take a function pointer as an argument.
+	ios_base &oct(ios_base &stream);
+	ios_base &dec(ios_base &stream);
+	ios_base &hex(ios_base &stream);
+	ios_base &internal(ios_base &stream);
+	ios_base &left(ios_base &stream);
+	ios_base &right(ios_base &stream);
+	ios_base &fixed(ios_base &stream);
+	ios_base &scientific(ios_base &stream);
+	ios_base &boolalpha(ios_base &stream);
+	ios_base &noboolalpha(ios_base &stream);
+	ios_base &showbase(ios_base &stream);
+	ios_base &noshowbase(ios_base &stream);
+	ios_base &showpoint(ios_base &stream);
+	ios_base &noshowpoint(ios_base &stream);
+	ios_base &showpos(ios_base &stream);
+	ios_base &noshowpos(ios_base &stream);
+	ios_base &skipws(ios_base &stream);
+	ios_base &noskipws(ios_base &stream);
+	ios_base &unitbuf(ios_base &stream);
+	ios_base &nounitbuf(ios_base &stream);
+	ios_base &uppercase(ios_base &stream);
+	ios_base &nouppercase(ios_base &stream);
+}
+
+#endif

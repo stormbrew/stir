@@ -1,0 +1,163 @@
+#ifndef _SSTL_TR1_TYPE_TRANSFORM_
+# define _SSTL_TR1_TYPE_TRANSFORM_
+
+// type traits are specified in http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1424.htm
+
+#include <cstddef>
+
+namespace std
+{namespace tr1 {
+
+	template <typename tArg>
+	struct remove_const
+	{
+		typedef tArg type;
+	};
+	template <typename tValue>
+	struct remove_const<const tValue>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct add_const
+	{
+		typedef const tArg type;
+	};
+	template <typename tValue>
+	struct add_const<const tValue>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct remove_volatile
+	{
+		typedef tArg type;
+	};
+	template <typename tValue>
+	struct remove_volatile<volatile tValue>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct add_volatile
+	{
+		typedef volatile tArg type;
+	};
+	template <typename tValue>
+	struct add_volatile<volatile tValue>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct remove_cv
+	{
+		typedef tArg type;
+	};
+	template <typename tValue>
+	struct remove_cv<const tValue>
+	{
+		typedef tValue type;
+	};
+	template <typename tValue>
+	struct remove_cv<volatile tValue>
+	{
+		typedef tValue type;
+	};
+	template <typename tValue>
+	struct remove_cv<const volatile tValue>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct add_cv
+	{
+		typedef const volatile tArg type;
+	};
+	template <typename tValue>
+	struct add_cv<const tValue>
+	{
+		typedef volatile tValue type;
+	};
+	template <typename tValue>
+	struct add_cv<volatile tValue>
+	{
+		typedef const tValue type;
+	};
+	template <typename tValue>
+	struct add_cv<const volatile tValue>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct remove_reference
+	{
+		typedef tArg type;
+	};
+	template <typename tValue>
+	struct remove_reference<tValue &>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct add_reference
+	{
+		typedef tArg &type;
+	};
+	template <typename tValue>
+	struct add_reference<tValue &>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct remove_bounds
+	{
+		typedef tArg type;
+	};
+	template <typename tValue, std::size_t count>
+	struct remove_bounds<tValue[count]>
+	{
+		typedef tValue type;
+	};
+	
+	template <typename tArg>
+	struct remove_pointer
+	{
+		typedef tArg type;
+	};
+	template <typename tValue>
+	struct remove_pointer<tValue *>
+	{
+		typedef tValue type;
+	};
+	template <typename tValue>
+	struct remove_pointer<tValue * const>
+	{
+		typedef tValue type;
+	};
+	template <typename tValue>
+	struct remove_pointer<tValue * volatile>
+	{
+		typedef tValue type;
+	};
+	template <typename tValue>
+	struct remove_pointer<tValue * const volatile>
+	{
+		typedef tValue type;
+	};
+
+	template <typename tValue>
+	struct add_pointer
+	{
+		typedef typename remove_bounds< typename remove_reference<tValue>::type >::type *type;
+	};
+}}
+
+#endif

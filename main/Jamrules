@@ -1,0 +1,1 @@
+GLOBAL_INCLUDES += $(BOOST_ROOT)/include ;

@@ -1,0 +1,164 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>A proposal to add a reference wrapper to the standard library (revision 1)</title><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2752357"></a>A proposal to add a reference wrapper to the standard library (revision 1)</h2></div><div><div class="author"><h3 class="author"><span class="firstname">Douglas</span> <span class="surname">Gregor <tt class="email">&lt;<a href="mailto:gregod@cs.rpi.edu">gregod@cs.rpi.edu</a>&gt;</tt></span></h3></div></div><div><div class="author"><h3 class="author"><span class="firstname">Peter</span> <span class="surname">Dimov <tt class="email">&lt;<a href="mailto:pdimov@mmltd.net">pdimov@mmltd.net</a>&gt;</tt></span></h3></div></div></div><div></div><hr></div><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Document number</span></b>:
+
+    N1453=03-0036<br><b><span class="term">Revises document number</span></b>:
+
+    N1436=03-0018<br><b><span class="term">Date</span></b>:
+
+    9 April 2003<br><b><span class="term">Project</span></b>:
+
+    Programming Language C++, Library Working Group<br><b><span class="term">Reply-to</span></b>:
+
+    Doug Gregor <tt class="email">&lt;<a href="mailto:gregod@cs.rpi.edu">gregod@cs.rpi.edu</a>&gt;</tt></p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="ref.intro"></a>Introduction</h3></div></div><div></div></div><p>This proposal defines a small library addition for passing
+  references to function templates (algorithms) that would usually
+  take copies of their arguments. It defines the class template
+  <tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a></tt> and the two
+  functions <tt class="computeroutput"><a href="#id2628998">ref</a></tt> and
+  <tt class="computeroutput"><a href="#id2629048">cref</a></tt> that return instances
+  of <tt class="computeroutput">reference_wrapper</tt>.</p><p><tt class="computeroutput">reference_wrapper&lt;T&gt;</tt> is a CopyConstructible
+  and Assignable wrapper around a reference to an object of type
+  <tt class="computeroutput">T</tt>. It provides an implicit conversion to
+  <tt class="computeroutput">T&amp;</tt>, often allowing the function templates to work
+  on references unmodified. Some library components that would not
+  work on references unmodified may instead detect
+  <tt class="computeroutput">reference_wrapper</tt> and alter their semantics
+  accordingly, e.g., those in the <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1403.pdf" target="_top">Tuple</a>
+  and <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1402.html" target="_top">Function
+  Object Wrapper</a> proposals.</p><p>This proposal is based on the <a href="http://www.boost.org/libs/bind/ref.html" target="_top">Boost.Ref</a>
+  library.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2800622"></a>Usage Examples</h3></div></div><div></div></div><p><tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a></tt> can be
+  used in places where argument deduction would not deduce a
+  reference, e.g., when forwarding arguments:</p><pre class="programlisting">void f(int &amp; r)
+{
+  ++r;
+}
+
+template&lt;class F, class T&gt; void g(F f, T t) { f(t); }
+
+int main()
+{
+  int i = 0;
+  g(f, i);
+  cout &lt;&lt; i &lt;&lt; endl; // 0
+  g(f, ref(i));
+  cout &lt;&lt; i &lt;&lt; endl; // 1
+}</pre><p>In particular, this can be used to overcome the limitations of
+  forwarding constructor arguments:</p><pre class="programlisting">struct X
+{
+  explicit X(int &amp; r);
+};
+
+template&lt;class T&gt; struct wrapper
+{
+  T t;
+  template&lt;class A1&gt; explicit wrapper(A1 const &amp; a1): t(a1) {}
+};
+
+int i = 0;
+wrapper&lt;X&gt; w1(i); // error
+wrapper&lt;X&gt; w1(ref(i)); // OK</pre><p>More information on the forwarding problem is given in <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1385.htm" target="_top">N1385</a>.</p><p><tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a></tt> can be
+  used where ordinary references cannot, e.g., in containers and (by
+  way of implicit conversion) function calls that expect the
+  underlying type.</p><pre class="programlisting">std::list&lt;int&gt; numbers;
+std::vector&lt;<a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a>&lt;int&gt; &gt; number_refs;
+for(int i = 0; i &lt; 100; ++i) {
+  numbers.push_back(4*i*i^2 - 10*i + 3);
+  number_refs.push_back(<a href="#id2628998">ref</a>(numbers.back()));
+}
+
+std::sort(number_refs.begin(), number_refs.end());</pre><p>Additional examples are given in the <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1403.pdf" target="_top">Tuple</a>
+  and <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1402.html" target="_top">Function
+  Object Wrapper</a> proposals.</p><p><tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a></tt> contains an
+  overloaded function call operator to enable passing function object
+  references to standard algorithms. This capability is particularly
+  useful for passing function objects that cannot be copied or
+  stateful function objects:</p><pre class="programlisting">struct counting_less {
+  typedef bool result_type;
+
+  template&lt;typename T&gt; bool operator()(const T&amp; x, const T&amp; y) 
+  {
+    ++count;
+    return x &lt; y;
+  }
+
+  int count;
+};
+
+// ...
+
+vector&lt;int&gt; elements;
+// fill elements
+counting_less cl;
+sort(elements.begin(), elements.end(), ref(cl));
+std::cout &lt;&lt; cl.count &lt;&lt; &quot; comparisons in sort\n&quot;;</pre></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2800383"></a>Impact on the standard</h3></div></div><div></div></div><p>This proposal defines a pure library extension. . A new class
+  template <tt class="computeroutput">reference_wrapper</tt> is
+  proposed to be added to the standard header
+  <tt class="computeroutput">&lt;utility&gt;</tt> with two supporting functions.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2800411"></a>Proposed Text</h3></div></div><div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="header.utility"></a>Header &lt;<a href="../../utility" target="_top">utility</a>&gt;</h4></div></div><div></div></div><pre class="synopsis"><span class="bold"><b>namespace</b></span> std {
+  <a href="#class.std.reference_wrapper" title="Class template reference_wrapper"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; <span class="bold"><b>class</b></span> reference_wrapper;</a>
+  <a href="#id2628998"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; ref(T&amp;)</a>;
+  <a href="#id2629048"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; cref(<span class="bold"><b>const</b></span> T&amp;)</a>;
+}</pre><div class="refentry" lang="en"><a name="class.std.reference_wrapper"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2><span class="refentrytitle">Class template reference_wrapper</span></h2><p>std::reference_wrapper &#8212; 
+        Contains a reference to an object of type
+        T. 
+      </p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><pre class="synopsis"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; 
+<span class="bold"><b>class</b></span> reference_wrapper {
+<span class="bold"><b>public</b></span>:
+  <span class="emphasis"><em>// types</em></span>
+  <span class="bold"><b>typedef</b></span> T type;
+
+  <span class="emphasis"><em>// <a href="#id2628649construct-copy-destruct">construct/copy/destruct</a></em></span>
+  <a href="#id2628783"><span class="bold"><b>explicit</b></span> reference_wrapper(T&amp;)</a>;
+
+  <span class="emphasis"><em>// <a href="#id2628829">access</a></em></span>
+  <a href="#id2628838"><span class="bold"><b>operator</b></span> () <span class="bold"><b>const</b></span></a>;
+  <a href="#id2628862">get() <span class="bold"><b>const</b></span></a>;
+
+  <span class="emphasis"><em>// <a href="#id2628884">invocation</a></em></span>
+  <span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T1, <span class="bold"><b>typename</b></span> T2, ..., <span class="bold"><b>typename</b></span> TN&gt; 
+    <span class="bold"><b>typename</b></span> result_of&lt;T(T1, T2, ..., TN)&gt;::type <a href="#id2628894"><span class="bold"><b>operator</b></span>()</a>(T1, T2, ..., TN) <span class="bold"><b>const</b></span>;
+};
+
+<span class="emphasis"><em>// <a href="#id2628989">constructors</a></em></span>
+<a href="#id2628998"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; ref(T&amp;)</a>;
+<a href="#id2629048"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; cref(<span class="bold"><b>const</b></span> T&amp;)</a>;</pre></div><div class="refsect1" lang="en"><h2>Description</h2><p><tt class="computeroutput">reference_wrapper&lt;T&gt;</tt> is a
+        CopyConstructible and Assignable wrapper around a reference to
+        an object of type <tt class="computeroutput">T</tt>.</p><p><tt class="computeroutput">reference_wrapper</tt> defines the member type
+        <tt class="computeroutput">result_type</tt> in the following cases:
+        </p><div class="orderedlist"><ol type="1" compact><li><tt class="computeroutput">T</tt> is a function pointer, then <tt class="computeroutput">result_type</tt> is the return type of <tt class="computeroutput">T</tt>.</li><li><tt class="computeroutput">T</tt> is a pointer to member function, then <tt class="computeroutput">result_type</tt> is the return type of <tt class="computeroutput">T</tt>.</li><li><tt class="computeroutput">T</tt> is a class type with a member type <tt class="computeroutput">result_type</tt>, then <tt class="computeroutput">result_type</tt> is <tt class="computeroutput">T::result_type</tt>.</li></ol></div><div class="refsect2" lang="en"><h3><a name="id2628649construct-copy-destruct"></a><tt class="computeroutput">reference_wrapper</tt> construct/copy/destruct</h3><div class="orderedlist"><ol type="1"><li><pre class="literallayout"><a name="id2628783"></a><span class="bold"><b>explicit</b></span> reference_wrapper(T&amp; t);</pre><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Effects</span></b>:
+
+    Constructs a
+        <tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a></tt>
+        object that stores a reference to
+        <tt class="computeroutput">t</tt>.<br><b><span class="term">Throws</span></b>:
+
+    Does not throw.</p></li></ol></div></div><div class="refsect2" lang="en"><h3><a name="id2628829"></a><tt class="computeroutput">reference_wrapper</tt> access</h3><div class="orderedlist"><ol type="1"><li><pre class="literallayout"><a name="id2628838"></a><span class="bold"><b>operator</b></span> () <span class="bold"><b>const</b></span>;</pre><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Returns</span></b>:
+
+    The stored reference.<br><b><span class="term">Throws</span></b>:
+
+    Does not throw.</p></li><li><pre class="literallayout"><a name="id2628862"></a>get() <span class="bold"><b>const</b></span>;</pre><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Returns</span></b>:
+
+    The stored reference.<br><b><span class="term">Throws</span></b>:
+
+    Does not throw.</p></li></ol></div></div><div class="refsect2" lang="en"><h3><a name="id2628884"></a><tt class="computeroutput">reference_wrapper</tt> invocation</h3><div class="orderedlist"><ol type="1"><li><pre class="literallayout"><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T1, <span class="bold"><b>typename</b></span> T2, ..., <span class="bold"><b>typename</b></span> TN&gt; 
+  <span class="bold"><b>typename</b></span> result_of&lt;T(T1, T2, ..., TN)&gt;::type <a name="id2628894"></a><span class="bold"><b>operator</b></span>()(T1 a1, T2 a1, ... , 
+                                                          TN aN) <span class="bold"><b>const</b></span>;</pre><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Effects</span></b>:
+
+    <tt class="computeroutput">f.get()(a1, a2, ..., aN)</tt><br><b><span class="term">Returns</span></b>:
+
+    The result of the expression <tt class="computeroutput">f.get()(a1, a2, ..., aN)</tt></p></li></ol></div></div><div class="refsect2" lang="en"><h3><a name="id2628989"></a><tt class="computeroutput">reference_wrapper</tt> constructors</h3><div class="orderedlist"><ol type="1"><li><pre class="literallayout"><a name="id2628998"></a><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; ref(T&amp; t);</pre><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Returns</span></b>:
+
+    <tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a>&lt;T&gt;(t)</tt><br><b><span class="term">Throws</span></b>:
+
+    Does not throw.</p></li><li><pre class="literallayout"><a name="id2629048"></a><span class="bold"><b>template</b></span>&lt;<span class="bold"><b>typename</b></span> T&gt; cref(<span class="bold"><b>const</b></span> T&amp; t);</pre><p xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision"><b><span class="term">Returns</span></b>:
+
+    <tt class="computeroutput"><a href="#class.std.reference_wrapper" title="Class template reference_wrapper">reference_wrapper</a>&lt;const T&gt;(t)</tt><br><b><span class="term">Throws</span></b>:
+
+    Does not throw.</p></li></ol></div></div></div></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id2796866"></a>Additions to &quot;Implemention Quantities&quot;</h4></div></div><div></div></div><p>Maximum number of arguments forwarded by <tt class="computeroutput">reference_wrapper</tt> [10]</p></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2796886"></a>Relationship with other proposals</h3></div></div><div></div></div><p>Class template <tt class="computeroutput">reference_wrapper</tt> and function
+  templates <tt class="computeroutput">ref</tt> and <tt class="computeroutput">cref</tt> were also defined
+  in documents N1402 (Function object wrappers) and N1403
+  (Tuples). The definition in this proposal is compatible with the
+  definitions in both these proposals; this proposal is meant only to
+  clarify the role of <tt class="computeroutput">reference_wrapper</tt> and its helper
+  functions, as requested by the committee.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2796931"></a>Revisions</h3></div></div><div></div></div><div class="itemizedlist"><ul type="disc"><li>Use <tt class="computeroutput">result_of</tt> for the return type
+    of <tt class="computeroutput">operator()</tt>.</li><li>Constructor is now <tt class="computeroutput">explicit</tt> (this was intended previously, and present in prior proposals).</li></ul></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2796977"></a>Acknowledgements</h3></div></div><div></div></div><p>Much of the text of this proposal comes from the Boost.Ref
+  library documentation written by Peter Dimov. The first two examples
+  were presented by Peter Dimov in
+  <tt class="computeroutput">c++std-ext-5635</tt>.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2796999"></a>References</h3></div></div><div></div></div><div class="orderedlist"><ol type="1"><li><p>Järvi, Jaakko. <span class="emphasis"><em>Proposal for adding tuple types into the standard library</em></span>. <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1403.pdf" target="_top">http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1403.pdf</a></p></li><li><p>Gregor, Doug. <span class="emphasis"><em>A Proposal to add a Polymorphic Function Object Wrapper to the Standard Library</em></span>. <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1402.html" target="_top">http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1402.html</a></p></li><li><p>Dimov, Peter. <span class="emphasis"><em>The Forwarding Problem: Arguments</em></span>. <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1385.htm" target="_top">http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1385.htm</a></p></li><li><p><span class="emphasis"><em>The Boost.Ref Library</em></span>. <a href="http://www.boost.org/libs/bind/ref.html" target="_top">http://www.boost.org/libs/bind/ref.html</a></p></li></ol></div></div></div></body></html>

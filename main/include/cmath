@@ -1,0 +1,11 @@
+#ifndef _SSTL_CMATH_
+# define _SSTL_CMATH_
+
+namespace std
+{
+	extern "C"
+	{
+# include <math.h>
+	}
+}
+#endif

@@ -1,0 +1,668 @@
+#ifndef _SSTL_ITERATOR_
+#define _SSTL_ITERATOR_
+
+#include <cstddef>
+#include <iosfwd>
+
+namespace std
+{
+	struct input_iterator_tag {};
+	struct output_iterator_tag {};
+	struct forward_iterator_tag : public input_iterator_tag {};
+	struct bidirectional_iterator_tag : public forward_iterator_tag {};
+	struct random_access_iterator_tag : public bidirectional_iterator_tag {};
+
+	template 
+	<
+		typename tCategory, 
+		typename tValue, 
+		typename tDifference = std::ptrdiff_t,
+		typename tPointer = tValue*,
+		typename tReference = tValue&
+	>
+	struct iterator
+	{
+		typedef tCategory iterator_category;
+		typedef tValue value_type;
+		typedef tDifference difference_type;
+		typedef tPointer pointer;
+		typedef tReference reference;
+	};
+
+	template <typename tIterator>
+	struct iterator_traits
+	{
+		typedef typename tIterator::iterator_category iterator_category;
+		typedef typename tIterator::value_type value_type;
+		typedef typename tIterator::difference_type difference_type;
+		typedef typename tIterator::pointer pointer;
+		typedef typename tIterator::reference reference;
+	};
+
+	template <typename tVal>
+	struct iterator_traits<tVal*>
+	{
+		typedef random_access_iterator_tag iterator_category;
+		typedef tVal value_type;
+		typedef std::ptrdiff_t difference_type;
+		typedef tVal* pointer;
+		typedef tVal& reference;
+	};
+
+	template <typename tIterator>
+	class reverse_iterator : public iterator
+	<
+		typename iterator_traits<tIterator>::iterator_category,
+		typename iterator_traits<tIterator>::value_type,
+		typename iterator_traits<tIterator>::difference_type,
+		typename iterator_traits<tIterator>::pointer,
+		typename iterator_traits<tIterator>::reference
+	>
+	{
+	private:
+		typedef tIterator iterator_type;
+
+		typedef iterator<
+			typename iterator_traits<iterator_type>::iterator_category,
+			typename iterator_traits<iterator_type>::value_type,
+			typename iterator_traits<iterator_type>::difference_type,
+			typename iterator_traits<iterator_type>::pointer,
+			typename iterator_traits<iterator_type>::reference
+		> base_type;
+
+		iterator_type mCurrent;
+
+	public:
+		typedef typename base_type::reference reference;
+		typedef typename base_type::pointer pointer;
+		typedef typename base_type::difference_type difference_type;
+
+		reverse_iterator() : mCurrent()
+		{}
+
+		explicit reverse_iterator(const iterator_type &it)
+		 : mCurrent(it)
+		{}
+		template <typename tOtherIterator>
+		reverse_iterator(const reverse_iterator<tOtherIterator> &other)
+		 : mCurrent(other.base())
+		{}
+
+		iterator_type base() const
+		{
+			return mCurrent;
+		}
+
+		reference operator*() const
+		{
+			iterator_type temp = mCurrent;
+			--temp;
+			return *temp;
+		}
+
+		pointer operator->() const
+		{
+			iterator_type temp = mCurrent;
+			--temp;
+			return temp.operator->();
+		}
+
+		reverse_iterator &operator++()
+		{
+			--mCurrent;
+			return *this;
+		}
+
+		reverse_iterator operator++(int)
+		{
+			reverse_iterator temp(mCurrent);
+			--mCurrent;
+			return temp;
+		}
+
+		reverse_iterator &operator--()
+		{
+			++mCurrent;
+			return *this;
+		}
+
+		reverse_iterator &operator--(int)
+		{
+			reverse_iterator temp = mCurrent;
+			--mCurrent;
+			return temp;
+		}
+
+		reverse_iterator operator+(difference_type n) const
+		{
+			return (reverse_iterator(mCurrent) += n);
+		}
+
+		reverse_iterator &operator+=(difference_type n)
+		{
+			mCurrent -= n;
+			return *this;
+		}
+
+		reverse_iterator operator-(difference_type n) const
+		{
+			return (reverse_iterator(mCurrent) -= n);
+		}
+
+		reverse_iterator operator-=(difference_type n)
+		{
+			mCurrent += n;
+			return *this;
+		}
+
+		difference_type operator-(const reverse_iterator<tIterator> &y) const
+		{
+			return (y.base() - base());
+		}
+	};
+
+	// notice that all these functions for reverse_iterator reverse the x and y parameters
+	// (for clarity's sake, this is done even when order is irrelevant)
+	template <typename tIterator>
+	bool operator==(const reverse_iterator<tIterator> &x, const reverse_iterator<tIterator> &y)
+	{
+		return (y.base() == x.base());
+	}
+
+	template <typename tIterator>
+	bool operator!=(const reverse_iterator<tIterator> &x, const reverse_iterator<tIterator> &y)
+	{
+		return (y.base() != x.base());
+	}
+
+	template <typename tIterator>
+	bool operator<(const reverse_iterator<tIterator> &x, const reverse_iterator<tIterator> &y)
+	{
+		return (y.base() < x.base());
+	}
+
+	template <typename tIterator>
+	bool operator<=(const reverse_iterator<tIterator> &x, const reverse_iterator<tIterator> &y)
+	{
+		return (y.base() <= x.base());
+	}
+
+	template <typename tIterator>
+	bool operator>(const reverse_iterator<tIterator> &x, const reverse_iterator<tIterator> &y)
+	{
+		return (y.base() > x.base());
+	}
+
+	template <typename tIterator>
+	bool operator>=(const reverse_iterator<tIterator> &x, const reverse_iterator<tIterator> &y)
+	{
+		return (y.base() >= x.base());
+	}
+
+	template <typename tIterator>
+	tIterator operator+(typename tIterator::distance_type x, const reverse_iterator<tIterator> &y)
+	{
+		return (reverse_iterator<tIterator>(y) + x);
+	}
+
+	template <typename tIterator>
+	tIterator operator-(typename tIterator::difference_type x, const reverse_iterator<tIterator> &y)
+	{
+		return (reverse_iterator<tIterator>(y) - x);
+	}
+
+	template <typename tContainer>
+	class insert_iterator : public iterator<output_iterator_tag, 
+		typename tContainer::value_type, void, void, insert_iterator<tContainer>&>
+	{
+	private:
+		typedef iterator<
+			output_iterator_tag, typename tContainer::value_type,
+			void, void, insert_iterator<tContainer>&
+		> base_type;
+
+	public:
+		typedef tContainer container_type;
+		typedef typename container_type::iterator container_iterator_type;
+
+		typedef typename base_type::value_type value_type;
+
+		insert_iterator(container_type &container, const container_iterator_type &it)
+		 : mContainer(container),
+		   mIterator(it)
+		{}
+
+		insert_iterator &operator=(const value_type &val)
+		{
+			mIterator = mContainer.insert(mIterator, val);
+			mIterator++;
+			return *this;
+		}
+
+		insert_iterator &operator*()
+		{
+			return *this;
+		}
+
+		insert_iterator &operator++()
+		{
+			return *this;
+		}
+		insert_iterator &operator++(int) 
+		{
+			return *this; 
+		}
+
+	private:
+		container_type &mContainer;
+		container_iterator_type mIterator;
+	};
+
+	template <typename tContainer, typename tOutputIterator>
+	insert_iterator<tContainer> inserter(tContainer &container, const tOutputIterator &it)
+	{
+		return insert_iterator<tContainer>(container, it);
+	}
+			
+	template <typename tContainer>
+	class back_insert_iterator : public iterator<output_iterator_tag, 
+		typename tContainer::value_type, void, void, back_insert_iterator<tContainer>&>
+	{
+	private:
+		typedef iterator<
+			output_iterator_tag, typename tContainer::value_type,
+			void, void, insert_iterator<tContainer>&
+		> base_type;
+
+	public:
+		typedef tContainer container_type;
+
+		typedef typename base_type::value_type value_type;
+
+		back_insert_iterator(container_type &container)
+		 : mContainer(container)
+		{}
+
+		back_insert_iterator &operator=(const value_type &val)
+		{
+			mContainer.push_back(val);
+			return *this;
+		}
+
+		back_insert_iterator &operator*()
+		{
+			return *this;
+		}
+
+		back_insert_iterator &operator++()
+		{
+			return *this;
+		}
+		back_insert_iterator &operator++(int) 
+		{
+			return *this; 
+		}
+
+	private:
+		container_type &mContainer;
+	};
+
+	template <typename tContainer>
+	back_insert_iterator<tContainer> back_inserter(tContainer &container)
+	{
+		return back_insert_iterator<tContainer>(container);
+	}
+
+	template <typename tContainer>
+	class front_insert_iterator : public iterator<output_iterator_tag, 
+		typename tContainer::value_type, void, void, front_insert_iterator<tContainer>&>
+	{
+	private:
+		typedef iterator<
+			output_iterator_tag, typename tContainer::value_type,
+			void, void, insert_iterator<tContainer>&
+		> base_type;
+
+	public:
+		typedef tContainer container_type;
+
+		typedef typename base_type::value_type value_type;
+
+		front_insert_iterator(container_type &container)
+		 : mContainer(container)
+		{}
+
+		front_insert_iterator &operator=(const value_type &val)
+		{
+			mContainer.push_front(val);
+			return *this;
+		}
+
+		front_insert_iterator &operator*()
+		{
+			return *this;
+		}
+
+		front_insert_iterator &operator++()
+		{
+			return *this;
+		}
+		front_insert_iterator &operator++(int) 
+		{
+			return *this; 
+		}
+
+	private:
+		container_type &mContainer;
+	};
+
+	template <typename tContainer>
+	front_insert_iterator<tContainer> front_inserter(tContainer &container)
+	{
+		return front_insert_iterator<tContainer>(container);
+	}
+
+	template <typename tValue, typename tChar = char, typename tTraits = char_traits<tChar>,
+		typename tDistance = ptrdiff_t>
+	class istream_iterator : public iterator<input_iterator_tag, tValue, tDistance, const tValue *, const tValue &>
+	{
+	public:
+		typedef tChar char_type;
+		typedef tTraits traits_type;
+		typedef basic_istream<char_type, traits_type> istream_type;
+
+	private:
+		istream_type *mStream;
+		tValue mCurrentValue;
+
+	public:
+		istream_iterator()
+		 : mStream(0)
+		{}
+		istream_iterator(istream_type &stream)
+		 : mStream(&stream)
+		{
+			++(*this);
+		}
+		istream_iterator(const istream_iterator &y)
+		 : mStream(y.mStream),
+		   mCurrentValue(y.mCurrentValue)
+		{
+		}
+
+		const tValue &operator*() const
+		{
+			return mCurrentValue;
+		}
+		const tValue *operator->() const
+		{
+			return &mCurrentValue;
+		}
+
+		istream_iterator &operator++()
+		{
+			if (mStream != 0)
+			{
+				*mStream >> mCurrentValue;
+				if (!(*mStream))
+					mStream = 0;
+			}
+			return *this;
+		}
+		istream_iterator operator++(int)
+		{
+			istream_iterator tmp(*this);
+			++(*this); // increment this rather than the tmp we're returning, that way it has the old value and this has the new.
+			return tmp;
+		}
+
+		template <typename tValue1, typename tChar1, typename tTraits1, typename tDistance1>
+		friend bool operator==(const istream_iterator<tValue1, tChar1, tTraits1, tDistance1> &x,
+		                       const istream_iterator<tValue1, tChar1, tTraits1, tDistance1> &y);
+	};
+
+	template <typename tValue, typename tChar, typename tTraits, typename tDistance>
+	bool operator==(const istream_iterator<tValue, tChar, tTraits, tDistance> &x,
+	                const istream_iterator<tValue, tChar, tTraits, tDistance> &y)
+	{
+		return x.mStream == y.mStream;
+	}
+
+	template <typename tValue, typename tChar = char, typename tTraits = char_traits<tChar> >
+	class ostream_iterator : public iterator<output_iterator_tag, void, void, void, void>
+	{
+	public:
+		typedef tChar char_type;
+		typedef tTraits traits_type;
+		typedef basic_ostream<tChar, tTraits> ostream_type;
+
+	private:
+		ostream_type *mStream;
+		tChar *mDelim;
+
+	protected:
+		static tChar *make_delim(const tChar *str)
+		{
+			if (str == 0)
+				return 0;
+
+			std::size_t len = tTraits::length(str) + 1;
+			tChar *delim = new tChar[len];
+			tTraits::copy(delim, str, len);
+		}
+
+	public:
+		ostream_iterator(ostream_type &stream)
+		 : mStream(&stream)
+		{}
+		ostream_iterator(ostream_type &stream, const tChar *delim)
+		 : mStream(&stream),
+		   mDelim( make_delim(delim) )
+		{}
+		ostream_iterator(const ostream_iterator &y)
+		 : mStream(y.mStream),
+		   mDelim( make_delim(y.mDelim) )
+		{}
+
+		~ostream_iterator()
+		{
+			if (mDelim != 0)
+				delete[] mDelim;
+		}
+
+		ostream_iterator &operator=(const tValue &val)
+		{
+			mStream << val;
+			mStream << mDelim;
+		}
+		ostream_iterator &operator*()
+		{
+			return *this;
+		}
+		ostream_iterator &operator++()
+		{
+			return *this;
+		}
+		ostream_iterator &operator++(int)
+		{
+			return *this;
+		}
+	};
+
+	template <typename tChar, typename tTraits = char_traits<tChar> >
+	class istreambuf_iterator : public iterator<input_iterator_tag, tChar, 
+		typename tTraits::off_type, tChar *, tChar &>
+	{
+	public:
+		typedef tChar char_type;
+		typedef tTraits traits_type;
+		typedef typename traits_type::int_type int_type;
+		typedef basic_streambuf<tChar, tTraits> streambuf_type;
+		typedef basic_istream<tChar, tTraits> istream_type;
+
+	private:
+		streambuf_type *mStreamBuf;
+		char_type mCurrentValue;
+
+	public:
+		istreambuf_iterator() throw()
+		 : mStreamBuf(NULL)
+		{}
+		istreambuf_iterator(istream_type &stream) throw()
+		 : mStreamBuf(stream.rdbuf())
+		{
+			++(*this);
+		}
+		istreambuf_iterator(streambuf_type *buf) throw()
+		 : mStreamBuf(buf)
+		{
+			++(*this);
+		}
+		istreambuf_iterator(const istreambuf_iterator &y) throw()
+		 : mStreamBuf(y.mStreamBuf),
+		   mCurrentValue(y.mCurrentValue)
+		{}
+
+		tChar operator*() const
+		{
+			return mCurrentValue;
+		}
+		istreambuf_iterator &operator++()
+		{
+			if (mStreamBuf != 0)
+			{
+				typename tTraits::int_type c = mStreamBuf->sgetc();
+				mCurrentValue = tTraits::to_char_type(c);
+				if (c == tTraits::eof())
+					mStreamBuf = 0;
+			}
+			return *this;
+		}
+		istreambuf_iterator operator++(int)
+		{
+			istreambuf_iterator tmp(*this);
+			++(*this); // increment this one, the returned one holds the previous value.
+			return tmp;
+		}
+
+		template <typename tChar1, typename tTraits1>
+		friend bool operator!=(const istreambuf_iterator<tChar1, tTraits1> &x,
+		                       const istreambuf_iterator<tChar1, tTraits1> &y);
+	};
+
+	template <typename tChar, typename tTraits>
+	bool operator==(const istreambuf_iterator<tChar, tTraits> &x,
+	                const istreambuf_iterator<tChar, tTraits> &y)
+	{
+		return x.mStreamBuf == y.mStreamBuf;
+	}
+	template <typename tChar, typename tTraits>
+	bool operator!=(const istreambuf_iterator<tChar, tTraits> &x,
+	                const istreambuf_iterator<tChar, tTraits> &y)
+	{
+		return x.mStreamBuf != y.mStreamBuf;
+	}
+
+	template <typename tChar = char, typename tTraits = char_traits<tChar> >
+	class ostreambuf_iterator : public iterator<output_iterator_tag, void, void, void, void>
+	{
+	public:
+		typedef tChar char_type;
+		typedef tTraits traits_type;
+		typedef basic_streambuf<tChar, tTraits> streambuf_type;
+		typedef basic_ostream<tChar, tTraits> ostream_type;
+
+	private:
+		streambuf_type *mStreamBuf;
+		bool mFailed;
+
+	public:
+		ostreambuf_iterator(ostream_type &stream) throw()
+		 : mStreamBuf(stream.rdbuf()),
+		   mFailed(false)
+		{}
+		ostreambuf_iterator(streambuf_type *stream)
+		 : mStreamBuf(stream),
+		   mFailed(false)
+		{}
+
+		ostreambuf_iterator &operator=(const tChar &val)
+		{
+			if (!mFailed)
+			{
+				typename tTraits::int_type c = mStreamBuf->sputc(val);
+				mFailed = (c == tTraits::eof());
+			}
+		}
+		ostreambuf_iterator &operator*()
+		{
+			return *this;
+		}
+		ostreambuf_iterator &operator++()
+		{
+			return *this;
+		}
+		ostreambuf_iterator &operator++(int)
+		{
+			return *this;
+		}
+		bool failed() const throw()
+		{
+			return mFailed;
+		}
+	};
+
+	namespace ext
+	{
+		// here goes the specializations for the iterator types
+
+		// generic type degrades to it++
+		template <typename tIterator, typename tDistance>
+		void advance(tIterator &it, tDistance distance, input_iterator_tag type)
+		{
+			for (tDistance i = 0; i < distance; i++)
+				it++;
+		}
+
+		template <typename tIterator, typename tDistance>
+		void advance(tIterator &it, tDistance distance, random_access_iterator_tag type)
+		{
+			it += distance;
+		}
+	}
+	template <typename tIterator, typename tDistance>
+	void advance(tIterator &it, tDistance distance)
+	{
+		ext::advance(it, distance, iterator_traits<tIterator>::iterator_category());
+	}
+
+	namespace ext
+	{
+		// generic type has to iterate over every element
+		template <typename tIterator>
+		typename iterator_traits<tIterator>::difference_type distance(tIterator itBegin, const tIterator &itEnd, 
+			input_iterator_tag type)
+		{
+			typename iterator_traits<tIterator>::difference_type i;
+			for (i = 0; itBegin++ != itEnd; i++) ;
+			return i;
+		}
+
+		template <typename tIterator>
+		typename iterator_traits<tIterator>::difference_type distance(tIterator itBegin, const tIterator &itEnd,
+			random_access_iterator_tag type)
+		{
+			return itEnd - itBegin;
+		}
+	}
+
+	template <typename tIterator>
+	typename iterator_traits<tIterator>::difference_type distance(const tIterator &itBegin, const tIterator &itEnd)
+	{
+		return ext::distance(itBegin, itEnd, iterator_traits<tIterator>::iterator_category());
+	}
+	
+}
+
+#endif
+

@@ -1,0 +1,1019 @@
+#ifndef _SSTL_STRING_
+#define _SSTL_STRING_
+
+#include <machine/_types.h>
+
+#include <memory>
+#include <iterator>
+#include <algorithm>
+#include <stdexcept>
+#include <iosfwd>
+
+namespace std
+{
+	namespace string_impl
+	{
+		// char_traits stuff that depends on the character type explicitly
+		template <typename tCharType>
+		class dependant_char_traits; // no default specialization. This also prevents default specialization of char_traits as well.
+
+		template <>
+		class dependant_char_traits<char>
+		{
+		public:
+			typedef char		char_type;
+			typedef int		int_type;
+		};
+		template <>
+		class dependant_char_traits<wchar_t>
+		{
+		public:
+			typedef wchar_t		char_type;
+			typedef wint_t		int_type;
+		};
+	}
+
+	// define character traits here
+	template <typename tCharType>
+	class char_traits
+	{
+	private:
+		typedef string_impl::dependant_char_traits<tCharType> deptype;
+	public:
+		typedef	typename deptype::char_type	char_type;
+		typedef typename deptype::int_type	int_type;
+		typedef streampos			pos_type;
+		typedef streamoff			off_type;
+		typedef mbstate_t			state_type;
+
+		static inline void assign(char_type &x, const char_type &y)
+		{
+			x = y;
+		}
+		static inline char_type *assign(char_type *x, size_t count, const char_type &y)
+		{
+			fill_n(x, count, y);
+			return x;
+		}
+		static inline char_type *copy(char_type *x, const char_type *y, size_t count)
+		{
+			::std::copy(y, y + count, x);
+			return x;
+		}
+		static inline int_type eof()
+		{
+			return -1;
+		}
+		static inline const char_type *find(const char_type *x, size_t count, const char_type &y)
+		{
+			const char_type *end = x + count;
+			const char_type *found = ::std::find(x, end, y);
+
+			return (found != end)? found : 0;
+		}
+		static inline size_t length(const char_type *x)
+		{
+			const char_type *pos = x;
+			while (*pos != '\0') pos++;
+			return pos - x;
+		}
+		static inline char_type *move(char_type *x, const char_type *y, size_t count)
+		{
+			// In the case of overlapping regions, if the from pointer is > the to pointer,
+			// we want to start at the start of from so elements are overwritten
+			// such that the early letters, already copied, are overwritten first.
+			if (x == y) // do nothing
+				return x; 
+			else if (x > y) // start from the end
+			{
+				while (count != 0)
+				{
+					x[count - 1] = y[count - 1];
+					count--;
+				}
+				return x;
+			} else // start from the beginning
+				return copy(x, y, count);
+		}
+		static inline int_type not_eof(const int_type &c)
+		{
+			if (c == -1)
+				return 0;
+			else
+				return c;
+		}
+		static inline int compare(const char_type *x, const char_type *y, size_t count)
+		{
+			while (count != 0)
+			{
+				if (x[count - 1] == y[count - 1])
+					continue;
+				if (x[count - 1] > y[count - 1])
+					return 1;
+				else if (x[count - 1] < y[count - 1])
+					return -1;
+			}
+			return 0;
+		}
+		static inline bool eq(const int_type &x, const int_type &y)
+		{
+			return x == y;
+		}
+		static inline bool eq_int_type(const int_type &x, const int_type &y)
+		{
+			return x == y;
+		}
+		static inline bool lt(const char_type &x, const char_type &y)
+		{
+			return x < y;
+		}
+		static inline int_type to_int_type(const char_type &x)
+		{
+			return static_cast<int_type>(x);
+		}
+		static inline char_type to_char_type(const int_type &x)
+		{
+			return static_cast<char_type>(x);
+		}
+	};
+
+	template <
+		typename tChar, 
+		typename tTraits = char_traits<tChar>, 
+		typename tAllocator = allocator<tChar>
+	>
+	class basic_string
+	{
+	public:
+		typedef tAllocator						allocator_type;
+		typedef tTraits							traits_type;
+
+		typedef typename allocator_type::pointer 			pointer;
+		typedef typename allocator_type::const_pointer			const_pointer;
+		typedef typename allocator_type::reference			reference;
+		typedef typename allocator_type::const_reference		const_reference;
+
+		typedef typename allocator_type::size_type			size_type;
+		typedef typename traits_type::char_type				value_type;
+		
+		typedef pointer							iterator;
+		typedef const_pointer						const_iterator;
+		typedef typename iterator_traits<iterator>::difference_type	difference_type;
+
+		typedef ::std::reverse_iterator<iterator>			reverse_iterator;
+		typedef ::std::reverse_iterator<const_iterator>			const_reverse_iterator;
+
+		static const size_type npos = -1;
+
+	private:
+		size_type 	mCapacity;
+		allocator_type 	mAlloc;
+
+		pointer 	mBegin; // points to the first character of the sequence.
+		pointer 	mEnd; // points to one past the last character of the sequence.
+		// mEnd must always be valid, so capacity must always be at least length+1, as *mEnd
+		// is set to a nul termination for c_str().
+
+	public:
+		explicit basic_string(const allocator_type &alloc = allocator_type())
+		 : mCapacity(0),
+		   mAlloc(alloc)
+		{
+			reserve();
+		}
+		basic_string(const_pointer copy, size_type count, const allocator_type &alloc = allocator_type())
+		 : mCapacity(0),
+		   mAlloc(alloc)
+		{
+			reserve(count + 1);
+			assign(copy, count);
+		}
+		basic_string(const_pointer copy, const allocator_type &alloc = allocator_type())
+		 : mCapacity(0),
+		   mAlloc(alloc)
+		{
+			size_type count = traits_type::length(copy);
+			reserve(count + 1);
+			assign(copy, count);
+		}
+		basic_string(const basic_string &copy, size_type offset = 0, size_type count = npos,
+			const allocator_type &alloc = allocator_type())
+		 : mCapacity(0),
+		   mAlloc(alloc)
+		{
+			reserve(min(copy.length() - offset, count));
+			assign(copy, offset, npos);
+		}
+		basic_string(size_type count, value_type value, const allocator_type &alloc = allocator_type())
+		 : mCapacity(0),
+		   mAlloc(alloc)
+		{
+			reserve(count);
+			assign(count, value);
+		}
+		template <typename tInputIterator>
+		basic_string(tInputIterator begin, tInputIterator end, 
+			const allocator_type &alloc = allocator_type())
+		 : mCapacity(0),
+		   mAlloc(alloc)
+		{
+			reserve();
+			assign<tInputIterator>(begin, end);
+		}
+
+		~basic_string()
+		{
+			mAlloc.deallocate(mBegin, mCapacity);
+		}
+
+		void reserve(size_type count = 0)
+		{
+			size_type max_alloc = mAlloc.max_size();
+
+			if (count > max_alloc)
+				throw length_error("std::string::reserve count > max_alloc");
+
+			// make sure count is at least 16
+			if (count < 16)
+				count = 16;
+
+			if (count > mCapacity)
+			{
+				if (mCapacity == 0) // completely uninitialized, so we have to initialize it.
+				{
+					mBegin = mAlloc.allocate(count);
+					mEnd = mBegin;
+					mCapacity = count;
+				} else {
+					size_type newCapacity = mCapacity;
+
+					// double the capacity until it's > count
+					while (newCapacity < count) 
+						newCapacity *= 2;
+					// if that's too big for the allocator, cut down to the same.
+					if (newCapacity > max_alloc)
+						newCapacity = max_alloc;
+
+					// allocate our new block
+					pointer ptrBegin = mAlloc.allocate(newCapacity),
+					        ptrEnd   = ptrBegin + (mEnd - mBegin);
+					// construct all the elements of the new block that need construction
+					// (unneeded for char and wchar_t at least, but for anything else it may be needed)
+					for (pointer allocBegin = ptrBegin; allocBegin != ptrEnd; allocBegin++)
+						mAlloc.construct(allocBegin, value_type());
+
+					// copy the old string to the new
+					traits_type::copy(ptrBegin, mBegin, ptrBegin - ptrEnd);
+
+					// destroy and delete the old
+					for (pointer destroyBegin = mBegin; destroyBegin != mEnd; destroyBegin++)
+						mAlloc.destroy(destroyBegin);
+
+					mAlloc.deallocate(mBegin, mCapacity);
+
+					// now we assign and we're done
+					mBegin = ptrBegin;
+					mEnd = ptrEnd;
+					mCapacity = newCapacity;
+				}
+			}
+			// do nothing if we're already big enough
+		}
+
+		void resize(size_type count, value_type fill)
+		{
+			pointer newEnd = mBegin + count;
+
+			if (count <= size())
+			{
+				// destroy all the elements after the new end
+				for (pointer delBegin = newEnd; delBegin != mEnd; delBegin++)
+					mAlloc.destroy(delBegin);
+			} else {
+				// we check the count against max_size as well because capacity cares about
+				// the allocator's max_size, while we care about the string object's max_size.
+				if (count > max_size())
+					throw length_error("std::string::resize count > max_size");
+
+				// count + 1 because we leave room for a nul terminator
+				reserve(count + 1);
+
+				// allocate all the elements after the old end
+				for (pointer addBegin = mEnd; addBegin != newEnd; addBegin++)
+					mAlloc.construct(addBegin, fill);
+			}
+			mEnd = newEnd;
+		}
+		void resize(size_type count)
+		{
+			resize(count, value_type());
+		}
+
+		basic_string &append(const_pointer ptr, size_type len)
+		{
+			size_type oldlen = length();
+			resize(oldlen + len);
+			traits_type::copy(mBegin + len, ptr, len);
+
+			return *this;
+		}
+		basic_string &append(const_pointer ptr)
+		{
+			return append(ptr, traits_type::length(ptr));
+		}
+		basic_string &append(const basic_string &copy, size_type pos = 0, size_type count = npos)
+		{
+			count = min(count, copy.length() - pos);
+			if (count > copy.length())
+				throw out_of_range("std::string::append not enough characters in source sequence");
+
+			return append(copy.data(), count);
+		}
+		basic_string &append(size_type count, value_type value)
+		{
+			resize(length() + count, value);
+			return *this;
+		}
+		template <typename tIterator>
+		basic_string &append(const tIterator &begin, const tIterator &end)
+		{
+			return append<tIterator>(begin, end, iterator_traits<tIterator>::iterator_category());
+		}
+
+		void push_back(value_type c)
+		{
+			append(1, c);
+		}
+
+		basic_string &operator+=(const basic_string &y)
+		{
+			return append(y);
+		}
+		basic_string &operator+=(const_pointer y)
+		{
+			return append(y);
+		}
+		basic_string &operator+=(value_type y)
+		{
+			return append(y);
+		}
+
+		basic_string &assign(const_pointer ptr, size_type len)
+		{
+			resize(len);
+			traits_type::copy(mBegin, ptr, len);
+			return *this;
+		}
+		basic_string &assign(const_pointer ptr)
+		{
+			return assign(ptr, traits_type::length(ptr));
+		}
+		basic_string &assign(const basic_string &str)
+		{
+			return assign(str.data(), str.length());			
+		}
+		basic_string &assign(const basic_string &str, size_type pos, size_type count)
+		{
+			count = min(count, str.length() - pos);
+			if (count > str.length() - pos)
+				throw out_of_range("std::string::assign too few characters in source sequence");
+			return assign(str.data() + pos, count);
+		}
+		basic_string &assign(size_type count, value_type value)
+		{
+			resize(length() + count, value);
+		}
+		template <typename tIterator>
+		basic_string &assign(tIterator begin, const tIterator &end)
+		{
+			resize(0);
+			return append<tIterator>(begin, end, iterator_traits<tIterator>::iterator_category());
+		}
+
+		basic_string &operator=(const basic_string &y)
+		{
+			return assign(y);
+		}
+		basic_string &operator=(const_pointer y)
+		{
+			return assign(y);
+		}
+		basic_string &operator=(value_type y)
+		{
+			return assign(y);
+		}
+
+		basic_string &replace(size_type pos, size_type replace_count, const_pointer str, size_type count)
+		{
+			size_type current_length = length();
+
+			if (pos > current_length)
+				throw out_of_range("std::string::replace position out of range");
+
+			replace_count = min(replace_count, current_length - pos);
+
+			if (replace_count == count) // direct replacement, no need to move
+			{
+				traits_type::copy(mBegin + pos, str, count);
+
+			} else if (replace_count < count) { // we are growing the string
+				resize(current_length + (count - replace_count)); // resize first
+
+				traits_type::move(mBegin + pos + count, mBegin + pos + replace_count, current_length - pos);
+				traits_type::copy(mBegin + pos, str, count);
+
+			} else { // we are shrinking the string
+				traits_type::move(mBegin + pos + count, mBegin + pos + replace_count, current_length - pos);
+				traits_type::copy(mBegin + pos, str, count);
+
+				resize(current_length + (count - replace_count)); // resize last
+			}
+
+			return *this;
+		}
+		inline basic_string &replace(size_type pos, size_type replace_count, size_type count, value_type value)
+		{
+			size_type current_length = length();
+
+			if (pos > current_length)
+				throw out_of_range("std::string::replace position out of range");
+
+			replace_count = min(replace_count, current_length - count);
+
+			if (replace_count == count) // just replace directly
+				traits_type::assign(mBegin + pos, count, value);
+
+			else if (replace_count < count) // growing the string
+			{
+				resize(current_length + (count - replace_count)); // resize first
+
+				traits_type::move(mBegin + pos + count, mBegin + pos + replace_count, current_length - pos);
+				traits_type::assign(mBegin + pos, count, value);
+
+			} else { // shrinking the string
+				traits_type::move(mBegin + pos + count, mBegin + pos + replace_count, current_length - pos);
+				traits_type::assign(mBegin + pos, count, value);
+
+				resize(current_length + (count - replace_count)); // resize after
+			}
+			return *this;
+		}
+		inline basic_string &replace(size_type pos, size_type count, const_pointer str)
+		{
+			return replace(pos, count, str, traits_type::length(str));
+		}
+		inline basic_string &replace(size_type pos, size_type count, const basic_string &str)
+		{
+			return replace(pos, count, str.data(), str.length());
+		}
+		inline basic_string &replace(size_type pos, size_type count, const basic_string &str,
+			size_type src_pos, size_type src_count)
+		{
+			if (src_pos > str.length())
+				throw out_of_range("std::string::replace not enough characters in source");
+
+			src_count = min(src_count, str.length() - src_pos);
+
+			return replace(pos, count, str.data() + src_pos, src_count);
+		}
+		inline basic_string &replace(const iterator &begin, const iterator &end,
+			const basic_string &str)
+		{
+			return replace(begin - mBegin, end - begin, str);
+		}
+		inline basic_string &replace(const iterator &begin, const iterator &end,
+			const_pointer str, size_type count)
+		{
+			return replace(begin - mBegin, end - begin, str, count);
+		}
+		inline basic_string &replace(const iterator &begin, const iterator &end,
+			const_pointer str)
+		{
+			return replace(begin - mBegin, end - begin, str);
+		}
+		inline basic_string &replace(const iterator &begin, const iterator &end,
+			size_type count, value_type value)
+		{
+			return replace(begin - mBegin, end - begin, count, value);
+		}
+		template <typename tIterator>
+		inline basic_string &replace(const iterator &begin1, const iterator &end1,
+			const tIterator &begin2, const tIterator &end2)
+		{
+			return replace<tIterator>(begin1, end1, begin2, end2, iterator_traits<tIterator>::iterator_category());
+		}
+		inline basic_string &replace(const iterator &begin1, const iterator &end1,
+			const const_iterator &begin2, const const_iterator &end2)
+		{
+			return replace(begin1 - mBegin, end1 - begin1, begin2, begin2 - end2);
+		}
+
+		inline basic_string &insert(size_type pos, const basic_string &str)
+		{
+			return replace(pos, 0, str);
+		}
+		inline basic_string &insert(size_type pos, const basic_string &str,
+			size_type src_pos, size_type count)
+		{
+			return replace(pos, 0, str, src_pos, count);
+		}
+		inline basic_string &insert(size_type pos, const_pointer str)
+		{
+			return replace(pos, 0, str);
+		}
+		inline basic_string &insert(size_type pos, size_type count, value_type value)
+		{
+			return replace(pos, 0, count, value);
+		}
+		inline iterator insert(const iterator &it, value_type value)
+		{
+			size_type pos = &*it - mBegin;
+
+			replace(it, it, 1, value);
+
+			return iterator(mBegin + pos);
+		}
+		inline void insert(const iterator &it, size_type count, value_type value)
+		{
+			replace(it, it, count, value);
+		}
+		template <typename tIterator>
+		inline void insert(const iterator &it, const tIterator &begin, const tIterator &end)
+		{
+			replace<tIterator>(it, it, begin, end);
+		}
+
+		inline basic_string &erase(size_type pos = 0, size_type count = npos)
+		{
+			return replace(pos, count, 0, value_type());
+		}
+		inline iterator erase(iterator it)
+		{
+			size_type pos = &*it - mBegin;
+
+			replace(it, it + 1, 0, value_type());
+
+			return iterator(mBegin + pos);
+		}
+		inline iterator erase(iterator begin, iterator end)
+		{
+			size_type pos = &*begin - mBegin;
+
+			replace(begin, end, 0, value_type());
+
+			return iterator(mBegin + pos);
+		}
+
+		inline void clear()
+		{
+			erase();
+		}
+
+		size_type copy(pointer x, size_type count, size_type pos = 0) const
+		{
+			count = min(count, length() - pos);
+			copy(x, data(), count);
+			return count;
+		}
+
+		void swap(basic_string &y)
+		{
+			::std::swap(mAlloc, y.mAlloc);
+			::std::swap(mBegin, y.mBegin);
+			::std::swap(mEnd, y.mEnd);
+			::std::swap(mCapacity, y.mCapacity);
+		}
+
+		inline basic_string substr(size_type pos = 0, size_type count = npos)
+		{
+			if (pos > length())
+				throw out_of_range("std::string::substr position out of range");
+
+			count = min(count, length() - pos);
+
+			return basic_string(begin() + pos, begin() + count);
+		}
+
+		inline size_type find(value_type value, size_type pos = 0) const
+		{
+			if (pos > length())
+				return npos;
+
+			pointer found = traits_type::find(data() + pos, length(), value);
+			if (found != 0)
+				return found - data();
+			else
+				return npos;
+		}
+		inline size_type find(const basic_string &str, size_type pos = 0) const
+		{
+			if (pos > length())
+				return npos;
+
+			const_iterator found = search(begin() + pos, end(), str.begin(), str.end(), ptr_fun(eq));
+			if (found != end())
+				return found - begin();
+			else
+				return npos;
+		}
+		inline size_type find(pointer ptr, size_type pos, size_type count) const
+		{
+			if (pos > length())
+				return npos;
+
+			const_iterator found = search(begin() + pos, end(), ptr, ptr + count, ptr_fun(traits_type::eq));
+			if (found != end())
+				return found - begin();
+			else
+				return npos;
+		}
+		inline size_type find(pointer ptr, size_type pos = 0) const
+		{
+			return find(ptr, traits_type::length(ptr), pos);
+		}
+
+		inline size_type find_first_of(value_type value, size_type pos = 0) const
+		{
+			return find(value, pos);
+		}
+		inline size_type find_first_of(const basic_string &str, size_type pos = 0) const
+		{
+			if (pos > length())
+				return npos;
+
+			const_iterator found = ::std::find_first_of(begin() + pos, end(), str.begin(), str.end(), ptr_fun(traits_type::eq));
+			if (found != end())
+				return found - begin();
+			else
+				return npos;
+		}
+		inline size_type find_first_of(const_pointer ptr, size_type pos, size_type count) const
+		{
+			if (pos > length())
+				return npos;
+
+			const_iterator found = ::std::find_first_of(begin() + pos, end(), ptr, ptr + count, ptr_fun(traits_type::eq));
+			if (found != end())
+				return found - begin();
+			else
+				return npos;
+		}
+		inline size_type find_first_of(const_pointer ptr, size_type pos = 0) const
+		{
+			return find_first_of(ptr, pos, traits_type::length(ptr));
+		}
+
+		// need to do more find stuff
+
+		int compare(size_type pos, size_type count1, const_pointer str, size_type count2 = 0) const
+		{
+			pos = min(pos, size() - 1);
+			count1 = min(count1, size() - pos);
+
+			int diff = int(count1) - int(count2);
+			if (diff != 0)
+			{
+				diff = traits_type::compare(data() + pos, str, count1);
+			}
+			return diff;
+		}
+		int compare(const basic_string &str) const
+		{
+			return compare(0, length(), str.data(), str.length());
+		}
+		int compare(size_type pos, size_type count, const basic_string &str) const
+		{
+			return compare(pos, count, str.data(), str.length());
+		}
+		int compare(size_type pos, size_type count, const basic_string &str,
+			size_type pos2, size_type count2) const
+		{
+			pos2 = min(pos2, str.length() - 1);
+			count2 = min(count2, str.length() - pos2);
+			return compare(pos, count, str.data(), pos2, count2);
+		}
+		int compare(const_pointer str)
+		{
+			return compare(0, length(), str, traits_type::length(str));
+		}
+		int compare(size_type pos, size_type count, const_pointer str)
+		{
+			return compare(pos, count, str, traits_type::length(str));
+		}
+
+		iterator begin()
+		{
+			return iterator(mBegin);
+		}
+		const_iterator begin() const
+		{
+			return const_iterator(mBegin);
+		}
+		iterator end()
+		{
+			return iterator(mEnd);
+		}
+		const_iterator end() const
+		{
+			return const_iterator(mEnd);
+		}
+		reverse_iterator rbegin()
+		{
+			return reverse_iterator(mEnd);
+		}
+		const_reverse_iterator rbegin() const
+		{
+			return const_reverse_iterator(mEnd);
+		}
+		reverse_iterator rend()
+		{
+			return reverse_iterator(mBegin);
+		}
+		const_reverse_iterator rend() const
+		{
+			return const_reverse_iterator(mBegin);
+		}
+
+		reference at(size_type pos)
+		{
+			if (pos > (mEnd - mBegin))
+				throw out_of_range("std::string::at out of range");
+			return mBegin[pos];
+		}
+		const_reference at(size_type pos) const
+		{
+			if (pos > (mEnd - mBegin))
+				throw out_of_range("std::string::at out of range");
+			return mBegin[pos];
+		}
+
+		reference operator[](size_type pos)
+		{
+			return at(pos);
+		}
+		const_reference operator[](size_type pos) const
+		{
+			return at(pos);
+		}
+
+		const_pointer data() const
+		{
+			return mBegin;
+		}
+		size_type length() const
+		{
+			return mEnd - mBegin;
+		}
+		const_pointer c_str() const
+		{
+			*mEnd = '\0';
+			return data();
+		}
+		size_type size() const
+		{
+			return length();
+		}
+		size_type max_size() const
+		{
+			return mAlloc.max_size() - 1; // for nul termination.
+		}
+		size_type capacity() const
+		{
+			return mCapacity;
+		}
+		bool empty() const
+		{
+			return (mBegin == mEnd);
+		}
+		allocator_type get_allocator() const
+		{
+			return mAlloc;
+		}
+
+	protected:
+		template <typename tInputIterator>
+		inline basic_string &append(const tInputIterator &begin, const tInputIterator &end, const input_iterator_tag &tag)
+		{
+			copy(begin, end, back_inserter(*this));
+			return *this;
+		}
+		template <typename tRandomIterator>
+		inline basic_string &append(const tRandomIterator &begin, const tRandomIterator &end, const random_access_iterator_tag &tag)
+		{
+			size_type oldLength = length();
+			resize(length() + (end - begin));
+			copy(begin, end, mBegin + oldLength - 1);
+			return *this;
+		}
+
+		// wow this will be slow. Rather than insert one character at a time (which would be very bad), though, we will
+		// make a temporary string object to keep it, then insert that. I don't see any better way around this with an
+		// input iterator.
+		template <typename tInputIterator>
+		inline basic_string &replace(const iterator &begin1, const iterator &end1,
+			const tInputIterator &begin2, const tInputIterator &end2, const input_iterator_tag &tag)
+		{
+			basic_string<value_type, traits_type, allocator_type> tmp(begin2, end2);
+			return replace(&*begin1 - mBegin, &*end1 - &*begin1, tmp);
+		}
+
+		// this on the other hand is much easier
+		template <typename tRandomIterator>
+		inline basic_string &replace(const iterator &begin1, const iterator &end1,
+			const tRandomIterator &begin2, const tRandomIterator &end2, const random_access_iterator_tag &tag)
+		{
+			// do essentially all the same stuff as before wrt the basic replace function.
+			return *this;
+		}
+	};
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	basic_string<tValue, tTraits, tAllocator>
+		operator+(const basic_string<tValue, tTraits, tAllocator> &x,
+		          const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return basic_string<tValue, tTraits, tAllocator>(x).append(y);
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	basic_string<tValue, tTraits, tAllocator>
+		operator+(const basic_string<tValue, tTraits, tAllocator> &x,
+		          const tValue *y)
+	{
+		return basic_string<tValue, tTraits, tAllocator>(x).append(y);
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	basic_string<tValue, tTraits, tAllocator>
+		operator+(const basic_string<tValue, tTraits, tAllocator> &x,
+		          tValue y)
+	{
+		return basic_string<tValue, tTraits, tAllocator>(x).append(y);
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	basic_string<tValue, tTraits, tAllocator>
+		operator+(const tValue *x,
+		          const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return basic_string<tValue, tTraits, tAllocator>(x).append(y);
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	basic_string<tValue, tTraits, tAllocator>
+		operator+(tValue x, const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return basic_string<tValue, tTraits, tAllocator>(x).append(y);
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator==(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.compare(y) == 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator==(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const tValue *y)
+	{
+		return x.compare(y) == 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator==(const tValue *x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return y.compare(x) == 0;
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator!=(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.compare(y) != 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator!=(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const tValue *y)
+	{
+		return x.compare(y) != 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator!=(const tValue *x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return y.compare(x) != 0;
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator<(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.compare(y) < 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator<(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const tValue *y)
+	{
+		return x.compare(y) < 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator<(const tValue *x, const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return y.compare(x) > 0;
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator<=(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.compare(y) <= 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator<=(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const tValue *y)
+	{
+		return x.compare(y) <= 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator<=(const tValue *x, const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return y.compare(x) >= 0;
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator>(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.compare(y) > 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator>(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const tValue *y)
+	{
+		return x.compare(y) > 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator>(const tValue *x, const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return y.compare(x) < 0;
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator>=(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.compare(y) >= 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator>=(const basic_string<tValue, tTraits, tAllocator> &x,
+	                const tValue *y)
+	{
+		return x.compare(y) >= 0;
+	}
+	template <typename tValue, typename tTraits, typename tAllocator>
+	bool operator>=(const tValue *x, const basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return y.compare(x) <= 0;
+	}
+
+	template <typename tValue, typename tTraits, typename tAllocator>
+	void swap(basic_string<tValue, tTraits, tAllocator> &x,
+	          basic_string<tValue, tTraits, tAllocator> &y)
+	{
+		return x.swap(y);
+	}
+	
+	template <typename tValue, typename tTraits, typename tAllocator>
+	basic_istream<tValue, tTraits> &getline(basic_istream<tValue, tTraits> &stream,
+	                                        basic_string<tValue, tTraits, tAllocator> &str,
+											tValue delim = stream.widen('\n'))
+	{
+		typename basic_istream<tValue, tTraits>::sentry safe(stream, true);
+		if (book(safe))
+		{
+			str.erase();
+			typename tTraits::int_type c;
+			while (true)
+			{
+				c = stream.get();
+
+				if (c == tTraits::eof())
+				{
+					stream.setstate(ios::eofbit);
+					return stream;
+				} else if (tTraits::to_char_type(c) == delim) {
+					return stream;
+				} else if (str.length() == str.max_size()) {
+					stream.setstate(ios::failbit);
+					return stream;
+				}
+
+				str.push_back(tTraits::to_char_type(c));
+			}
+		}
+		// if we get here, nothing was extracted, so we fail
+		stream.setstate(ios::failbit);
+	}
+
+	typedef basic_string<char> string;
+	typedef basic_string<wchar_t> wstring;
+}
+
+#endif

@@ -1,0 +1,56 @@
+#ifndef _SSTL_TR1_TYPE_COMPARE_
+#define _SSTL_TR1_TYPE_COMPARE_
+
+#include <type_traits>
+
+// type traits are specified in http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1424.htm
+
+namespace std
+{namespace tr1 {
+
+	template <typename tValue1, typename tValue2>
+	struct is_same : public false_type
+	{};
+	template <typename tValue>
+	struct is_same<tValue, tValue> : public true_type
+	{};
+	
+	// This technique for determining convertability is documented at http://www.cuj.com/experts/1810/alexandr.htm?topic=experts
+	namespace type_compare_impl
+	{
+		typedef char noType;
+		struct yesType { char mDummy[2]; };
+		
+		template <typename tTo>
+		static noType test(...);
+		template <typename tTo>
+		static yesType test(tTo);
+		
+		template <typename tFrom>
+		static tFrom gen();
+		
+		template <typename tFrom, typename tTo>
+		struct conversion
+		{
+			// note, GCC really hates it if we're not utterly completely specific about scope here.
+			static const bool exists = 
+				(sizeof(::std::tr1::type_compare_impl::test<tTo>(
+					::std::tr1::type_compare_impl::gen<tFrom>())
+				) == sizeof(yesType));
+		};
+	}
+	
+	template <typename tFrom, typename tTo>
+	struct is_convertible : public integral_constant<bool, type_compare_impl::conversion<tFrom, tTo>::exists>
+	{};
+	template <typename tBoth>
+	struct is_convertible<tBoth, tBoth> : public true_type
+	{};
+	
+	template <typename tBase, typename tDerived>
+	struct is_base_of : public integral_constant<bool,
+		!is_void<tBase>::value && is_convertible<const tDerived*, const tBase*>::value>
+	{};
+}}
+
+#endif

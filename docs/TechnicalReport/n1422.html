@@ -1,0 +1,1676 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html>
+<head>
+  <title>C++ Mathematical Special Functions Proposal</title>
+  <meta http-equiv="author" content="Walter E. Brown">
+  <meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+  <link rev="made"
+	href="mailto:wb@fnal.gov?subject=Special%20Functions%20Proposal">
+
+  <style type="text/css">
+      <!--
+      .blackOnWhite,
+	  body
+      {
+	  background-color: #ffffff;
+	  font-color: #000000;
+      }
+      .center
+      {
+	  text-align: center;
+      }
+      .head,
+	  h2
+      {
+	  font-size: 140%;
+	  font-weight: bold;
+	  padding-top: 3pt;
+	  text-decoration: underline;
+      }
+      .noBorder,
+	  img
+      {
+	  border-style: none;
+      }
+      .red
+      {
+	  color: red;
+      }
+      .roundBullet,
+	  ul
+      {
+	  list-style-type: disc;
+      }
+      .sansSerif,
+	  body,
+	  br,
+	  html,
+	  p,
+	  table,
+	  tbody,
+	  td,
+	  tr
+      {
+	  font-family: Tahoma, Arial, Helvetica, sans-serif;
+      }
+      .squareBullet,
+	  ul ul
+      {
+	  list-style-type: square;
+      }
+      -->
+    </style>
+    <style type="text/css" media="print">
+      <!--
+      .justify,
+	  p
+      {
+	  text-align: justify;
+      }
+      -->
+    </style>
+</head>
+
+
+<body>
+
+<center><h1>A Proposal to Add Mathematical <i>Special Functions</i>
+to the C++ Standard Library</h1></center>
+
+
+<table align="right" cellspacing="0" cellpadding="0">
+<tr>
+  <td align="right"><b><I>Document number:</I></B></td>
+  <td>&nbsp; WG21/N1422 = J16/03-0004</td>
+</tr>
+<tr>
+  <td align="right"><b><I>Date:</I></B></td>
+  <td>&nbsp; February 24, 2003</td>
+</tr>
+<tr>
+  <td align="right"><b><I>Project:</I></B></td>
+  <td>&nbsp; Programming Language C++</td>
+</tr>
+<tr>
+  <td align="right"><b><I>Reference:</I></B></td>
+  <td>&nbsp; ISO/IEC IS 14882:1998(E)</td>
+</tr>
+<tr>
+  <td align="right"><b><I>Reply to:</I></B></td>
+  <td>&nbsp; Walter E. Brown &lt;<a href="mailto:wb@fnal.gov?subject=Special%20Functions%20proposal">wb@fnal.gov</a>&gt;</td>
+</tr>
+<tr>
+  <td></td>
+  <td>&nbsp; Fermi National Accelerator Laboratory<br></td>
+</tr>
+<tr>
+  <td></td>
+  <td>&nbsp; Batavia, Illinois, USA<br></td>
+</tr>
+</table>
+
+<br clear="all">
+<hr>
+
+<h2>Contents</h2>
+<blockquote>
+  <table>
+  <tr><td>I.   </td><td><a href="#Intro">  Background and Motivation</a></td></tr>
+  <tr><td>II.  </td><td><a href="#Impact"> Impact On the C++ Standard</a></td></tr>
+  <tr><td>III. </td><td><a href="#Design"> Design Decisions</a></td></tr>
+  <tr><td>IV.  </td><td><a href="#Text">   Proposed Text</a></td></tr>
+  <tr><td>V.   </td><td><a href="#Overlap">Relationship to Earlier Proposal</a></td></tr>
+  <tr><td>VI.  </td><td><a href="#Ack">    Acknowledgements</a></td></tr>
+  <tr><td>VII. </td><td><a href="#Ref">    References</a></td></tr>
+  <!--
+  <tr><td>VIII.</td><td><a href="#Rev">    Revision History</a></td></tr>
+  -->
+  </table>
+</blockquote>
+
+<hr>
+
+<h2><a name="Intro">I. Background and Motivation</a></h2>
+
+<blockquote><i>
+Why is this important? What kinds of problems does it address, and what
+kinds of programmers is it intended to support?  Is it based on existing
+practice?</i></blockquote>
+
+<p>
+Compared to C++ [<a href="#C++98">ISO:14882</a>], C99 [<a
+href="#C99">ISO:9899</a>] provides an extended <tt>&lt;math.h&gt;</tt>
+header and library.  Among the additions introduced by C99 are selected
+mathematical functions from categories of particular interest to
+the numerical computing communities: <i>exponential and logarithmic
+functions</i>, <i>circular and hyperbolic functions</i>, and <i>special
+functions</i>.  </p>
+
+<p>
+In particular, C99 specifies the following traditional and extended
+functions of numerical interest in <tt>&lt;math.h&gt;</tt>, each with
+variants to accomodate arguments of types <tt>float</tt>, <tt>double</tt>,
+and <tt>long double</tt>: </p>
+
+<ul>
+  <li><i>circular</i>, a.k.a. <i>trigonometric</i> (&sect;7.12.4):
+    <tt>sin</tt>,
+    <tt>cos</tt>,
+    <tt>tan</tt>,
+    <tt>asin</tt>,
+    <tt>acos</tt>,
+    <tt>atan</tt> and <tt>atan2</tt>;
+  </li>
+
+  <li><i>hyperbolic</i> (&sect;7.12.5):
+    <tt>sinh</tt>,
+    <tt>cosh</tt>,
+    <tt>tanh</tt>,
+    <tt>asinh</tt>,
+    <tt>acosh</tt>,
+    <tt>atanh</tt>;
+  </li>
+
+  <li><i>exponential</i> (&sect;7.12.6):
+    <tt>exp</tt>,
+    <tt>exp2</tt>,
+    <tt>frexp</tt>,
+    <tt>ldexp</tt>,
+    <tt>expm1</tt>;
+  </li>
+
+  <li><i>logarithmic</i> (&sect;7.12.6):
+    <tt>log10</tt>,
+    <tt>log2</tt>,
+    <tt>logb</tt>,
+    <tt>ilogb</tt>,
+    <tt>log1p</tt>;
+  </li>
+
+  <li><i>power</i> (&sect;7.12.7):
+    <tt>pow</tt>,
+    <tt>sqrt</tt>,
+    <tt>cbrt</tt>,
+    <tt>hypot</tt>;
+  </li>
+
+  <li><i>special</i> (&sect;7.12.8):
+    <tt>erf</tt>,
+    <tt>erfc</tt>,
+    <tt>tgamma</tt>,
+    <tt>lgamma</tt>;
+  </li>
+</ul>
+
+
+<p>
+All these functions either (a) are already part of the
+C++ standard library, or (b) have already been proposed [<a
+href="#C99LibAdd">Plauger</a>] and discussed [<a href="#LibTR">Dawes</a>,
+Item 1] for incorporation into the forthcoming C++ Library Technical
+Report [<a href="#TR">Josuttis</a>].  <b>We here propose to augment the
+C++ standard library with additional functions from the above <i>Special
+Functions</i> category</b>.  </p>
+
+<p>
+Mathematical <i>Special Functions</i> are appropriate for this
+TR because they plug an obvious hole ("Filling Gaps," as [<a
+href="#Extensions">Austern</a>] phrases it) in the existing standard
+library.  While these functions are clearly numerical in nature and will
+likely be most heavily used by the scientific and engineering communities,
+other communities of programmers also have needs, ranging from frequent
+to intermittent, for these functions.  </p>
+
+<p>
+This <i>Special Functions</i> proposal additionally falls into the
+"Standards Coordination and Infrastructure" categories identified in
+[<a href="#Extensions">Austern</a>] as targets for the TR, for this
+proposal is based on an existing standard, <i>Quantities and units</i>
+[<a href="#ISO31">ISO:31</a>] <i>Part 11: Mathematical signs and symbols
+for use in the physical sciences and technology</i>.  We draw particular
+attention to the tables constituting ISO:31-11 paragraphs 8 ("Exponential
+and logarithmic functions"), 9 ("Circular and hyperbolic functions"),
+10 ("Complex numbers"), and 14 ("Special functions").  </p>
+
+<p>
+There is a long history of implementation experience with these functions,
+as evidenced, for example, by section C of the Fortran-based SLATEC
+Common Mathematical Library [<a href="#SLATEC">SLATEC</a>].  Today,
+special functions constitute important subsets of such well-respected
+add-on libraries as the NAG C Library, [<a href="#NAG">NAG</a>],
+the IMSL C Numerical Library [<a href="#IMSL">IMSL</a>], and the GNU
+Scientific Library [<a href="#GSL">GSL</a>].  Further, some standard
+C libraries such as the SGI C library [<a href="#SGI">SGI</a>] and the
+GNU C library [<a href="#GNUC">GNU C</a>] also provide, as extensions,
+a few of the proposed special functions.  The benefits of incorporating
+them into the C++ Standard Library include predictability of interface
+and behavior across a broad spectrum of implementations, leading to
+improved portability and interoperability for applications that make
+use of these functions.  </p>
+
+<p>
+Finally, we believe that adoption of this proposal would send a clear
+message to the various numeric computing communities that, contrary to
+significant popular belief within these communities, C++ is an eminently
+suitable programming language for their problem domain, too.  </p>
+
+<h2><a name="Impact">II. Impact On the C++ Standard</a></h2>
+<blockquote><i>
+What does it depend on, and what depends on it?  Is it a pure extension,
+or does it require changes to standard components?  Does it require core
+language changes?  </i></blockquote>
+
+<p>
+This proposal is a pure extension.  It does not require any changes
+in the core language.  It does not require changes to any standard
+classes or functions.  It does not require changes to any of the standard
+requirement tables.  All the functions are mathematically well-understood,
+all have proven their utility in practice over a considerable period of
+time, and all have been previously implemented in C and C++.  </p>
+
+<p>
+This proposal does not depend on any other C++ library extensions.
+This proposal potentially overlaps slightly with another proposal
+[<a href="#C99LibAdd">Plauger</a>] that would incorporate the bulk
+of C99's library additions into C++.  The potential commonality
+between the two proposals is, however, limited to a rather tiny part
+of <tt>&lt;math.h&gt;</tt> that is essentially identical in the two
+proposals; see <a href="#Overlap">section V</a> for details.  </p>
+
+
+<h2><a name="Design">III. Design Decisions</a></h2>
+
+<blockquote><i>
+Why did you choose the specific design that you did?  What alternatives
+did you consider, and what are the tradeoffs?  What are the consequences
+of your choice, for users and implementors?  What decisions are left
+up to implementors?  If there are any similar libraries in use, how do
+their design decisions compare to yours?  </i></blockquote>
+
+<h3>A. How to Package the Additional Declarations?</h3>
+
+<p>
+Following the precedent set by C99, this proposal recommends that
+declarations for all the proposed special functions be incorporated into
+<tt>&lt;math.h&gt;</tt> and thence extended into <tt>&lt;cmath&gt;</tt>
+in the obvious way.  </p>
+
+<p>
+An alternative design would present these additional declarations
+in a new header.  Obvious names for this header, <i>e.g.</i>,
+<tt>&lt;special_functions.h&gt;</tt>, seem unwieldy, and no suitably
+descriptive shorter names have come to mind.  Further, it seems likely
+that implemention of some of the special functions can make advantageous
+use of extant functionality in <tt>&lt;math.h&gt;</tt> and so it seemed
+reasonable to avoid the separation.  </p>
+
+<h3>B. Which <i>Special Functions</i> to Incorporate?</h3>
+
+<p>
+Because the set of mathematical functions that can be considered
+<i>Special Functions</i> is potentially unbounded, we considered several
+options in selecting our list of candidates for standardization.  </p>
+
+<p>
+This proposal recommends adoption of the list of <i>Special Functions</i>
+specified in the ISO standard <i>Quantities and units</i> [<a
+href="#ISO31">ISO:31</a>, Part 11, paragraph 14].  This list has already
+received international scrutiny and endorsement via the standardization
+process.  Further consultations with respected scientific colleagues
+have confirmed that these <i>Special Functions</i> would, if incorporated
+into the C++ standard library, constitute a significant contribution to
+the numeric community.  </p>
+
+<p>
+A second possibility was the adoption of all the <i>Special Functions</i>
+listed in the (exhaustive!) <i>Handbook of Mathematical Functions</i>
+[<a href="#Handbook">Abramowitz &amp; Stegun</a>], the generally-accepted
+standard reference for this domain.  However, a careful inspection of
+this work's extensive contents strongly suggests that its scope may be
+overly broad.  More importantly, many of the listed functions appear
+to be very difficult to implement.  (Indeed, a colleague suggested,
+not entirely in jest, that "several Ph.D. dissertations could result"
+from such efforts!)  </p>
+
+<p>
+We considered, third, adopting a list taken from an existing library
+in this domain.  The <i>Special Functions</i> portion of the GNU
+Scientific Library [<a href="#GSL">GSL</a>], for example, seemed to
+present a reasonable set for consideration.  Indeed, these functions
+largely constitute a superset of the list recommended above, and are
+all clearly implementable.  However, we felt it advantageous to require
+only the functions in the above list, in order to allow implementers
+the freedom to add value by providing additional functions.</p>
+
+<p>
+A final possibility was the construction of an <i>ad hoc</i> list of
+<i>Special Functions</i>.  We rejected this as the least defensible of
+the alternatives, since there are no obvious criteria for accepting some
+and rejecting others, other than a feel for general utility.  </p>
+
+<p>
+We note, in passing, that we have omitted both the cylindrical
+and the spherical Hankel functions from our list of candidates for
+standardization.  Our motivation for this is straightforward:  we have
+restricted ourselves to functions taking real-valued arguments, and
+producing real-valued results.  The Hankel functions do not qualify.  </p>
+
+<h3>C. Function Templates or Overloaded Functions?</h3>
+
+<p>
+It is possible to declare the desired additional <tt>&lt;cmath&gt;</tt>
+functionality in either of two ways:  as (specialized) function templates
+or as families of overloaded functions.  We recommend overloading.  </p>
+
+<p>
+This recommendation based in significant part on arguments favoring
+consistency of form with the existing contents of the affected
+headers:  There are no templates today in <tt>&lt;math.h&gt;</tt> or in
+<tt>&lt;cmath&gt;</tt>.  Further, we are unaware of any current <i>Special
+Functions</i> implementation that is based on template technology.  </p>
+
+<p>
+Additional reasons take into account the possible future extension
+of the new functions to additional headers (such as, for example,
+<tt>&lt;complex&gt;</tt>).  To do so in the presence of function templates
+would raise such issues as the location of the primary template and the
+concomitant need to coordinate multiple cooperating headers.  We prefer
+to avoid such entanglements.  </p>
+
+<h3>D. Exceptions or Error Codes?</h3>
+
+<p>
+Most of the proposed functions must advise their caller of domain and/or
+range errors.  In the context of C++, this would arguably be best done
+by throwing appropriate exceptions.  </p>
+
+<p>
+However, no standard functions in <tt>&lt;cmath&gt;</tt> today
+throw exceptions.  Rather, mimicking the behavior of the functions in
+<tt>&lt;math.h&gt;</tt>, each sets a global <tt>errno</tt> variable to
+a suitable code (<i>i.e.</i>, <tt>EDOM</tt> or <tt>ERANGE</tt>) defined
+in <tt>&lt;cerrno&gt;</tt>.  </p>
+
+<p>
+We recommend that this existing behavior be preserved with respect to
+the proposed new functions.  Not only is this a matter of consistency,
+but it preserves the possibility that a compatible version of this
+proposal might be incorporated into a future revision of C99.  </p>
+
+<h3>E. Traditional or Extended Error Codes?</h3>
+
+<p>
+Having recommended, in the previous subsection, the continued use of
+error codes, a further question arises:  Are the existing <tt>EDOM</tt>,
+<tt>ERANGE</tt> error codes sufficient to the needs of the proposed
+<i>Special Functions</i>?  </p>
+
+<p>
+We note that several current implementations of some of the proposed
+<i>Special Functions</i> do define their own codes to supplement the codes
+mandated by the standard.  They incorporate codes for such situations
+as overflow, underflow, loss of precision, singularities, and the like,
+and make these codes accessible via additional global variables analogous
+to <tt>errno</tt>, or via other means.  </p>
+
+<p>
+Nothing in this proposal should be construed as preventing implementors
+from such optional extensions.  However, this proposal recommends against
+requiring such behavior.  We base this recommendation on consistency
+with current standards.  In particular, we call attention to &sect;7.12.1
+of C99 [<a href="#C99">ISO:9899</a>].  </p>
+
+<h3>F. Traditional or Descriptive Function Names?</h3>
+
+<p>
+In selecting names for the proposed new functions, we were moved to
+retain their traditional (mathematical) names.  For example, we kept
+the names of a few functions which are customarily denoted using Greek
+letters (spelled out, of course:  <tt>beta</tt>, <tt>zeta</tt> [but
+<tt>tgamma</tt> for compatibility with C99]).  We also kept the function
+names <tt>erf</tt> and <tt>erfc</tt> because they are both traditional
+and descriptive, as well as for compatibility with C99.  </p>
+
+<p>
+In the remaining (majority of) cases, the traditional mathematical names
+are mostly single letters (<i>e.g.</i>, <tt>J</tt> and <tt>N</tt>).
+We judged such names to be too brief and insufficiently descriptive for
+programming purposes.  Also, such one-character names are frequently
+reserved by coding standards to signify local variables.  For these
+reasons, we recommend against use of the traditional names.  Instead, we
+chose such names as <tt>bessel_J</tt> and <tt>neumann_N</tt>, combining
+a descriptive prefix with a traditional suffix.  </p>
+
+<p>
+We note in passing that this policy resulted in a few pairs of our
+names that differ only in the case of a single character (<i>e.g.</i>,
+<tt>bessel_J</tt> and <tt>bessel_j</tt>).  In each instance, this is
+an artifact of the traditional mathematical naming convention that
+we preserved on the basis of prior art as the accepted canonical
+mathematical nomenclature.  While some coding standards recommend or
+require avoidance of multiple identifiers that differ only in case, we
+believe it appropriate in the present context to embrace case-sensitivity
+in distinguishing otherwise-identical names.  </p>
+
+<h3>G. Real- or Complex-valued Domains and Results?</h3>
+
+<p>
+Many of the proposed special functions have definitions over some or all
+of the complex plane as well as over some or all of the real numbers.
+Further, some of these functions can produce complex results, even
+over real-valued arguments.  The present proposal restricts itself by
+considering only real-valued arguments and (correspondingly) real-valued
+results.  </p>
+
+<p>
+Our investigation of the alternative led us to realize that the complex
+landscape for the special functions is figuratively dotted with land
+mines.  In coming to our recommendation, we gave weight to the statement
+from a respected colleague that "Several Ph.D. dissertations would
+[or could] result from efforts to implement this set of functions
+over the complex domain."  This led us to take the position that
+there is insufficient prior art in this area to serve as a basis for
+standardization, and that such standardization would be therefore
+premature.  While we could perhaps consider standardizing some subset
+of the special functions over the complex domain, we far prefer to treat
+this set of special functions as a unit.  </p>
+
+<p>
+We further ruled out (via domain errors, for example) the possibility
+that these special functions could return complex results.  In making
+this recommendation, we followed the past practice of C++ and of C99:
+functions taking real arguments always return real results; only functions
+taking complex arguments return complex results.  Perhaps the best example
+of this is the <code>sqrt</code> function:  it always returns a value
+of type matching its parameter's type.  To do otherwise opens the door
+to a number of small, but bothersome technical issues.  As one example,
+which header (<code>&lt;cmath&gt;</code> or <code>&lt;complex&gt;</code>)
+would declare such a function whose domain and range are different?  </p>
+
+<p>
+Finally, none of our colleagues or reviewers has presented any compelling
+need or rationale for the extension to the complex domain or range.
+While there would certainly be some segments of the user community that
+could take advantage of such functionality (and we certainly don't mean
+to prohibit vendors from providing such as extensions), there seems to
+be insufficient demand to require such at present.  </p>
+
+<h3>H. Which Conventions?</h3>
+
+<p>
+Among the functions in this proposal, there are several (<i>e.g.</i>,
+spherical harmonics: <code>sph_Y()</code>) for which multiple phase
+and normalization conventions exist.  Because the choices do not easily
+co-exist, we have opted to resolve any such ambiguities by appealing to
+a common source, the aforementioned standard <i>Handbook of Mathematical
+Functions</i> by [<a href="#Handbook">Abramowitz &amp; Stegun</a>].  </p>
+
+<h3>I. Relationship to LIA?</h3>
+
+<p>
+It has been suggested that the functions constituting the subject of
+this proposal be reviewed within the framework of one or more parts
+of the International Standard for Language Independent Arithmetic
+[<a href="#LIA-1">ISO:10967-1</a>, <a href="#LIA-2">ISO:10967-2</a>,
+<a href="#LIA-3">ISO:10967-3</a>].  While we applaud the motivation
+underlying the suggestion, we recommend against such a perspective,
+believing it to be premature and not yet feasible.  </p>
+
+<p>
+Only LIA Part 1 has been formally adopted as an International Standard:
+LIA Part 2 is a Final Draft, while LIA Part 3 is only a Committee Draft.
+Further, LIA Part 1 does not speak to the subject of the present proposal,
+while Parts 2 and 3 restrict themselves to coverage of "elementary"
+numerical functions such as those already part of the C++ standard
+library.  Thus, none of the LIA documents addresses (or even mentions)
+any of the functions comprising the present proposal.  </p>
+
+<p>
+Finally, we note that the C++ standards body has to date not adopted any
+"conformity statement" regarding the LIA "binding standard" to be used
+by a conforming C++ implementation.  In the absence of such guidance,
+it is unclear how to apply to C++ the principles (let alone the details)
+of the LIA documents.  </p>
+
+<p>
+In our view, the present situation is best summarized as constituting
+a lack of prior art:  C++ has not determined how LIA is to apply to
+an implementation and, in any event, none of the functions comprising
+the present proposal are in the scope of the LIA documents as currently
+drafted.  For these reasons, we believe there is today an insufficient
+basis on which to evaluate the present proposal with respect to LIA.  </p>
+
+
+<h2><a name="Text">IV. Proposed Text</a></h2>
+
+<p>
+Note:  the wording presented in these subsections describes the contents
+of the <tt>&lt;cmath&gt;</tt> header.  The changes to describe analogous
+contents in <tt>&lt;math.h&gt;</tt> are straightforward and consist
+primarily of function renaming to avoid overloading.  </p>
+
+<h3>A. To be inserted into Table 80 (Clause 26)</h3>
+
+<center>
+  <table width="75%">
+  <tr>
+    <td>
+      <tt>bessel_I</tt><br>
+      <tt>bessel_J</tt><br>
+      <tt>bessel_K</tt><br>
+      <tt>bessel_j</tt><br>
+      <tt>beta</tt><br>
+      <tt>ei</tt></td>
+
+    <td>
+      <tt>ellint_E</tt><br>
+      <tt>ellint_E2</tt><br>
+      <tt>ellint_F</tt><br>
+      <tt>ellint_K</tt><br>
+      <tt>ellint_P</tt><br>
+      <tt>ellint_P2</tt></td>
+
+    <td>
+      <tt></tt><br>
+      <tt></tt><br>
+      <tt>hermite</tt><br>
+      <tt>hyperg_1F1</tt><br>
+      <tt>hyperg_2F1</tt><br>
+      <tt>laguerre_0</tt></td>
+
+    <td>
+      <tt>laguerre_m</tt><br>
+      <tt>legendre_Pl</tt><br>
+      <tt>legendre_Plm</tt><br>
+      <tt>neumann_N</tt><br>
+      <tt>neumann_n</tt><br>
+      <tt>sph_Y</tt></td>
+
+    <td>
+      <tt></tt><br>
+      <tt>zeta</tt><br>
+      <tt></tt><br>
+      <tt></tt><br>
+      <tt></tt><br>
+      <tt></tt></td>
+  </tr>
+  </table>
+</center>
+
+<h3>B. New section to be added to Clause 26</h3>
+
+<p><b>26.x.1  Synopsis</b>
+<pre>
+  // (26.x.2) cylindrical Bessel functions (of the first kind):
+  double       bessel_J( double l, double x );
+  float        bessel_J( float l, float  x );
+  long double  bessel_J( long double l, long double x );
+
+  // (26.x.3) cylindrical Neumann functions;
+  // cylindrical Bessel functions (of the second kind):
+  double       neumann_N( double l, double x );
+  float        neumann_N( float l, float  x );
+  long double  neumann_N( long double l, long double x );
+
+  // (26.x.4.1) regular modified cylindrical Bessel functions:
+  double       bessel_I( double l, double x );
+  float        bessel_I( float l, float  x );
+  long double  bessel_I( long double l, long double x );
+
+  // (26.x.4.2) irregular modified cylindrical Bessel functions:
+  double       bessel_K( double l, double x );
+  float        bessel_K( float l, float  x );
+  long double  bessel_K( long double l, long double x );
+
+  // (26.x.5) spherical Bessel functions (of the first kind):
+  double       bessel_j( double l, double x );
+  float        bessel_j( float l, float  x );
+  long double  bessel_j( long double l, long double x );
+
+  // (26.x.6) spherical Neumann functions;
+  // spherical Bessel functions (of the second kind):
+  double       neumann_n( double l, double x );
+  float        neumann_n( float l, float  x );
+  long double  neumann_n( long double l, long double x );
+
+  // (26.x.7) Legendre polynomials:
+  double       legendre_Pl( unsigned l, double x )
+  float        legendre_Pl( unsigned l, float x )
+  long double  legendre_Pl( unsigned l, long double x )
+
+  // (26.x.8) associated Legendre functions:
+  double       legendre_Plm( unsigned l, unsigned m, double x )
+  float        legendre_Plm( unsigned l, unsigned m, float x )
+  long double  legendre_Plm( unsigned l, unsigned m, long double x )
+
+  // (26.x.9) spherical harmonics:
+  double       sph_Y( unsigned l, int m, double theta, double phi )
+  float        sph_Y( unsigned l, int m, float theta, float phi )
+  long double  sph_Y( unsigned l, int m, long double theta, long double phi )
+
+  // (26.x.10) Hermite polynomials:
+  double       hermite( unsigned n, double x );
+  float        hermite( unsigned n, float x );
+  long double  hermite( unsigned n, long double x );
+
+  // (26.x.11) Laguerre polynomials:
+  double       laguerre_0(unsigned n, double x);
+  float        laguerre_0(unsigned n, float x);
+  long double  laguerre_0(unsigned n, long double x);
+
+  // (26.x.12) associated Laguerre polynomials:
+  double       laguerre_m(unsigned n, unsigned m, double x);
+  float        laguerre_m(unsigned n, unsigned m, float x);
+  long double  laguerre_m(unsigned n, unsigned m, long double x);
+
+  // (26.x.13) hypergeometric functions:
+  double       hyperg_2F1(double a, double b, double c, double x) ;
+  float        hyperg_2F1(float a, float b, float c, float x) ;
+  long double  hyperg_2F1(long double a, long double b, long double c, long double x) ;
+
+  // (26.x.14) confluent hypergeometric functions:
+  double       hyperg_1F1(double a, double c, double x) ;
+  float        hyperg_1F1(float a, float c, float x) ;
+  long double  hyperg_1F1(long double a, long double c, long double x) ;
+
+  // (26.x.15.1) (incomplete) elliptic integral of the first kind:
+  double       ellint_F( double k, double phi );
+  float        ellint_F( float k, float phi );
+  long double  ellint_F( long double k, long double phi );
+
+  // (26.x.15.2) (complete) elliptic integral of the first kind:
+  double       ellint_K( double k );
+  float        ellint_K( float k );
+  long double  ellint_K( long double k );
+
+  // (26.x.16.1) (incomplete) elliptic integral of the second kind:
+  double       ellint_E( double k, double phi );
+  float        ellint_E( float k, float phi );
+  long double  ellint_E( long double k, long double phi );
+
+  // (26.x.16.2) (complete) elliptic integral of the second kind:
+  double       ellint_E2( double k );
+  float        ellint_E2( float k );
+  long double  ellint_E2( long double k );
+
+  // (26.x.17.1) (incomplete) elliptic integral of the third kind:
+  double       ellint_P( double k, double n, double phi );
+  float        ellint_P( float k, float n, float phi );
+  long double  ellint_P( long double k, long double n, long double phi );
+
+  // (26.x.17.2) (complete) elliptic integral of the third kind:
+  double       ellint_P2( double k, double n, double phi );
+  float        ellint_P2( float k, float n, float phi );
+  long double  ellint_P2( long double k, long double n, long double phi );
+
+  // (26.x.19) beta function:
+  double       beta( double x, double y );
+  float        beta( float x, float y );
+  long double  beta( long double x, long double y );
+
+  // (26.x.20) exponential integral:
+  double       ei( double );
+  float        ei( float );
+  long double  ei( long double );
+
+  // (26.x.22) Riemann zeta function:
+  double       zeta( double );
+  float        zeta( float );
+  long double  zeta( long double );
+</pre>
+
+<p><b>26.x.2
+cylindrical Bessel functions (of the first kind)</b>
+<pre>
+  double       bessel_J( double l, double x );
+  float        bessel_J( float l, float  x );
+  long double  bessel_J( long double l, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the cylindrical Bessel functions of the first
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;9.1.10, <i>etc.</i>]) of their respective arguments <tt>l</tt>
+and <tt>x</tt>.  A domain error occurs if <tt>l</tt> is less than zero.
+A range error (due to underflow) occurs if <tt>x</tt> is too close to
+any of the roots of the <tt>bessel_J</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>bessel_J</tt> functions return <b>J<sub>l</sub>(x)</b> as denoted
+in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.1].  </p>
+
+<p><b>26.x.3
+cylindrical Neumann functions;
+cylindrical Bessel functions (of the second kind)</b>
+<pre>
+  double       neumann_N( double l, double x );
+  float        neumann_N( float l, float  x );
+  long double  neumann_N( long double l, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the cylindrical Neumann functions (as defined
+by [<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;9.1.2,
+<i>etc.</i>]), also known as the cylindrical Bessel functions of the
+second kind, of their respective arguments <tt>l</tt> and <tt>x</tt>.
+A domain error occurs if <tt>x</tt> is less than or equal to zero.
+A range error (due to overflow) occurs (a) if the magnitude of <tt>l</tt>
+is too large, or (b) if <tt>x</tt> is too small.  A range error (due
+to underflow) occurs if <tt>x</tt> is too close to any of the roots of
+the <tt>neumann_N</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>neumann_N</tt> functions return <b>N<sub>l</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.2].  </p>
+
+<p><b>26.x.4.1
+regular modified cylindrical Bessel functions</b>
+<pre>
+  double       bessel_I( double l, double x );
+  float        bessel_I( float l, float  x );
+  long double  bessel_I( long double l, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the regular modified cylindrical Bessel
+functions (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;9.6.3, <i>etc.</i>) of their respective arguments <tt>l</tt> and
+<tt>x</tt>.  A domain error occurs if <tt>l</tt> is not an integer and
+either (a) <tt>l</tt> is less than or equal to zero or (b) <tt>x</tt>
+is less than or equal to zero.  A range error occurs if <tt>x</tt>
+is too large.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>bessell_I</tt> functions return <b>I<sub>l</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.4].  </p>
+
+<p><b>26.x.4.2
+irregular modified cylindrical Bessel functions</b>
+<pre>
+  double       bessel_K( double l, double x );
+  float        bessel_K( float l, float  x );
+  long double  bessel_K( long double l, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the irregular modified cylindrical Bessel
+functions (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;9.6.4, <i>etc.</i>]) of their respective arguments <tt>l</tt>
+and <tt>x</tt>.  A domain error occurs if <tt>l</tt> is not an integer
+and either (a) <tt>l</tt> is less than or equal to zero or (b) <tt>x</tt>
+is less than or equal to zero.  A range error occurs (a) if the magnitude
+of <tt>l</tt> is too large, or (b) if <tt>x</tt> is too small.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>bessell_K</tt> functions return <b>K<sub>l</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.4].  </p>
+
+<p><b>26.x.5
+spherical Bessel functions (of the first kind)</b>
+<pre>
+  double       bessel_j( double l, double x );
+  float        bessel_j( float l, float  x );
+  long double  bessel_j( long double l, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the spherical Bessel functions of the first
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;10.1.1, <i>etc.</i>) of their respective arguments <tt>l</tt>
+and <tt>x</tt>.  A domain error occurs if <tt>l</tt> is less than zero.
+A range error (due to overflow) occurs if <tt>l</tt> equals zero and the
+magnitude of <tt>x</tt> is too small.  A range error (due to underflow)
+occurs if <tt>x</tt> is too close to any of the roots of the
+<tt>bessel_j</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>bessell_j</tt> functions return <b>j<sub>l</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.5].  </p>
+
+<p><b>26.x.6
+spherical Neumann functions;
+spherical Bessel functions (of the second kind)</b>
+<pre>
+  double       neumann_n( double l, double x );
+  float        neumann_n( float l, float  x );
+  long double  neumann_n( long double l, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the spherical Neumann functions (as defined
+by [<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;10.1.1,
+<i>etc.</i>]), also known as the spherical Bessel functions of the second
+kind, of their respective arguments <tt>x</tt>.  A domain error occurs if
+<tt>x</tt> is less than or equal to zero.  A range error (due to overflow)
+occurs (a) if the magnitude of <tt>l</tt> is too large, or (b) if the
+magnitude of <tt>x</tt> is too small.  A range error (due to underflow)
+occurs if <tt>x</tt> is too close to any of the roots of the
+<tt>neumann_n</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>neumann_n</tt> functions return <b>n<sub>l</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.6].  </p>
+
+<p><b>26.x.7
+Legendre polynomials</b>
+<pre>
+  double       legendre_Pl( unsigned l, double x )
+  float        legendre_Pl( unsigned l, float x )
+  long double  legendre_Pl( unsigned l, long double x )
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the Legendre polynomials (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;8.1.1, <i>etc.</i>])
+of their respective arguments <tt>l</tt> and <tt>x</tt>.  A domain
+error occurs if <tt>x</tt> is greater than one.  A range error (due to
+underflow) occurs if <tt>x</tt> is too close to any of the roots of the
+<tt>legendre_Pl</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>legendre_Pl</tt> functions return <b>P<sub>l</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.8].  </p>
+
+<p><b>26.x.8
+associated Legendre functions</b>
+<pre>
+  double       legendre_Plm( unsigned l, unsigned m, double x )
+  float        legendre_Plm( unsigned l, unsigned m, float x )
+  long double  legendre_Plm( unsigned l, unsigned m, long double x )
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the associated Legendre functions (as defined
+by [<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;8.1.1,
+<i>etc.</i>]) of their respective arguments <tt>l</tt>, <tt>m</tt>,
+and <tt>x</tt>.  A domain error occurs (a) if <tt>m</tt> is greater than
+<tt>l</tt>, or (b) if <tt>x</tt> is greater than one.  A range error
+(due to overflow) occurs if <tt>l</tt> is too large.  A range error
+(due to underflow) occurs if <tt>x</tt> is too close to any of the roots
+of the <tt>legendre_Plm</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>legendre_Plm</tt> functions return
+<b>P<sub>l</sub><sup>m</sup>(x)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.9].  </p>
+
+<p><b>26.x.9
+spherical harmonics</b>
+<pre>
+  double       sph_Y( unsigned l, int m, double theta, double phi )
+  float        sph_Y( unsigned l, int m, float theta, float phi )
+  long double  sph_Y( unsigned l, int m, long double theta, long double phi )
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute spherical harmonic functions (as defined by
+[<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;8.1.1 footnote
+2, <i>etc.</i>) of their respective arguments <tt>l</tt>, <tt>m</tt>,
+<tt>theta</tt>, and <tt>phi</tt>.  A domain error occurs if the magnitude
+of <tt>m</tt> is greater than <tt>l</tt>.  A range error (due to overflow)
+occurs if <tt>l</tt> is too large.  A range error (due to underflow)
+occurs if either <tt>theta</tt> or <tt>phi</tt> is too close to any of
+the roots of the <tt>sph_Y</tt> function.  </p> </p>
+
+<p><b>Returns</b>:<br>
+The <tt>sph_Y</tt> functions return
+<b>Y<sub>l</sub><sup>m</sup>(&phi;,&theta;)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.10].  </p>
+
+<p><b>26.x.10
+Hermite polynomials</b>
+<pre>
+  double       hermite( unsigned n, double x );
+  float        hermite( unsigned n, float x );
+  long double  hermite( unsigned n, long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the Hermite polynomials (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;13.6.17 and -.18,
+<i>etc.</i>) of their respective arguments <tt>n</tt> and <tt>x</tt>.
+A range error (due to overflow) occurs if the magnitude of <tt>x</tt> is
+too large.  A range error (due to underflow) occurs if <tt>x</tt> is
+too close to any of the roots of the <tt>hermite</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>hermite</tt> functions return <b>H<sub>n</sub>(x)</b> as denoted
+in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.11].  </p>
+
+<p><b>26.x.11
+Laguerre polynomials</b>
+<pre>
+  double       laguerre_0(unsigned n, double x);
+  float        laguerre_0(unsigned n, float x);
+  long double  laguerre_0(unsigned n, long double x);
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the Laguerre polynomials (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;13.6.9, <i>etc.</i>])
+of their respective arguments <tt>n</tt> and <tt>x</tt>.  A range error
+occurs (due to overflow) if the magnitude of <tt>x</tt> is too large.  A
+range error (due to underflow) occurs if <tt>x</tt> is too close to any
+of the roots of the <tt>laguerre_0</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>laguerre_0</tt> functions return <b>L<sub>n</sub>(x)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.12].  </p>
+
+<p><b>26.x.12
+associated Laguerre polynomials</b>
+<pre>
+  double       laguerre_m(unsigned n, unsigned m, double x);
+  float        laguerre_m(unsigned n, unsigned m, float x);
+  long double  laguerre_m(unsigned n, unsigned m, long double x);
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the associated Laguerre polynomials (as defined
+by [<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;13.6.9,
+<i>etc.</i>]) of their respective arguments <tt>n</tt>, <tt>m</tt>,
+and <tt>x</tt>.  A domain error occurs if <tt>m</tt> is greater than
+<tt>n</tt>.  A range error (due to overflow) occurs if the magnitude
+of <tt>x</tt> is too large.  A range error (due to underflow) occurs
+if <tt>x</tt> is too close to any of the roots of the <tt>laguerre_m</tt>
+function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>laguerre_m</tt> functions return
+<b>L<sub>n</sub><sup>m</sup>(x)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.13].  </p>
+
+<p><b>26.x.13
+hypergeometric functions</b>
+<pre>
+  double       hyperg_2F1(double a, double b, double c, double x) ;
+  float        hyperg_2F1(float a, float b, float c, float x) ;
+  long double  hyperg_2F1(long double a, long double b, long double c, long double x) ;
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the hypergeometric functions (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;15.1.1, <i>etc.</i>])
+of their respective arguments <tt>a</tt>, <tt>b</tt>, <tt>c</tt>, and
+<tt>x</tt>.  A domain error occurs if the magnitude of <tt>x</tt> is
+greater than or equal to one.  A range error (due to overflow) occurs if
+the magnitude of <tt>x</tt> is too close to one at the same time that
+<tt>c-a-b</tt> is an integer.  A range error (due to underflow) occurs
+if <tt>x</tt> is too close to any of the roots of the <tt>hyperg_2F1</tt>
+function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>hyperg_2F1</tt> functions return <b>F(a,b;c;x)</b> as denoted in
+[<a href="#ISO31">ISO:31</a>, Item No. 11-14.14].  </p>
+
+<p><b>26.x.14
+confluent hypergeometric functions</b>
+<pre>
+  double       hyperg_1F1(double a, double c, double x) ;
+  float        hyperg_1F1(float a, float c, float x) ;
+  long double  hyperg_1F1(long double a, long double c, long double x) ;
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the confluent hypergeometric functions (as
+defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;13.1.2,
+<i>etc.</i>]) of their respective arguments <tt>a</tt>, <tt>c</tt>,
+and <tt>x</tt>.  A domain error occurs (a) if <tt>c</tt> is a negative
+integer, or (b) if <tt>c</tt> is zero.  A range error (due to overflow)
+occurs if the magnitude of <tt>x</tt> is too large.  A range error (due
+to underflow) occurs if <tt>x</tt> is too close to any of the roots of
+the <tt>hyperg_1F1</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>hyperg_1F1</tt> functions return <b>F(a;c;x)</b> as denoted in
+[<a href="#ISO31">ISO:31</a>, Item No. 11-14.15].  </p>
+
+<p><b>26.x.15.1
+(incomplete) elliptic integral of the first kind</b>
+<pre>
+  double       ellint_F( double k, double phi );
+  float        ellint_F( float k, float phi );
+  long double  ellint_F( long double k, long double phi );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the incomplete elliptic integral of the first
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;17.2.6, <i>etc.</i>) of their respective arguments <tt>k</tt> and
+<tt>phi</tt>.  A domain error occurs (a) if <tt>k</tt> is less than or
+equal to zero, or (b) if <tt>k</tt> is greater than or equal to one, or
+(c) if <tt>phi</tt> is negative.  A range error occurs if the magnitude
+of <tt>k</tt> is too close to one.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>ellint_F</tt> functions return <b>F(k,&phi;)</b> as denoted in
+[<a href="#ISO31">ISO:31</a>, Item No. 11-14.16].  </p>
+
+<p><b>26.x.15.2
+(complete) elliptic integral of the first kind</b>
+<pre>
+  double       ellint_K( double k );
+  float        ellint_K( float k);
+  long double  ellint_K( long double k);
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the complete elliptic integral of the first
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;17.3.1, <i>etc.</i>]) of their respective arguments <tt>k</tt>.
+A domain error occurs (a) if <tt>k</tt> is less than or equal to zero,
+or (b) if <tt>k</tt> is greater than or equal to one.  A range error
+occurs if the magnitude of <tt>k</tt> is too close to one.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>ellint_K</tt> functions return <b>K(k)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.16].  </p>
+
+<p><b>26.x.16.1
+(incomplete) elliptic integral of the second kind</b>
+<pre>
+  double       ellint_E( double k, double phi );
+  float        ellint_E( float k, float phi );
+  long double  ellint_E( long double k, long double phi );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the incomplete elliptic integral of the second
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;17.2.9, <i>etc.</i>]) of their respective arguments <tt>k</tt>
+and <tt>phi</tt>.  A domain error occurs (a) if <tt>k</tt> is less than
+or equal to zero, or (b) if <tt>k</tt> is greater than or equal to one,
+or (c) if <tt>phi</tt> is negative.  A range error occurs if the magnitude
+of <tt>k</tt> is too close to one.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>ellint_E</tt> functions return <b>E(k,&phi;)</b> as denoted in
+[<a href="#ISO31">ISO:31</a>, Item No. 11-14.17].  </p>
+
+<p><b>26.x.16.2
+(complete) elliptic integral of the second kind</b>
+<pre>
+  double       ellint_E2( double k );
+  float        ellint_E2( float k );
+  long double  ellint_E2( long double k );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the complete elliptic integral of the second
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;17.2.9, <i>etc.</i>) of their respective arguments <tt>k</tt>
+and <tt>phi</tt>.  A domain error occurs (a) if <tt>k</tt> is less than
+or equal to zero, or (b) if <tt>k</tt> is greater than or equal to one.
+A range error occurs if the magnitude of <tt>k</tt> is too close to one.
+</p>
+
+<p><b>Returns</b>:<br>
+The <tt>ellint_E2</tt> functions return <b>E(k)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.17].  </p>
+
+<p><b>26.x.17.1
+(incomplete) elliptic integral of the third kind</b>
+<pre>
+  double       ellint_P( double k, double n, double phi );
+  float        ellint_P( float k, float n, float phi );
+  long double  ellint_P( long double k, long double n, long double phi );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the incomplete elliptic integral of the third
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;17.7.1, <i>etc.</i>) of their respective arguments <tt>k</tt>,
+<tt>n</tt>, and <tt>phi</tt>.  A domain error occurs (a) if <tt>k</tt>
+is less than or equal to zero, or (b) if <tt>k</tt> is greater than or
+equal to one, or (c) if <tt>phi</tt> is negative.  A range error occurs
+if the magnitude of <tt>k</tt> is too close to one.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>ellint_P</tt> functions return <b>&Pi;(k,n,&phi;)</b> as denoted
+in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.18].  </p>
+
+<p><b>26.x.17.2
+(complete) elliptic integral of the third kind</b>
+<pre>
+  double       ellint_P2( double k, double n );
+  float        ellint_P2( float k, float n );
+  long double  ellint_P2( long double k, long double n );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the complete elliptic integral of the third
+kind (as defined by [<a href="Handbook">Abramowitz &amp; Stegun</a>,
+&sect;17.7.2, <i>etc.</i>) of their respective arguments <tt>k</tt>,
+<tt>n</tt>, and <tt>phi</tt>.  A domain error occurs (a) if <tt>k</tt>
+is less than or equal to zero, or (b) if <tt>k</tt> is greater than
+or equal to one.  A range error occurs if the magnitude of <tt>k</tt>
+is too close to one.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>ellint_P2</tt> functions return <b>&Pi;(k,n,&pi;/2)</b> as
+denoted in [<a href="#ISO31">ISO:31</a>, Item No. 11-14.18].  </p>
+
+<p><b>26.x.19
+beta function</b>
+<pre>
+  double       beta( double x, double y );
+  float        beta( float x, float y );
+  long double  beta( long double x, long double y );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the beta function (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;6.2 and &sect;6.1])
+of their respective arguments <tt>x</tt> and <tt>y</tt>.  A domain error
+occurs (a) if either <tt>x</tt> or <tt>y</tt> is a negative integer,
+or (b) if either <tt>x</tt> or <tt>y</tt> is zero.  A range error
+occurs if the magnitude of <tt>x</tt> or the magnitude of <tt>y</tt>
+is too large or too small.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>beta</tt> functions return <b>&Beta;(x,y)</b> as denoted in
+[<a href="#ISO31">ISO:31</a>, Item No. 11-14.20].  </p>
+
+<p><b>26.x.20
+exponential integral</b>
+<pre>
+  double       ei( double x );
+  float        ei( float x );
+  long double  ei( long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the exponential integral (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;5.1.1, <i>etc.</i>])
+of their respective arguments <tt>x</tt>.  A domain error occurs
+if <tt>x</tt> is less than or equal to zero.  A range error (due to
+overflow) occurs (a) if <tt>x</tt> is to small, or (b) if <tt>x</tt> x
+is too large.  A range error (due to underflow) occurs if <tt>x</tt> is
+too close to the single root of the <tt>ei</tt> function.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>ei</tt> functions return <b>Ei(x)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.21].  </p>
+
+<p><b>26.x.22
+Riemann zeta function</b>
+<pre>
+  double       zeta( double x );
+  float        zeta( float x );
+  long double  zeta( long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the Riemann zeta function (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;23.2.1, <i>etc.</i>])
+of their respective arguments <tt>x</tt>.  A range error (due to overflow)
+occurs if <tt>x</tt> is too close to one.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>zeta</tt> functions return <b>&zeta;(x)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.23].  </p>
+
+<h2><a name="Overlap">V. Relationship to Earlier Proposal</a></h2>
+
+<p>
+We noted in <a href="#Impact">section II</a> that there is a small
+potential overlap between this proposal (which is based on [<a
+href="#ISO31">ISO:31</a>]) and an earlier proposal (which is based on
+[<a href="#C99">C99</a>]).  However, no competition is intended between
+the two proposals.  Indeed, we have coordinated efforts to ensure that
+no incompatibilities result.  </p>
+
+<p>
+In particular, this section describes three functions (<code>erf</code>,
+<code>erfc</code>, and <code>tgamma</code>) originating in the C99
+library and previously proposed for C++ standardization as part of
+[<a href="#C99LibAdd">Plauger</a>].  They are mentioned in the present
+proposal for two reasons, however:  (1) these functions are traditionally
+characterized as mathematical special functions, and (2) they form part of
+[<a href="#ISO31">ISO:31</a>], on which our proposal is based.  </p>
+
+<p>
+We emphasize that these functions are here described solely in the
+interest of completeness so that the full spectrum of envisioned
+mathematical special functions may be viewed together.  For purposes
+of the C++ standardization effort, these functions should be considered
+part of the [<a href="#C99LibAdd">Plauger</a>] proposal.  The language
+in the remainder of this section should therefore be considered solely
+for informative purposes.  </p>
+
+
+<h3>To be inserted into Table 80 (Clause 26)</h3>
+<center>
+  <table width="75%">
+  <tr>
+    <td>
+      <tt>erf</tt><br>
+      <tt>erfc</tt><br>
+      <tt>tgamma</tt><br>
+    </td>
+  </tr>
+  </table>
+</center>
+
+<p><b>26.x.1  Synopsis</b>
+
+<pre>
+  // (26.x.18) gamma function:
+  double       tgamma( double );
+  float        tgamma( float );
+  long double  tgamma( long double );
+
+  // (26.x.21.1) error function:
+  double       erf( double );
+  float        erf( float );
+  long double  erf( long double );
+
+  // (26.x.21.2) complementary error function:
+  double       erfc( double );
+  float        erfc( float );
+  long double  erfc( long double );
+</pre>
+
+<p><b>26.x.18
+gamma function</b>
+<pre>
+  double       tgamma( double x );
+  float        tgamma( float x );
+  long double  tgamma( long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the gamma function (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;6.1.1, <i>etc.</i>])
+of their respective arguments <tt>x</tt>.  A domain error occurs (a)
+if <tt>x</tt> is a negative integer, or (b) if <tt>x</tt> is zero.
+A range error occurs if the magnitude of <tt>x</tt> is too large or
+too small.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>tgamma</tt> functions return <b>&Gamma;(x)</b> as denoted in
+[<a href="#ISO31">ISO:31</a>, Item No. 11-14.19].  </p>
+
+<p><b>Note</b>:<br>
+This family of overloaded functions corresponds to the functions specified
+in [<a href="#C99">C99</a>, &sect;7.12.8.4].  </p>
+
+<p><b>26.x.21.1
+error function</b>
+<pre>
+  double       erf( double x );
+  float        erf( float x );
+  long double  erf( long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the error function (as defined by [<a
+href="Handbook">Abramowitz &amp; Stegun</a>, &sect;7.1.1, <i>etc.</i>])
+of their respective arguments <tt>x</tt>.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>erf</tt> functions return <b>erf(x)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.22].  </p>
+
+<p><b>Note</b>:<br>
+This family of overloaded functions corresponds to the functions specified
+in [<a href="#C99">C99</a>, &sect;7.12.8.1].  </p>
+
+<p><b>26.x.21.2
+complementary error function</b>
+<pre>
+  double       erfc( double x );
+  float        erfc( float x );
+  long double  erfc( long double x );
+</pre>
+
+<p><b>Effects</b>:<br>
+These functions compute the complementary error function (as defined
+by [<a href="Handbook">Abramowitz &amp; Stegun</a>, &sect;7.1.2,
+<i>etc.</i>]) of their respective arguments <tt>x</tt>.  </p>
+
+<p><b>Returns</b>:<br>
+The <tt>erf</tt> functions return <b>erfc(x)</b> as denoted in [<a
+href="#ISO31">ISO:31</a>, Item No. 11-14.22].  </p>
+
+<p><b>Note</b>:<br>
+This family of overloaded functions corresponds to the functions specified
+in [<a href="#C99">C99</a>, &sect;7.12.8.2].  </p>
+
+
+<h2><a name="Ack">VI. Acknowledgements</a></h2>
+
+<p>
+It is a pleasure to acknowledge the significant contributions provided
+by a number of colleagues at Fermilab:  James Amundson, Mark Fischler,
+Jeffrey Kallenbach, Leo Michelotti, and Marc Paterno.  Their active
+participation has materially improved this proposal, and their inspiration
+and support are deeply appreciated.  </p>
+
+<p>
+We extend special thanks to our Fermilab colleague John Marraffino for
+his extensive involvement with all aspects of this proposal's development.
+</p>
+
+<p>
+We have also received valuable input and feedback from Matt Austern, Beman
+Dawes, Gabriel Dos Reis, and Fred J. Tydeman.  We are grateful to them
+and to our outside reviewers for their careful consideration of earlier
+drafts of this document:  Their thoughtful comments and suggestions
+inspired several refinements and enhancements to this proposal.  </p>
+
+<p>
+Finally, we appreciate the support of the Fermi National Accelerator
+Laboratory's Computing Division, sponsors of our participation in the C++
+standards effort.  Thank you, one and all.  </p>
+
+<h2><a name="Ref">VII. References</a></h2>
+
+<dl>
+
+  <dt><a name="Handbook">[Abramowitz &amp; Stegun]</a>
+  <dd>
+    Abramowitz, Milton, and Irene A. Stegun (eds.):
+    <i>Handbook of Mathematical Functions
+       with Formulas, Graphs and Mathematical Tables</i>,
+    volume 55 of National Bureau of Standards Applied Mathematics Series.
+    U. S. Government Printing Office, Washington, DC: 1964.
+    Reprinted with corrections, Dover Publications: 1972.
+    <a href="http://members.fortunecity.com/aands">
+      http://members.fortunecity.com/aands</a>.
+  </dd>
+
+  <dt><a name="Extensions">[Austern]</a>
+  <dd>
+    Austern, Matt:
+    <i>Notes on Standard Library Extensions</i>.
+    WG21/N1314 (same as J16/01-0028): 17 May 2001.
+  </dd>
+
+  <dt><a name="LibTR">[Dawes]</a>
+  <dd>
+    Dawes, Beman:
+    <i>Library Technical Report Proposals and Issues List (Revision 4)</i>.
+    WG21/N1397 (same as J16/02-0055): 2002.
+  </dd>
+
+  <dt><a name="GNUC">[GNU C]</a>
+  <dd>
+    GNU C Library Steering Committee
+    <i>The GNU C Library</i>.
+    <a href="http://www.gnu.org/manual/glibc-2.0.6/html_node/libc_toc.html">
+      http://www.gnu.org/manual/glibc-2.0.6/html_node/libc_toc.html</a>.
+  </dd>
+
+  <dt><a name="GSL">[GSL]</a>
+  <dd>
+    Galassi, Mark, <i>et al.</i>:
+    <i>The GNU Scientific Library</i>.
+    2002.
+    <a href="http://www.gnu.org/software/gsl/gsl.html">
+      http://www.gnu.org/software/gsl/gsl.html</a>.
+  </dd>
+
+  <dt><a name="IMSL">[IMSL]</a>
+  <dd>
+    Visual Numerics, Inc.:
+    <i>IMSL C Numerical Library Version 5.0</i>.
+    Unpublished.
+    <a href="http://www.vni.com/products/imsl/docs/cmath.pdf">
+      http://www.vni.com/products/imsl/docs/cmath.pdf</a>.
+  </dd>
+
+  <dt><a name="ISO31">[ISO:31]</a>
+  <dd>
+    International Standards Organization:
+    <i>Quantities and units, Third edition</i>.
+    International Standard ISO 31-11:1992.
+    ISBN 92-67-10185-4.
+  </dd>
+
+  <dt><a name="C99">[ISO:9899]</a>
+  <dd>
+    International Standards Organization:
+    <i>Programming Languages -- C, Second edition</i>.
+    International Standard ISO/IEC 9899:1999.
+  </dd>
+
+  <dt><a name="LIA-1">[ISO:10967-1]</a>
+  <dd>
+    International Standards Organization:
+    <i>Information technology -- Language independent arithmetic --
+    Part 1:  Integer and floating point arithmetic</i>.
+    International Standard ISO/IEC 10967-1:1994.
+  </dd>
+
+  <dt><a name="LIA-2">[ISO:10967-2]</a>
+  <dd>
+    International Standards Organization:
+    <i>Information technology -- Language independent arithmetic --
+    Part 2:  Elementary numerical functions</i>.
+    Draft International Standard ISO/IEC FDIS 10967-2:2000.
+  </dd>
+
+  <dt><a name="LIA-3">[ISO:10967-3]</a>
+  <dd>
+    International Standards Organization:
+    <i>Information technology -- Language independent arithmetic --
+    Part 3:  Complex integer and floating point arithmetic
+    and complex elementary numerical functions</i>.
+    Draft International Standard ISO/IEC CD 10967-3.1:2002.
+  </dd>
+
+  <dt><a name="C++98">[ISO:14882]</a>
+  <dd>
+    International Standards Organization:
+    <i>Programming Languages -- C++</i>.
+    International Standard ISO/IEC 14882:1998.
+  </dd>
+
+  <dt><a name="TR">[Josuttis]</a>
+  <dd>
+    Josuttis, Nicolai:
+    <i>A New Work Item Proposal: Technical Report for Library Issues</i>.
+    WG21/N1283 (same as J16/00-0060): 26 October 2000.
+  </dd>
+
+  <dt><a name="NAG">[NAG]</a>
+  <dd>
+    The Numerical Algorithms Group:
+    <i>The NAG C Library Manual, Mark 7</i>.
+    The Numerical Algorithms Group, Ltd., Oxford, UK: 2002.
+    <a href="http://www.nag.com/numeric/CL/manual/html/CLlibrarymanual.asp">
+      http://www.nag.com/numeric/CL/manual/html/CLlibrarymanual.asp</a>.
+  </dd>
+
+  <dt><a name="C99LibAdd">[Plauger]</a>
+  <dd>
+    Plauger, P. J.:
+    <i>Proposed C99 Library Additions to C++ (Revised)</i>.
+    WG21/N1372 (same as J16/02-0030): 2002.
+    <a href="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1372.txt">
+      http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1372.txt</a>.
+  </dd>
+
+  <dt><a name="SGI">[SGI]</a>
+  <dd>
+    Silicon Graphics, Inc.:
+    <i>Introduction to mathematical library functions</i>.
+    2002.
+    <a href="http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi?coll=0650&amp;db=man&amp;fname=/usr/share/catman/p_man/cat3/standard/math.z&amp;srch=math">
+      http://techpubs.sgi.com/library/tpl/cgi-bin/getdoc.cgi?coll=0650&amp;db=man&amp;fname=/usr/share/catman/p_man/cat3/standard/math.z&amp;srch=math</a>.
+  </dd>
+
+  <dt><a name="SLATEC">[SLATEC]</a>
+  <dd>
+    Fong, Kirby W., <i>et al.</i>:
+    <i>Guide to the SLATEC Common Mathematical Library</i>.
+    July 1993.
+    <a href="http://www.netlib.org/slatec/guide">
+      http://www.netlib.org/slatec/guide</a>.
+  </dd>
+
+</dl>
+
+<!--
+<h2><a name="Rev">VIII. Revision History</a></h2>
+
+<dl>
+  <dt>November 8, 2002</dt>
+      <dd>&bull;&nbsp;
+	First draft released for local review</dd>
+
+  <dt>November 10, 2002</dt>
+      <dd>&bull;&nbsp;
+	Added subsection III D <b>Exceptions or Error Codes?</b></dd>
+      <dd>&bull;&nbsp;
+	Added section VII [now VIII--see below]
+	<b>Revision History</b></dd>
+      <dd>&bull;&nbsp;
+	Added <b>Returns</b> clauses throughout subsection IV C
+	[now IV B--see below]</dd>
+      <dd>&bull;&nbsp;
+	Deleted empty Hankel function subsubsections of IV C
+	[now IV B--see below] and resequenced accordingly</dd>
+      <dd>&bull;&nbsp;
+	Revised wording, corrected typos, <i>etc.</i></dd>
+
+  <dt>November 11, 2002</dt>
+      <dd>&bull;&nbsp;
+	Added subsection III E
+	<b>Traditional or Extended Error Codes?</b></dd>
+      <dd>&bull;&nbsp;
+	Added subsection III F
+	<b>Traditional or Descriptive Function Names?</b></dd>
+      <dd>&bull;&nbsp;
+	Deleted empty subsection IV A
+	<b>Requirements</b> and resequenced accordingly</dd>
+      <dd>&bull;&nbsp;
+	Added URI to section VI [now VII--see below]
+	<b>References</b> for WG21/N1372</dd>
+      <dd>&bull;&nbsp;
+	Added SGI and GNU C libraries discussion and references</dd>
+      <dd>&bull;&nbsp;
+	Made several minor editorial and typographic changes</dd>
+
+  <dt>November 13, 2002</dt>
+      <dd>&bull;&nbsp;
+	Added SLATEC discussion and reference</dd>
+      <dd>&bull;&nbsp;
+	Edited references' consistency and formatting</dd>
+      <dd>&bull;&nbsp;
+	Made several minor editorial clarifications and corrections</dd>
+
+  <dt>November 25, 2002</dt>
+      <dd>&bull;&nbsp;
+	Made a few small editorial revisions
+	to wording and font selection</dd>
+      <dd>&bull;&nbsp;
+	Released draft for preliminary outside review</dd>
+
+  <dt>November 26, 2002</dt>
+      <dd>&bull;&nbsp;
+	Removed inadvertant italics in references to ISO:31</dd>
+
+  <dt>December 2, 2002</dt>
+      <dd>&bull;&nbsp;
+	Reformatted document header</dd>
+      <dd>&bull;&nbsp;
+	Qualified:  ... <b>Mathematical</b> <i>Special Functions</i> ...</dd>
+      <dd>&bull;&nbsp;
+	Validated as HTML 4.0 Transitional</dd>
+
+  <dt>December 4, 2002</dt>
+      <dd>&bull;&nbsp;
+	Added closing comment to section I</dd>
+      <dd>&bull;&nbsp;
+	Improved discussion in subsection III C</dd>
+      <dd>&bull;&nbsp;
+	Added Josuttis citation and reference</dd>
+
+  <dt>December 13, 2002</dt>
+      <dd>&bull;&nbsp;
+	Added to subsection III F
+	a rationale for exploiting case-sensitivity in name choices</dd>
+      <dd>&bull;&nbsp;
+	Improved appearance throughout</dd>
+      <dd>&bull;&nbsp;
+	Validated as HTML 4.01 Transitional</dd>
+      <dd>&bull;&nbsp;
+	Released draft for additional outside review</dd>
+      <dd>&bull;&nbsp;
+	Fixed typo in 26.x.13</dd>
+
+  <dt>December 18, 2002</dt>
+      <dd>&bull;&nbsp;
+	Added subsection III G
+	<b>Real- or Complex-valued Domains and Results?</b></dd>
+      <dd>&bull;&nbsp;
+	Added subsection III H
+	<b>Which Conventions?</b></dd>
+      <dd>&bull;&nbsp;
+	Added to section V [now VI--see below]
+	thanks to outside reviewers and to FNAL/CD management</dd>
+      <dd>&bull;&nbsp;
+	Added new section V
+	<b>Relationship to Earlier Proposal</b>
+	and resequenced accordingly</dd>
+      <dd>&bull;&nbsp;
+	Reworded last paragraph of section II
+	to refer to new section V</dd>
+
+  <dt>January 3, 2003</dt>
+      <dd>&bull;&nbsp;
+	Very slightly reworded parts of section V</dd>
+      <dd>&bull;&nbsp;
+	Corrected <b>Contents</b> to reflect sections' true order</dd>
+      <dd>&bull;&nbsp;
+	Improved CSS</dd>
+      <dd>&bull;&nbsp;
+	Uploaded for public access</dd>
+
+  <dt>February 3, 2003</dt>
+      <dd>&bull;&nbsp;
+	Corrected reference in Effects clause of 26.x.19 (beta
+	function)</dd>
+      <dd>&bull;&nbsp;
+	Added assigned Committee document number</dd>
+
+  <dt>February 18, 2003</dt>
+      <dd>&bull;&nbsp;
+	Incorporated reference to C99 &sect;7.12.1 into subsection
+	III E <b>Traditional or Extended Error Codes?</b></dd>
+      <dd>&bull;&nbsp;
+	Updated domain and range errors for conformance
+	with C99 &sect;7.12.1</dd>
+      <dd>&bull;&nbsp;
+	Attributed range errors to overflow or to underflow</dd>
+      <dd>&bull;&nbsp;
+	Rephrased "may occur" as "occurs" to remove ambiguity</dd>
+
+  <dt>February 21, 2003</dt>
+      <dd>&bull;&nbsp;
+	Added subsection III I
+	<b>Relationship to LIA?</b></dd>
+      <dd>&bull;&nbsp;
+	Added LIA citations and references</dd>
+      <dd>&bull;&nbsp;
+	Reworded and added to section VI</dd>
+      <dd>&bull;&nbsp;
+	Commented out all traces of section VIII
+	<b>Revision History</b></dd>
+      <dd>&bull;&nbsp;
+	Removed DRAFT status residue</dd>
+
+  <dt>February 24, 2003</dt>
+      <dd>&bull;&nbsp;
+	Alphabetized references</dd>
+
+</dl>
+-->
+
+<hr>
+
+</body>
+</html>

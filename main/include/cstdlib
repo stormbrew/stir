@@ -1,0 +1,11 @@
+#ifndef _SSTL_CSTDLIB_
+# define _SSTL_CSTDLIB_
+
+namespace std
+{
+	extern "C"
+	{
+# include <stdlib.h>
+	}
+}
+#endif

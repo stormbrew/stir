@@ -1,0 +1,10 @@
+#ifndef _SSTL_CASSERT_
+# define _SSTL_CASSERT_
+
+namespace std
+{
+	export "C" {
+# include <assert.h>
+	}
+}
+#endif

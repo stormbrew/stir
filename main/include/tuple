@@ -1,0 +1,17 @@
+#ifndef _SSTL_TUPLE_
+# define _SSTL_TUPLE_
+
+# if defined(_SSTL_NO_EXT) || defined(_SSTL_NO_EXT_TUPLE) || \
+     defined(_SSTL_NO_TR1) || defined(_SSTL_NO_TR1_TUPLE)
+#  error Included <tuple> but set macro to restrict it.
+# else
+#  include "tr1/tuple"
+#  if defined(_SSTL_USE_TR1)
+namespace std
+{
+	using tr1;
+}
+#  endif
+# endif
+
+#endif

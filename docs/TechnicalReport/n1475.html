@@ -1,0 +1,910 @@
+<html>
+
+<head>
+<meta http-equiv="Content-Language" content="en-us">
+<meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+<meta name="GENERATOR" content="Microsoft FrontPage 5.0">
+<meta name="ProgId" content="FrontPage.Editor.Document">
+<title>Library TR Proposals and Issues List</title>
+</head>
+
+<body bgcolor="#FFFFFF" text="#000000">
+
+<p>Doc. no.&nbsp;&nbsp; J16/03-0058=WG21/N1475<br>
+Date:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 25 April 2003<br>
+Project:&nbsp;&nbsp;&nbsp;&nbsp; Programming Language C++<br>
+Reply to:&nbsp;&nbsp; Beman Dawes &lt;<a href="mailto:bdawes@acm.org">bdawes@acm.org</a>&gt;</p>
+
+<h1>Library Technical Report Proposals and Issues List (Revision 6)</h1>
+
+<p><a href="#1">1. C99 Library Additions to C++</a><br>
+<a href="#2">2. Type Traits</a><br>
+<a href="#3">3. Regular Expressions</a><br>
+<a href="#4">4. General Purpose Smart Pointers</a><br>
+<a href="#5">5. Random Numbers</a><br>
+<a href="#6">6. Rational Numbers</a><br>
+<a href="#7">7. Threads</a><br>
+<a href="#8">8. Hash tables</a><br>
+<a href="#9">9. Iterator adaptors</a><br>
+<a href="#10">10. Operators header</a><br>
+<a href="#11">11. Function object wrappers for deferred calls or callbacks</a><br>
+<a href="#12">12. Enhanced Binder</a><br>
+<a href="#13">13. Tokenizer</a><br>
+<a href="#14">14. Tuples</a><br>
+<a href="#15">15. Add file I/O functions taking filename arguments as 
+std::strings</a><br>
+<a href="#16">16. Date Time</a><br>
+<a href="#17">17. Mathematical Special Functions</a><br>
+<a href="#18">18. Enhanced Member Pointer Adaptor</a><br>
+<a href="#19">19. Reference Wrapper</a><br>
+<a href="#21">20. Uniform method for computing function object return types</a><br>
+<a href="#21">21. Fixed Size Array Wrapper</a><br>
+<a href="#22">22. New Iterator Requirements</a></p>
+
+<h2>Introduction</h2>
+
+<p>The Library Technical Report (TR) Proposals and Issues List serves as memory 
+of actions past and actions needed.&nbsp; It is modeled on the highly successful 
+Library and Core issues lists.</p>
+
+<p>The Library Working Group (LWG) is responsible for evaluating most proposals. 
+Proposals identified by the LWG or Evolution Working Group (EWG) chairs as 
+raising language related issues will be evaluated first by the EWG.&nbsp; Working 
+group schedules will be set so that LWG members can participate in EWG 
+discussions of these proposals.</p>
+
+<h2>Entries contain references </h2>
+
+<p>TR Proposals and Issues List entries often contain references to detailed proposals rather than 
+the proposals themselves. Detailed proposals are usually lengthy.&nbsp; They may 
+contain actual library specifications, plus introductions, rationale, history, 
+acknowledgments, reference implementations, example programs, tutorials, and 
+more.</p>
+
+<p>Early in the lifetime of a proposal, it is acceptable that references may be 
+to world-wide web pages under control of the submitter rather than the LWG.&nbsp; 
+As a proposal progresses, it will take the form of a regular numbered committee 
+document.</p>
+
+<h2>Standardese</h2>
+
+<p>Final acceptance of a proposal requires specific TR
+wording in full standardese.</p>
+
+<p>Library developers would be discouraged from submitting proposals if the initial
+proposal had to be written in standardese, since the submitter would not yet know&nbsp;if
+the proposal stood even a chance of acceptance.&nbsp; To avoid this problem, the LWG does
+not require preliminary proposals be written in standardese.&nbsp; Actual acceptance, however,
+always requires full TR wording in standardese. </p>
+
+<h2><a name="Status"><b>Proposal Status</b></a></h2>
+
+<p><b><a name="New">New</a></b> - The proposal or issue has not yet been reviewed by the LWG. The
+proposal should not be construed as the view of LWG.</p>
+
+<p><a name="Open"><b>Open</b></a> - The LWG has discussed the proposal but is not yet
+ready to move the proposal forward. There are several possible reasons for open status:
+for example, the LWG may wish to study the proposal further, is awaiting additional
+material from the submitter, has requested modifications to the proposal, or is awaiting
+final TR wording.&nbsp; Italicized notes by the list maintainer serve to remind the LWG of
+the details of the current status.&nbsp;</p>
+
+<p><b><a name="Dup">Dup</a></b> - The LWG has reached consensus that the proposal is a
+duplicate of another proposal, and will not be further dealt with. A <b>Rationale</b>
+identifies the duplicated proposal number.</p>
+
+<p><b><a name="Hold">Hold</a></b> - Work on a formal proposal is not underway at 
+this time. The LGW will devote no more time to the proposal until the proposal 
+is re-opened.</p>
+
+<p><a name="Rejected"><b>Rejected</b></a> - The LWG has reached consensus that the
+proposal should not be accepted for the TR. A <b>Rationale</b> discusses the LWG's
+reasoning.</p>
+
+<p><a name="Review"><b>Review</b></a> - Exact wording for the TR is now available for
+review.</p>
+
+<p><a name="Ready"><b>Ready</b></a> - The LWG has reached consensus that the proposal is
+ready to forward to the full committee for inclusion in the TR.</p>
+
+<p><b>T<a name="TR">R</a></b> - The full committee has accepted the proposal for inclusion
+in the Library Technical Report.</p>
+
+<h2>Type</h2>
+
+<p><b><a name="Pure">Pure</a></b> - The proposal is not expected to break source or binary
+compatibility for existing uses or implementations of the standard library.</p>
+
+<p><b><a name="Impure">Impure</a></b> - The proposal is expected to break source or binary
+compatibility for existing uses or implementations of the standard library.</p>
+
+<p>If there is some doubt, a proposal should be classified as impure.</p>
+
+<h2>Requires</h2>
+
+<p><b><a name="Std">Std</a> C++</b> - Both the interface and a reasonable implementation
+require only standard C++ as defined in ISO/IEC 14882:1998.</p>
+
+<p><b><a name="Extension">Extension</a></b> - Either the interface or reasonable
+implementations require a core language change or extension.</p>
+
+<p><b><a name="Compiler">Compiler</a></b> - The interface is standard C++, but no
+reasonable implementation is possible without compiler support. For example, a function
+template which determines if a structure is a POD requires compiler support but not a core
+language change.</p>
+
+<p><a name="Native"><b>Native</b></a> - The interface is standard C++, but implementations
+will normally use platform dependent native libraries. Thus such a proposal may not be
+implementable on all hosted C++ platforms.</p>
+
+<h2>Existing-practice</h2>
+
+<p>For proposals representing substantial existing practice, list suppliers (in
+abbreviated form). For widely available extensions like hash tables, specify
+&quot;Many&quot;.</p>
+
+<p><b>None</b> - Indicates there is no widely available existing practice.</p>
+
+<h2>Implementation</h2>
+
+<p><b><a name="Yes">Yes</a></b> - There is a working reference implementation available. <i>[What
+does &quot;available&quot; mean?&nbsp; Does it include &quot;available for a million
+dollar fee&quot;, &quot;if you sign an obnoxious NDA&quot;, or &quot;if you aren't a
+competitor&quot;? I'd say &quot;no&quot; to all of those.&nbsp; On the other hand, I
+certainly would expect the reference implementation to be copyrighted and not necessarily
+freely available for all uses.&nbsp; Perhaps &quot;available for inspection by LWG
+members?&quot;]</i></p>
+
+<p><b><a name="No">No</a></b> - Doesn't meet the above criteria.</p>
+
+<h2>Reference</h2>
+
+<p>One or more references to the documentation and reference implementation, preferable in
+the form of URLs.&nbsp; URLs should be spelled out in full so that they are readable on
+printed copies of this Proposals List.</p>
+
+<h2>Formal Proposal</h2>
+
+<p>One or more references to the actual numbered committee document which 
+contains the formal proposal in full standardese, preferable in
+the form of URLs.&nbsp; URLs should be spelled out in full so that they are readable on
+printed copies of this Proposals List.</p>
+
+<p>Left blank if a formal proposal has not yet been received.</p>
+
+<p>Most formal proposals go through several revisions.&nbsp; The document number 
+for each revision should be listed, with the most recent first.</p>
+
+<hr>
+
+<h2>Proposals and Issues</h2>
+
+<hr>
+
+<h3><a name="1">1</a>. C99 Library Additions to C++</h3>
+
+<p><b>Section:</b> 18.7&nbsp; <b>Status:</b> <a href="#Open">Open</a>&nbsp; <b>Submitter:</b> 
+P.J. Plauger&nbsp; <b>Date:</b> 3 Feb 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Many&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference: </b>
+<a href="http://www.dinkumware.com/refxc.html">www.dinkumware.com/refxc.html</a>, 
+ISO/IEC 9899:1999 Programming Language C<br>
+<b>Formal Proposal: </b>Revised:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1372.txt">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1372.txt</a>,<br>
+Original:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1354.txt">
+std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1354.txt</a>, </p>
+
+<p>The revised C standard ISO 9899:1999 (a.k.a. C99) makes extensive additions 
+to the Standard C library. The most obvious ones live in six new headers, but 
+the 18 existing headers (15 from C89 and 3 from Amendment 1) also have a host of 
+additions.
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1354.txt">Document 
+02-0012/N1354</a> summarizes what has been added since the C++ 
+Standard froze (ISO 14882:1998), along with some suggestions for appropriate C++ 
+machinery to accompany the new stuff. For a more complete description, see the 
+Dinkum C99 Library Reference at <a href="http://www.dinkumware.com/refxc.html">
+www.dinkumware.com/refxc.html</a>, which closely reflects the material 
+summarized in the proposal. Note that Dinkumware has been shipping a combined 
+C99/C++ library for the past year, so all of the proposed C++ additions have 
+been implemented.</p>
+
+<p>The proposal falls into the <i>Standards Coordination</i> and <i>Infrastructure</i>
+categories identified in 01-0028/N1314 as targets for the TR.</p>
+
+<p><i>[Redmond:&nbsp; After an initial  Boost proposal query covering a 
+portion of the C99 additions, PJP said that he wished to make a comprehensive 
+proposal based on his experience implementing the C99 additions for Dinkumware.]</i></p>
+
+<p><i>[Pre-Curaçao: PJP submitted his comprehensive 
+proposal, and Dawes withdrew the Boost proposal.]</i></p>
+
+<p><i>[Curaçao: The EWG and LWG jointly discussed 
+the proposal. The decision was to proceed on separate but parallel LWG and EWG 
+tracks, and thus request that PJP break the document into separate Library TR 
+C99 and Evolution C99 proposals.</i></p>
+<p><i>The TR proposal should cover components which 
+can be implemented today using only standard C++, without any compiler support 
+or language extensions. Although the LWG will look at each component in detail, 
+there is general support for adding C99 library additions to the TR. While it 
+may be a bit premature to supply standardese for the entire proposal, it might 
+be useful to begin work, such as deciding which portions can be specified by 
+reference to C99, and which will require full standardese.</i></p>
+<p><i>The Evolution proposal should cover 
+components which require compiler or language support (such as long long), and 
+need not contain more detail than the current document; the need is for a 
+checklist with recommendations rather than a detailed proposal. </i></p>
+<p><i>Although those present indicated much 
+interest in the library additions described, there was concern about how some 
+(particularly math functions) would work within the spirit of C++.&nbsp; PJP will be 
+asked to present a technical session in Santa Cruz to increase the committee's 
+knowledge of C99 compatibility issues in general, but with primary focus on math 
+related headers.]</i></p>
+
+<p><i>[pre-Santa Cruz: Per the request of the EWG and LWG, the proposal was 
+revised and included in the post-Curaçao mailing.]</i></p>
+
+<p><i>[Santa Cruz: The key aspects of the revised proposal were presented at an 
+evening technical session. PJP and Matt Austern will work toward a formal 
+proposal for the Oxford meeting.]</i></p>
+
+<hr>
+
+<h3><a name="2">2</a>. Type Traits</h3>
+
+<p><b>Section:</b> 18&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b>
+John Maddock&nbsp; <b>Date:</b> 4 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Compiler">Compiler</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b>
+<a href="http://www.boost.org/libs/type_traits/index.htm">www.boost.org/libs/type_traits/index.htm</a><br>
+<b>Formal Proposal: </b>
+Revised: N1424/03-0006
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1424.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1424.htm</a><br>
+Original:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1345.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1345.html</a></p>
+
+<p><i>[N1424 was accepted at the Santa Cruz meeting.]</i></p>
+
+<hr>
+
+<h3><a name="3">3</a>. Regular Expressions</h3>
+
+<p><b>Section:</b> 21&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b>
+John Maddock&nbsp; <b>Date:</b> 4 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/regex/index.htm">www.boost.org/libs/regex/index.htm</a><br>
+<b>Formal Proposal:</b> Revised: N1429/03-0011
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1429.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1429.htm</a><br>
+Original:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1386.htm">
+std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1386.htm</a></p>
+
+<p><i>[N1429 was accepted at the Santa Cruz meeting.]</i></p>
+
+<hr>
+
+<h3><a name="4">4</a>. General Purpose Smart Pointers</h3>
+
+<p><b>Section:</b> 20&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b> 
+Peter Dimov,  Greg Colvin, Beman Dawes&nbsp; <b>Date:</b> 4 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b>
+<a href="http://www.boost.org/libs/smart_ptr/shared_ptr.htm">
+www.boost.org/libs/smart_ptr/shared_ptr.htm</a><br>
+<b>Formal Proposal:</b> Revised: N1450/03-0032
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1450.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1450.html</a><b><br>
+</b>Original: N1431/03-0013
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1431.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1431.html</a></p>
+
+<p><i>[N1450 was accepted at the Santa Cruz meeting.]</i></p>
+
+<hr>
+
+<h3><a name="5">5</a>. Random Numbers</h3>
+
+<p><b>Section:</b> 26&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b>
+Jens Maurer&nbsp; <b>Date:</b> 4 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/random/index.html">www.boost.org/libs/random/index.html</a><br>
+<b>Formal Proposal:</b> Revised: N1452/03-0034
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1498.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1452.html</a><br>
+Original: N1398/02-0056
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1398.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1398.html</a></p>
+
+<p><i>[N1452 was accepted at the Santa Cruz meeting.]</i></p>
+
+<hr>
+
+<h3><a name="6">6</a>. Rational Numbers</h3>
+
+<p><b>Section:</b> 26&nbsp; <b>Status:</b> <a href="#Hold">Hold</a>&nbsp; <b>Submitter:</b>
+Paul Moore&nbsp; <b>Date:</b> 4 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/rational/index.html">www.boost.org/libs/rational/index.html</a><br>
+<b>Formal Proposal: </b></p>
+
+<p>This proposal includes class template <i>rational</i>, and related support such as
+exception class <i>bad_rational</i>, and function template <i>rational_cast</i>.</p>
+
+<p>The current specification assumes the availability of the boost/operators.hpp header
+(see Proposal ?).&nbsp; If that header doesn't become part of the TR, additional
+operations will have to be specified for the class <i>rational</i> interface.</p>
+
+<p>Rational numbers are important both in theory and practice. Questions and bug reports
+indicate that the class sees actual use. It falls into one of the domains (numerics)
+identified in 01-0028/N1314 as a target for the TR.</p>
+
+<p><i>[Redmond: Some LWG members thought rational numbers were close to the 
+boundary between what should and shouldn't be part of the standard library.&nbsp; 
+They would like to see a few more clear cut cases.]</i></p>
+
+<p><i>[Pre-Curaçao: Paul comments on rationale for inclusion; from a 
+mathematical point of view, having complex numbers, but not rationals, seems 
+odd. From a practical computing position, I have never needed complex numbers, 
+but have occasionally wanted rationals.</i></p>
+
+<p><i>Paul also comments that without an unlimited-precision integer type on 
+which to base the rational class, the usefulness of rational&lt;&gt; is drastically 
+diminished. Both double and rational&lt;int&gt; have subtle rounding, precision, and 
+other issues. With double, these properties are fairly well-known, especially by 
+the sort of people who are likely to hit them. With rational&lt;int&gt;, they are 
+*not* well known. On the contrary, the sort of people who might use rational&lt;int&gt; 
+are very likely to completely miss the fact that there are such problems.</i></p>
+
+<p><i>It's arguable that these sort of issues make rational&lt;&gt; inappropriate for 
+the standard library. And it's *definitely* arguable that unlimited-precision 
+integers are more appropriate, and should be considered first. On the other 
+hand,&nbsp; there is no significant real-world experience to indicate how likely 
+the issues with using limited-precision integers would be to cause problems in 
+practice. This makes assessing the risks difficult.]</i></p>
+
+<p><i>[Curaçao: Beman presented Paul's Pre-Curaçao comments (above). The LWG did 
+not indicate great concern about the unlimited-precision integer question.</i></p>
+
+<p><i>There is still considerable concern as to the usefulness of rational 
+numbers in the context of the standard library. A straw vote was taken: &quot;Is the LWG interested enough to 
+make it worthwhile for a formal proposal to be submitted?&quot; 7-yes, 2-no, 
+6-abstain.</i></p>
+
+<p><i>Given the level of concern, the next step might be a paper &quot;explaining the 
+explicit motivation for the usefulness of rational numbers in the context of the 
+standard library.&quot;]</i></p>
+
+<p><i>[Pre-Santa Cruz: Given that a credible unlimited-precision integer type is 
+now progressing through Boost, Paul asks that his proposal be tabled until 
+unlimited-precision integers are ready for standardization.&nbsp; See Pre-Curaçao 
+comments above.]</i></p>
+
+<hr>
+
+<h3><a name="7">7</a>. Threads</h3>
+
+<p><b>Section:</b> ?&nbsp; <b>Status:</b> <a href="#Open">Open</a>&nbsp; <b>Submitter:</b>
+William Kempf&nbsp; <b>Date:</b> 4 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Native">Native</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/thread/doc/index.html">www.boost.org/libs/thread/doc/index.html</a><br>
+<b>Formal Proposal: </b></p>
+
+<p>This proposal provides basic multithreading functionality, in a form designed
+specifically for the C++ Standard Library.</p>
+
+<p>The very public development process, with over one hundred people contributing comments
+and insights, ensured that a wide-range of concerns were exposed, and resulted in a much
+stronger library.&nbsp; The documentation includes a great deal of rationale for important
+design decisions.&nbsp;</p>
+
+<p>The proposal is suitable for a wide range of hosted C++ environments, but is intended
+to be an optional component of the C++ Standard Library since implementors may not wish to
+support platforms where concurrent programming support is limited, non-existent, or
+unimportant.&nbsp; The proposal has been implemented on UNIX using POSIX threads, and
+Windows using both the native Win32 threads and POSIX threads.</p>
+
+<p>The proposal falls in the <i>filling gaps</i> and <i>systems programming domain</i>
+categories identified in 01-0028/N1314 as targets for the TR.</p>
+
+<p><i>[Redmond: Bill presented the Boost Thread Library to the LWG.&nbsp; There 
+was considerable interest and encouragement.]</i></p>
+
+<p><i>[Pre-Curaçao: Since Redmond, Bill 
+Kempf has done considerable work on the documentation, Mac Murrett has 
+contributed a port to the Mac, and Dave Moore has pending read/write lock, 
+thread pool, and barrier contributions, all of which were known needs. Significant ongoing 
+work includes addressing known issues with boost::thread, and adding 
+cancellation and thread-attribute support.</i></p>
+
+<p><i>There's been an increase in public awareness, including an article on 
+Boost.Threads&nbsp; in CUJ, and non-Boost users and MT experts are offering both 
+criticism and praise; evaluating that feedback continues.&nbsp; One of the 
+byproducts of the feedback will be a list of features which might better be 
+supported by language extensions.]</i></p>
+
+<p><i>[Curaçao: Dinkumware reports they are about to ship a multi-threading 
+library, with the C++ portions based on the Boost Threads library. Pete Becker 
+said that they view the need as for a &quot;toolkit&quot; approach, and Boost threads met 
+that need.</i></p>
+
+<p><i>The EWG and LWG jointly discussed 
+the proposal. The decision was to proceed on separate but parallel LWG, CWG, and 
+EWG tracks, and thus formal proposals and requests should be submitted as 
+separate documents.</i></p>
+<p><i>The proposal to the LWG for the TR should 
+cover components which can be implemented today using only standard C++ with 
+native threads libraries, without any compiler support or language extensions, 
+but assuming that the CWG supplies appropriate standardese to describe uniform 
+C++ execution in threaded environments.</i></p>
+<p><i>The request to the Core Working Group should 
+identify areas of concern to ensure uniform C++ execution in threaded 
+environments. Although full standardese isn't discouraged, the point of asking 
+the CWG for help is to tap their expertise in writing standardese affecting the 
+core portion of the language.</i></p>
+<p><i>The request to the Evolution Working Group 
+should identify areas where a future C++ standard might better support 
+multi-threading by adding language extensions. Although full standardese isn't 
+discouraged, the point of asking the EWG for help is to tap their expertise in 
+adding language enhancements.]</i></p>
+<p><i>[Pre-Santa Cruz: A formal proposal is planned in time for the Oxford 
+meeting.]</i></p>
+
+<p><i>[Post-Oxford: A formal proposal has been delayed by work on refinements 
+dealing with usage issues such as thread priorities. Two additional developers 
+are now helping with the project.]</i></p>
+
+<hr>
+
+<h3><a name="8">8</a>. Hash tables</h3>
+
+<p><b>Section:</b> 23&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b> 
+Matt Austern&nbsp; <b>Date:</b> 17 Oct 2001<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Many&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <br>
+<b>Formal Proposal:</b> Revision 4: N1456/03-0038<b> </b>
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1456.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1456.html</a><b><br>
+</b>
+Revision 3:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1443.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1443.html</a>,<b><br>
+</b>
+Revision 2:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1399.html">
+std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1399.html</a>,<br>
+Original:
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2001/n1326.html">
+std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2001/n1326.html</a></p>
+
+<p><i>[N1456 was accepted at the Oxford meeting.]</i></p>
+
+<hr>
+<h3><a name="9">9</a>. Iterator adaptors</h3>
+<p><b>Section:</b> 24&nbsp; <b>Status:</b> <a href="#Open">Open</a>&nbsp; <b>Submitter:</b> 
+Dave Abrahams, Jeremy Siek&nbsp; <b>Date:</b> 8 Apr 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b>
+<a href="http://www.boost.org/libs/utility/iterator_adaptors.htm">
+www.boost.org/libs/utility/iterator_adaptors.htm</a><br>
+<b>Formal Proposal:</b> N1476/03-0059
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1475.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1475.html</a></p>
+<p>The Iterator Adaptor library allows you transform an arbitrary ``base'' type 
+into a standard-conforming iterator with the behaviors you choose. Doing so is 
+especially easy if the ``base'' type is itself an iterator. The library also 
+supplies several example adaptors which apply specific useful behaviors to 
+arbitrary base iterators.</p>
+<p>``Policy Adaptors and the Boost Iterator Adaptor Library'' (<a href="http://www.boost.org/libs/utility/iterator_adaptors.pdf">www.boost.org/libs/utility/iterator_adaptors.pdf</a>) 
+is a technical paper describing this library and the powerful design pattern on 
+which it is based. It was presented at the
+<a href="http://www.oonumerics.org/tmpw01">C++ Template Workshop</a> at OOPSLA 
+2001.</p>
+<p>The proposal falls in the <i>filling gaps</i> category identified in
+01-0028/N1314 as a target for the TR.</p>
+<p><i>[Pre-Curaçao: The submitters plan to refactor 
+header files to meet the needs of the committee.]</i></p>
+
+<p><i>[Curaçao: Dave, with help from Jeremy, 
+briefly presented Iterator Adaptors.&nbsp; If there is a LWG concern, it is that 
+Iterator Adaptors are hard to get a handle on initially.</i></p>
+
+<p><i>It was noted that Iterator Adaptors would 
+benefit from named template parameters, although such a language feature is not 
+a part of the proposal.&nbsp; There was concern that library based solutions for 
+named template parameters be consistent across the entire standard library.</i></p>
+
+<p><i>Straw vote: &quot;Is the LWG interested enough to 
+make it worthwhile for a formal proposal to be submitted?&quot; 12-yes, 0-no.]</i></p>
+
+<p><i>[Pre-Santa Cruz: Dave and Jeremy plan to review and revise Iterator 
+Adaptors.]</i></p>
+
+<p><i>[Post-Oxford: A formal proposal (N1476)&nbsp; is promised for the 
+Post-Oxford mailing.]</i></p>
+
+<hr>
+
+<h3><a name="10">10</a>. Operators header</h3>
+<p><b>Section:</b> 20&nbsp; <b>Status:</b> <a href="#Hold">Hold</a>&nbsp; <b>Submitter:</b> 
+Dave Abrahams, Jeremy Siek&nbsp; <b>Date:</b> 8 Apr 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/utility/operators.htm">
+www.boost.org/libs/utility/operators.htm</a><br>
+<b>Formal Proposal: </b></p>
+<p>This proposal supplies several sets of class templates which define operators 
+at namespace scope in terms of a minimal number of fundamental operators 
+provided by a template parameter class.</p>
+<p>Overloaded operators for class types typically occur in groups. If you can 
+write <code>x + y</code>, you probably also want to be able to write <code>x += 
+y</code>. If you can write <code>x &lt; y,</code> you also want <code>x &gt; y, x &gt;= 
+y,</code> and <code>x &lt;= y</code>. Moreover, unless your class has really 
+surprising behavior, some of these related operators can be defined in terms of 
+others (e.g. <code>x &gt;= y &lt;=&gt; !(x &lt; y)</code>). Replicating this boilerplate for 
+multiple classes is both tedious and error-prone. The <cite>operators header</cite> 
+templates help by generating operators for you at namespace scope based on other 
+operators you've defined in your class.</p>
+<p>The proposal falls in the <i>filling gaps</i> category identified in
+01-0028/N1314 as a target for the TR.</p>
+
+<p><i>[Curaçao: Dave, with help from Jeremy, 
+briefly presented the operators header.</i></p>
+
+<p><i>Straw vote: &quot;Is the LWG interested enough to 
+make it worthwhile for a formal proposal to be submitted?&quot; 9-yes, 0-no.]</i></p>
+
+<p><i>[Post-Oxford: Dave reports there are no plans to continue with this 
+proposal due to lack of time/interest on his part. He says that the need is 
+&quot;definitely not redundant or replaced. If someone else cares enough, they should 
+propose it.&quot;]</i></p>
+
+<hr>
+
+<h3><a name="11">11</a>. Function object wrappers for deferred calls or callbacks</h3>
+<p><b>Section:</b>&nbsp;20.3&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b>&nbsp;Douglas 
+Gregor&nbsp; <b>Date:</b> 9 Apr 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/function/index.html">
+www.boost.org/libs/function/index.html</a><br>
+<b>Formal Proposal: </b>
+Revised: N1402/02-0060
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1402.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1402.html</a>,<br>
+Original: N1375/02-0033
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1375.html">
+std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1375.html</a></p>
+
+<p><i>[N1402 was accepted at the Santa Cruz meeting.]</i></p>
+
+<hr>
+
+<h3><a name="12">12</a>. Enhanced Binder</h3>
+<p><b>Section:</b>&nbsp;&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b>&nbsp;Peter 
+Dimov, Doug Gregor, Jakko Järvi, Gary Powell <b>Date:</b> 16 Apr 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/bind/bind.html">www.boost.org/libs/bind/bind.html</a><br>
+<b>Formal Proposal:</b> Revised: N1455/03-0037
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1455.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1455.htm</a><b><br>
+</b>Original: N1438/03-0020
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1438.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1438.htm</a></p>
+
+<p><i>[N1455 was accepted at the Oxford meeting.]</i></p>
+
+<hr>
+
+<h3><a name="13">13</a>. Tokenizer</h3>
+<p><b>Section:</b>&nbsp;?&nbsp; <b>Status:</b> <a href="#Open">Open</a>&nbsp; <b>Submitter:</b>&nbsp;John 
+Bandela&nbsp; <b>Date:</b> 16 Apr 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b> <a href="http://www.boost.org/libs/tokenizer/index.htm">
+www.boost.org/libs/tokenizer/index.htm</a><br>
+<b>Formal Proposal: </b></p>
+
+<p align="left">The <code>tokenizer</code> class template provides a container 
+view of a series of tokens contained in a sequence. The sequence to parse and 
+the TokenizerFunction which performs the parse are supplied either upon 
+construction or via the assign member function.</p>
+<p align="left">The <code>tokenizer</code> class template provides a flexible 
+and easy way to break of a string or other character sequence into a series of 
+tokens. For example, to break a phrase into words.</p>
+<div align="left">
+  <pre>   string s = &quot;This is,  a test&quot;;
+   tokenizer&lt;&gt; tok(s);
+   for(tokenizer&lt;&gt;::iterator beg=tok.begin(); beg!=tok.end();++beg)
+   {
+       cout &lt;&lt; *beg &lt;&lt; &quot;\n&quot;;
+   }</pre>
+</div>
+<p>TokenizerFunctions <code>escaped_list_separator</code>, <code>
+offset_separator</code>, and <code>char_delmiters_separator</code> are provided 
+as part of the proposal.</p>
+
+<p>The proposal falls in the <i>filling gaps</i> category identified in
+01-0028/N1314 as a target for the TR, and eliminates the need to use std::strtok, 
+with its associated problem of global state.</p>
+
+<p><i>[Curaçao: Jeremy Siek 
+briefly presented the proposal.</i></p>
+
+<p><i>Ichiro Koshida asked if tokenizer can handle 
+multibyte character strings.&nbsp; The tentative answer is &quot;yes&quot;; a request has 
+been made for test cases to verify that assertion.</i></p>
+
+<p><i>There was a question as to performance 
+compared to strtok().</i></p>
+
+<p><i>Straw vote: &quot;Is the LWG interested enough to 
+make it worthwhile for a formal proposal to be submitted?&quot; 10-yes, 0-no.]</i></p>
+
+<p><i>[Post-Curaçao: John Bandela reports raw strtok calls are typically four 
+times faster than raw tokenizer calls, while a strtok based application (copying 
+the tokens to a vector) is typically twice as fast as the same code using 
+tokenizer. Results vary a lot from compiler to compiler.]</i></p>
+
+<hr>
+
+<h3><a name="14">14</a>. Tuples</h3>
+<p><b>Section:</b>&nbsp;?&nbsp; <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b>&nbsp;Jaakko 
+Järvi&nbsp; <b>Date:</b> 16 Apr 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes<br>
+</a><b>Reference:</b>
+<a href="http://www.boost.org/libs/tuple/doc/tuple_users_guide.html">www.boost.org/libs/tuple/doc/tuple_users_guide.html</a><br>
+<b>Formal Proposal: </b>
+Revised: N1403 <a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1403.pdf">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1403.pdf</a>,<br>
+Original: N1382
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1382.pdf">
+std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1382.pdf</a></p>
+
+<p><i>[N1403 was accepted at the Santa Cruz meeting.]</i></p>
+
+<hr>
+
+<h3><a name="15">15</a>. Add file I/O functions taking filename arguments as std::strings </h3>
+<p><b>Section:</b>&nbsp;27.8&nbsp; <b>Status:</b> <a href="#Hold">Hold</a>&nbsp; <b>Submitter:</b>&nbsp;Beman 
+Dawes&nbsp; <b>Date:</b> 
+15 Apr 2002<br>
+<b>Type:</b> <a href="#Impure">Impure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> None&nbsp; <b>Implementation:</b> <a href="#No">No</a><br>
+<b>Reference:</b><br>
+<b>Formal Proposal: </b></p>
+
+<p>The I/O functions identified below have signatures taking filename arguments
+<code>s</code> as <code>const char*</code>. This is most inconvenient for modern 
+C++ programs working with filenames as std::strings, and is a constant source of 
+compile time errors.&nbsp; Although the fix is trivial (adding a call to <code>
+std::string::c_str()</code>), it irritates users that the standard library 
+doesn't provide for this common usage.</p>
+
+<p>This problem was originally identified in library issue 105 from AFNOR.</p>
+
+<p>Note that this proposal <b>does not</b> include <code>std::wstring</code> 
+overloads. Discussion on the library reflector indicates such overloads would be 
+extremely controversial, because there are no agreed upon semantics for the 
+common case where the underlying operating system has no concept of wide 
+character filenames.</p>
+
+<p><b>Proposal:</b></p>
+
+<p>To the member functions identified below, add a signature taking a <code>
+const std::string&amp; s</code>, with effects defined as a call to the current 
+function, with an <code>s</code> argument of <code>s</code><code>.c_str()</code>.</p>
+
+<p>[lib.filebuf] 27.8.1.1 Template class basic_filebuf<br>
+[lib.filebuf.members] 27.8.1.3 Member functions<br>
+<br>
+&nbsp;&nbsp;&nbsp; basic_filebuf open()<br>
+<br>
+[lib.ifstream] 27.8.1.5 Template class basic_ifstream<br>
+[lib.ifstream.cons] 27.8.1.6 basic_ifstream constructors<br>
+[lib.ifstream.members] 27.8.1.7 Member functions<br>
+<br>
+&nbsp;&nbsp;&nbsp; basic_ifstream constructor<br>
+&nbsp;&nbsp;&nbsp; basic_ifstream open()<br>
+<br>
+[lib.ofstream] 27.8.1.8 Template class basic_ofstream<br>
+[lib.ofstream.cons] 27.8.1.9 basic_ofstream constructors<br>
+[lib.ofstream.members] 27.8.1.10 Member functions<br>
+<br>
+&nbsp;&nbsp;&nbsp; basic_ofstream constructor<br>
+&nbsp;&nbsp;&nbsp; basic_ofstream open()<br>
+<br>
+[lib.fstream] 27.8.1.11 Template class basic_fstream<br>
+[lib.fstream.cons] 27.8.1.12 basic_fstream constructors<br>
+[lib.fstream.members] 27.8.1.13 Member functions<br>
+<br>
+&nbsp;&nbsp;&nbsp; basic_fstream constructor<br>
+&nbsp;&nbsp;&nbsp; basic_fstream open()<br>
+<br>
+[depr.ios.members] D.6 Old iostreams members<br>
+<br>
+&nbsp;&nbsp;&nbsp; Three places; no change proposed.</p>
+
+<p><i>[Curaçao: Beman briefly presented the proposal.</i></p>
+
+<p><i>There was discussion of various options for semantics for interpreting 
+argument </i> <code>
+const std::string&amp; s</code><i>:</i></p>
+
+<p><i>1) s.c_str()</i></p>
+
+<p><i>2) Treat s as multibyte character string if supported by operating system, 
+else s.c_str().</i></p>
+
+<p><i>3) Also provide std::wstring overload.</i></p>
+
+<p><i>4) Generalize as a template&lt; typename S &gt; where s of type S must support 
+s.c_str() returning a type convertible to const char *.</i></p>
+
+<p><i>There was no support for options (3) and (4) because no one has been able 
+to propose reasonable semantics. These options are listed here only as a record 
+of discussion; they are dead-on-arrival without semantics applicable to all 
+platforms.</i></p>
+
+<p><i>Ichiro Koshida raised the question of multibyte character strings; the LWG 
+was supportive of the intent but must consult I/O experts as to whether this is 
+possible or makes sense.</i></p>
+
+<p><i>Straw vote: &quot;Is the LWG interested enough to 
+make it worthwhile for a formal proposal to be submitted?&quot; lots-yes, 0-no.]</i></p>
+
+<p><i>[Pre-Santa Cruz: This proposal is on hold, pending the outcome of a couple 
+of related projects:</i></p>
+
+<ul>
+  <li><i>Boost has accepted a Filesystem Library by Beman Dawes, which uses a 
+  generalized path object rather than a string to represent file and directory 
+  names. Ideas from this library may have some impact on an eventual proposal, 
+  but it is too early to tell as the Boost library hasn't had time to mature 
+  yet.</i></li>
+  <li><i>The has been more discussion, both privately and on public newsgroups, 
+  of wide-character string filenames. There is some interest in forming a group 
+  to work on the issue. Any resulting proposal would almost certainly be 
+  classified as innovation rather than existing practice, and thus not ready for 
+  the TR.]</i></li>
+</ul>
+
+<p><i>[Santa Cruz: Although no formal vote was taken, there was considerable 
+support in the LWG for not making piecemeal changes to existing Standard Library 
+components in the first Library TR. Thus the proposal remains on hold.]</i></p>
+
+<hr>
+<h3><a name="16">16</a>. Date Time</h3>
+<p><b>Section:</b> ??&nbsp; <b>Status:</b> <a href="#Open">Open</a>&nbsp; <b>Submitter:</b> 
+Jeff Garland&nbsp; <b>Date:</b> 22 Sep 2002<br>
+<b>Type:</b> <a href="#Pure">Pure</a>&nbsp; <b>Requires:</b> <a href="#Std">Std C++</a>&nbsp;
+<b>Existing-practice:</b> Boost&nbsp; <b>Implementation:</b> <a href="#Yes">Yes</a><br>
+<b>Reference:</b> <a href="http://www.boost.org/libs/date_time/index.html">
+www.boost.org/libs/date_time/index.html</a><br>
+<b>Formal Proposal: </b></p>
+<p>This proposal includes classes and functions for the manipulation of dates 
+and times. The library separates the domain into the following concepts: </p>
+<ul>
+  <li>Time Points </li>
+  <li>Time Durations </li>
+  <li>Time Intervals </li>
+  <li>Clocks </li>
+  <li>Time systems (Calendars) </li>
+</ul>
+<p>This separation of concerns allows the library to support consistent 
+extensions for different date-time systems. In addition to the type representing 
+the domain concepts, the library builds on these concepts by providing 
+programming aids such as <i>iterators</i> and <i>algorithms</i> useful for 
+building date and time applications. </p>
+<p>The current library provides an implementation of a concrete date system 
+based on the ISO 8601 standard calendar system with a date range extending back 
+to 1400 A.D. Some of the key classes include: <i>date</i>, <i>date_duration</i>,
+<i>date_period</i>, <i>day_clock</i>, and <i>gregorian_calendar</i>. For time 
+programming the library offers a non-adjusted counted time system. Some of the 
+key classes include: <i>ptime(posix time)</i>, <i>time_duration</i>, <i>
+time_period</i>, and others. </p>
+<p>The manipulation of dates and times is an extremely common problem in 
+building applications. Many date-time libraries are available and are utilized 
+widely by C++ programmers. </p>
+<p>This proposal would benefit from the adoption of a 64-bit integer type. </p>
+<p>The proposal falls in the filling gaps category identified in 01-0028/N1314 
+as a target for the TR.</p>
+
+<p><i>[Santa Cruz: Jeff Garland presented the Date Time library to the LWG.&nbsp; 
+There was considerable interest, and Jeff was asked to submit a formal proposal.&nbsp; 
+In addition to the current Boost components, civil time was of interest to LWG 
+members.]</i></p>
+
+<p><i>[Pre-Oxford:&nbsp; A formal proposal is still planned; no target date has 
+been set yet.]</i></p>
+
+<hr>
+
+<h3><a name="17">17</a>. Mathematical Special Functions</h3>
+<p><b>Section:</b> ? <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b> 
+Walter E. Brown&nbsp; <b>Date:</b> 24 Feb 2003<br>
+<b>Type:</b> ? <b>Requires:</b> ?
+<b>Existing-practice:</b> ? <b>Implementation:</b> ?
+<b>Reference:</b> <br>
+<b>Formal Proposal: </b>N1422/03-0004
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1422.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1422.html</a></p>
+<p><i>[N1422 was accepted at the Oxford meeting.]</i></p>
+
+<hr>
+
+<h3><a name="18">18</a>. Enhanced Member Pointer Adaptor</h3>
+<p><b>Section:</b> 20.3 <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b> 
+Peter Dimov&nbsp; <b>Date:</b> 28 Feb 2003<br>
+<b>Type:</b> <a href="#Pure">Pure</a> <b>Requires:</b> <a href="#Std">Std C++</a>
+<b>Existing-practice:</b> Boost <b>Implementation:</b> <a href="#Yes">Yes</a>
+<b>Reference:</b> <a href="http://www.boost.org/libs/mem_fn/">
+www.boost.org/libs/mem_fn/</a><br>
+<b>Formal Proposal: </b>N1432/03-0014
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1432.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1432.html</a></p>
+<p><i>[N1432 was accepted at the Oxford meeting.]</i></p>
+<hr>
+
+<h3><a name="19">19</a>. Reference Wrapper</h3>
+<p><b>Section:</b> 20.3 <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b> 
+Douglas Gregor&nbsp; <b>Date:</b> 28 Feb 2003<br>
+<b>Type:</b> <a href="#Pure">Pure</a> <b>Requires:</b> <a href="#Std">Std C++</a>
+<b>Existing-practice:</b> Boost <b>Implementation:</b> <a href="#Yes">Yes</a>
+<b>Reference:</b>
+<a href="http://www.boost.org/libs/bind/ref.html" target="_top">
+www.boost.org/libs/bind/ref.html</a><br>
+<b>Formal Proposal: </b>Revised: N1453/03-0035
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1453.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1453.htm</a><br>
+Original: N1436/03-0018
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1436.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1436.htm</a></p>
+<p><i>[N1453 was accepted at the Oxford meeting.]</i></p>
+<hr>
+
+<h3><a name="20">20</a>. Uniform method for computing function object return 
+types</h3>
+<p><b>Section:</b> 20.3 <b>Status:</b> <a href="#TR">TR</a>&nbsp; <b>Submitter:</b> 
+Douglas Gregor&nbsp; <b>Date:</b> 27 Feb 2003<br>
+<b>Type:</b> <a href="#Pure">Pure</a> <b>Requires:</b> <a href="#Std">Std C++</a>
+<b>Existing-practice:</b> Yes <b>Implementation:</b> <a href="#Yes">Yes</a>
+<b>Reference:</b> <a href="http://www.boost.org/libs/lambda/" target="_top">
+www.boost.org/libs/lambda/</a>,
+<a href="http://spirit.sourceforge.net/index.php?doc=docs/phoenix%20v1%20%20%20%20%200/index.html" target="_top">
+spirit.sourceforge.net/index.php?doc=docs/phoenix v1 0/index.html</a>.<br>
+<b>Formal Proposal:</b> Revised:<b> </b>N1454/03-0036
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1454.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1454.htm</a><b><br>
+</b>Original:<b> </b>N1437/03-0019
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1437.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1437.htm</a></p>
+<p><i>[N1454 was accepted at the Oxford meeting.]</i></p>
+<hr>
+
+<h3><a name="21">21</a>. Fixed Size Array Wrapper</h3>
+<p><b>Section:</b> 23 <b>Status:</b> <a href="#New">New</a>&nbsp; <b>Submitter:</b> 
+Alisdair Meredith&nbsp; <b>Date:</b> 25 Apr 2003<br>
+<b>Type:</b> <a href="#Pure">Pure</a> <b>Requires:</b> <a href="#Std">Std C++</a>
+<b>Existing-practice:</b> Yes <b>Implementation:</b> <a href="#Yes">Yes</a>
+<b>Reference:</b> <a target="_top" href="http://www.boost.org/libs/array">
+www.boost.org/libs/array</a><br>
+<b>Formal Proposal:</b> N1479/03-0062
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1479.htm">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1479.htm</a></p>
+<p>This is Nicolai Josuttis' Boost version of the fixed-size array wrapper 
+described by Bjarne Stroustrup, Matt Austern, and Nicolai Josuttis in their 
+respective books.</p>
+<p><i>[N1479 is promised for the post-Oxford mailing]</i></p>
+<hr>
+
+<h3><a name="22">22</a>. New Iterator Requirements</h3>
+<p><b>Section:</b> 24 <b>Status:</b> <a href="#New">New</a>&nbsp; <b>Submitter:</b> 
+Jeremy Siek&nbsp; <b>Date:</b> 25 Apr 2003<br>
+<b>Type:</b> ?<b> Requires:</b> <a href="#Std">Std C++</a>
+<b>Existing-practice:</b> ? <b>Implementation:</b> ?
+<b>Reference:</b> <br>
+<b>Formal Proposal:</b> N1477/03-0060
+<a href="http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1477.html">std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1477.html</a></p>
+<p>Also see <a href="#9">[9] Iterator adaptors</a> proposal.</p>
+<p><i>[N1477 is promised for the post-Oxford mailing]</i></p>
+<hr>
+
+<p>Revised 
+<!--webbot bot="Timestamp" S-Type="EDITED" S-Format="%B %d, %Y" startspan -->April 25, 2003<!--webbot bot="Timestamp" endspan i-checksum="17413" --> </p>
+
+<p>--- End ---</p>
+</body>
+</html>

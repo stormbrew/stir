@@ -1,0 +1,4193 @@
+<title>ISO/IEC 14882:1998(E) -- C++ -- Localization library</title><a name="lib.localization"><h1>22 - Localization library [lib.localization]</h1></a>
+</ul></ol></dl><p><b>-1-</b>
+This clause describes components that C++ programs may use to
+encapsulate (and therefore be more portable when confronting)
+cultural differences.
+The locale facility includes internationalization
+support for character classification and string collation, numeric,
+monetary, and date/time formatting and parsing, and message retrieval.
+</ul></ol></dl><p><b>-2-</b>
+The following subclauses describe components for
+locales themselves, the standard facets, and facilities
+from the ISO C library, as summarized in Table ??:
+<p><center><table border><caption>Localization library summary</caption>
+<tr><td>Subclause</td><td>Header(s)</td></tr>
+
+<tr><td><a href="lib-locales.html#lib.locales">lib.locales</a> Locales</td><td>&lt;locale&gt;</td></tr>
+<tr><td><a href="lib-locales.html#lib.locale.categories">lib.locale.categories</a> Standard  <tt>locale</tt>  Categories</td><td>&nbsp;</td></tr>
+
+<tr><td><a href="lib-locales.html#lib.c.locales">lib.c.locales</a> C library locales</td><td>&lt;clocale&gt;</td></tr>
+</table></center><p>
+</ul></ol></dl><a name="lib.locales"><h2>22.1 - Locales [lib.locales]</h2></a>
+<p><b>
+<b>Header  <tt><b>&lt;locale&gt;</b></tt>  synopsis</b>
+</b></p>
+<blockquote><tt><pre>
+namespace std {
+  //</tt><i>  <a href="lib-locales.html#lib.locale">lib.locale</a>, locale:</i><tt>
+  class locale;
+  template &lt;class Facet&gt; const Facet&amp; use_facet(const locale&amp;);
+  template &lt;class Facet&gt; bool         has_facet(const locale&amp;) throw();
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.locale.convenience">lib.locale.convenience</a>, convenience interfaces:</i><tt>
+  template &lt;class charT&gt; bool isspace (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isprint (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool iscntrl (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isupper (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool islower (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isalpha (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isdigit (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool ispunct (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isxdigit(charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isalnum (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; bool isgraph (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; charT toupper(charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+  template &lt;class charT&gt; charT tolower(charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.category.ctype">lib.category.ctype</a> and <a href="lib-locales.html#lib.facet.ctype.special">lib.facet.ctype.special</a>, ctype:</i><tt>
+  class ctype_base;
+  template &lt;class charT&gt; class ctype;
+  template &lt;&gt;            class ctype&lt;char&gt;;             //</tt><i>  specialization</i><tt>
+  template &lt;class charT&gt; class ctype_byname;
+  template &lt;&gt;            class ctype_byname&lt;char&gt;;      //</tt><i>  specialization</i><tt>
+  class codecvt_base;
+  template &lt;class internT, class externT, class stateT&gt;
+    class codecvt;
+  template &lt;class internT, class externT, class stateT&gt;
+    class codecvt_byname;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.category.numeric">lib.category.numeric</a> and <a href="lib-locales.html#lib.facet.numpunct">lib.facet.numpunct</a>, numeric:</i><tt>
+  template &lt;class charT, class InputIterator&gt;  class num_get;
+  template &lt;class charT, class OutputIterator&gt; class num_put;
+  template &lt;class charT&gt; class numpunct;
+  template &lt;class charT&gt; class numpunct_byname;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.category.collate">lib.category.collate</a>, collation:</i><tt>
+  template &lt;class charT&gt; class collate;
+  template &lt;class charT&gt; class collate_byname;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.category.time">lib.category.time</a>, date and time:</i><tt>
+  class time_base;
+  template &lt;class charT, class InputIterator&gt;  class time_get;
+  template &lt;class charT, class InputIterator&gt;  class time_get_byname;
+  template &lt;class charT, class OutputIterator&gt; class time_put;
+  template &lt;class charT, class OutputIterator&gt; class time_put_byname;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.category.monetary">lib.category.monetary</a>, money:</i><tt>
+  class money_base;
+  template &lt;class charT, class InputIterator&gt;  class money_get;
+  template &lt;class charT, class OutputIterator&gt; class money_put;
+  template &lt;class charT, bool Intl&gt; class moneypunct;
+  template &lt;class charT, bool Intl&gt; class moneypunct_byname;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  <a href="lib-locales.html#lib.category.messages">lib.category.messages</a>, message retrieval:</i><tt>
+  class messages_base;
+  template &lt;class charT&gt; class messages;
+  template &lt;class charT&gt; class messages_byname;
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The header
+<tt>&lt;locale&gt;</tt>
+defines classes and declares functions that encapsulate and manipulate
+the information peculiar to a locale.*
+<blockquote>[Footnote:
+In this subclause, the type name
+<tt>struct&nbsp;tm</tt>
+is an incomplete type that is defined in
+<tt>&lt;ctime&gt;</tt>.
+--- end foonote]</blockquote>
+</ul></ol></dl><a name="lib.locale"><h3>22.1.1 - Class  <tt><b>locale</b></tt>  [lib.locale]</h3></a>
+<blockquote><tt><pre>
+namespace std {
+  class locale {
+  public:
+    //</tt><i>  types:</i><tt>
+    class facet;
+    class id;
+    typedef int category;
+    static const category   //</tt><i>  values assigned here are for exposition only</i><tt>
+      none     = 0,
+      collate  = 0x010, ctype    = 0x020,
+      monetary = 0x040, numeric  = 0x080,
+      time     = 0x100, messages = 0x200,
+      all = collate | ctype | monetary | numeric | time  | messages;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    //</tt><i>  construct/copy/destroy:</i><tt>
+    locale() throw()
+    locale(const locale&amp; <tt><i>other</i></tt>) throw()
+    explicit locale(const char* <tt><i>std_name</i></tt>);
+    locale(const locale&amp; <tt><i>other</i></tt>, const char* <tt><i>std_name</i></tt>, category);
+    template &lt;class Facet&gt; locale(const locale&amp; <tt><i>other</i></tt>, Facet* <tt><i>f</i></tt>);
+    locale(const locale&amp; <tt><i>other</i></tt>, const locale&amp; <tt><i>one</i></tt>, category);
+   ~locale() throw();           //</tt><i>  non-virtual</i><tt>
+    const locale&amp; operator=(const locale&amp; <tt><i>other</i></tt>) throw();
+    template &lt;class Facet&gt; locale combine(const locale&amp; <tt><i>other</i></tt>);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    //</tt><i>  locale operations:</i><tt>
+    basic_string&lt;char&gt;                  name() const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    bool operator==(const locale&amp; <tt><i>other</i></tt>) const;
+    bool operator!=(const locale&amp; <tt><i>other</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    template &lt;class charT, class Traits, class Allocator&gt;
+      bool operator()(const basic_string&lt;charT,Traits,Allocator&gt;&amp; s1,
+		      const basic_string&lt;charT,Traits,Allocator&gt;&amp; s2) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    //</tt><i>  global locale objects:</i><tt>
+    static       locale  global(const locale&amp;);
+    static const locale&amp; classic();
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+Class
+<tt>locale</tt>
+implements a type-safe polymorphic set of facets, indexed by facet
+<i>type</i>.
+In other words, a facet has a dual role: in one
+sense, it's just a class interface; at the same time, it's an index
+into a locale's set of facets.
+</ul></ol></dl><p><b>-2-</b>
+Access to the facets of a
+<tt>locale</tt>
+is via two function templates,
+<tt>use_facet&lt;&gt;</tt>
+and
+<tt>has_facet&lt;&gt;</tt>.
+</ul></ol></dl><p><b>-3-</b>
+[<i>Example:</i>
+An iostream
+<tt>operator&lt;&lt;</tt>
+might be implemented as:*
+<blockquote>[Footnote:
+Notice that, in the call to
+<tt>put</tt>,
+the stream is implicitly converted to an
+<tt>ostreambuf_iterator&lt;charT,traits&gt;</tt>.
+--- end foonote]</blockquote>
+<blockquote><tt><pre>
+  template &lt;class charT, class traits&gt;
+    basic_ostream&lt;charT,traits&gt;&amp;
+    operator&lt;&lt; (basic_ostream&lt;charT,traits&gt;&amp; s, Date d)
+  {
+    typename basic_ostream&lt;charT,traits&gt;::sentry cerberos(s);
+    if (cerberos) {
+      ios_base::iostate err = 0;
+      tm tmbuf; d.extract(tmbuf);
+      use_facet&lt; time_put&lt;charT,ostreambuf_iterator&lt;charT,traits&gt; &gt; &gt;(
+	s.getloc()).put(s, s, s.fill(), err, &amp;tmbuf, 'x');
+      s.setstate(err);          //</tt><i>  might throw</i><tt>
+    }
+    return s;
+  }
+</pre></tt></blockquote>
+<br>--- end example]
+</ul></ol></dl><p><b>-4-</b>
+In the call to
+<tt>use_facet&lt;Facet&gt;(loc)</tt>,
+the type argument chooses a facet, making available all members
+of the named type.
+If
+<tt>Facet</tt>
+is not present in a locale (or, failing that, in the
+<tt>global</tt>
+locale),
+it throws the standard exception
+<tt>bad_cast</tt>.
+A C++ program can check if a locale implements a particular
+facet with the template function
+<tt>has_facet&lt;Facet&gt;()</tt>.
+User-defined facets may be installed in a locale, and used identically as
+may standard facets (<a href="lib-locales.html#lib.facets.examples">lib.facets.examples</a>).
+</ul></ol></dl><p><b>-5-</b>
+[<i>Note:</i>
+All locale semantics are accessed via
+<tt>use_facet&lt;&gt;</tt>
+and
+<tt>has_facet&lt;&gt;</tt>,
+except that:
+</ul><ul><li>
+A member operator template
+<tt>operator()(basic_string&lt;C,T,A&gt;&amp;, basic_string&lt;C,T,A&gt;&amp;)</tt>
+is provided so that a locale may be used as a predicate argument to
+the standard collections, to collate strings.
+</ul><ul><li>
+Convenient global interfaces are provided for traditional
+<tt>ctype</tt>
+functions such as
+<tt>isdigit()</tt>
+and
+<tt>isspace()</tt>,
+so that given a locale
+object  <tt><i>loc</i></tt>  a C++ program can call
+<tt>isspace(<tt><i>c</i></tt>,<tt><i>loc</i></tt>)</tt>.
+(This eases upgrading existing extractors (<a href="lib-iostreams.html#lib.istream.formatted">lib.istream.formatted</a>).)
+<br>--- end note]
+</ul></ol></dl><p><b>-6-</b>
+An instance of
+<tt>locale</tt>
+is
+<i>immutable</i>;
+once a facet reference is obtained from it, that
+reference remains usable as long as the locale value itself exists.
+</ul></ol></dl><p><b>-7-</b>
+In successive calls to a locale facet member function during a call
+to an iostream inserter or extractor or a streambuf member function,
+the returned result shall be identical.
+[<i>Note:</i>
+This implies that such results may safely be reused without
+calling the locale facet member function again, and
+that member functions of iostream classes cannot safely call
+<tt>imbue()</tt>
+themselves, except as specified elsewhere.
+<br>--- end note]
+</ul></ol></dl><p><b>-8-</b>
+A
+<tt>locale</tt>
+constructed from a name string (such as <tt>"POSIX"</tt>), or from parts of
+two named locales, has a name; all others do not.
+Named locales may be compared for equality; an unnamed locale is equal
+only to (copies of) itself.
+For an unnamed locale,
+<tt>locale::name()</tt>
+returns the string
+``<tt>*</tt>''.
+</ul></ol></dl><a name="lib.locale.types"><h4>22.1.1.1 -  <tt><b>locale</b></tt>  types [lib.locale.types]</h4></a>
+</ul></ol></dl><a name="lib.locale.category"><h5>22.1.1.1.1 - Type  <tt><b>locale::category</b></tt>  [lib.locale.category]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+typedef int category;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b>
+<i>Valid</i>
+<tt>category</tt>
+values include the
+<tt>locale</tt>
+member bitmask elements
+<tt>none</tt>,
+<tt>collate</tt>,
+<tt>ctype</tt>,
+<tt>monetary</tt>,
+<tt>numeric</tt>,
+<tt>time</tt>,
+and
+<tt>messages</tt>.
+In addition,
+<tt>locale</tt>
+member
+<tt>all</tt>
+is defined such that the expression
+<blockquote><tt><pre>
+  (collate | ctype | monetary | numeric | time | messages | all) == all
+</pre></tt></blockquote>
+is
+<tt>true</tt>.
+Further, the result of applying operators
+<tt>|</tt>
+and
+<tt>&amp;</tt>
+to any two valid values is valid, and results in the setwise union and
+intersection, respectively, of the argument categories.
+</ul></ol></dl><p><b>-2-</b>
+<tt>locale</tt>
+member functions expecting a
+<tt>category</tt>
+argument require either a valid
+<tt>category</tt>
+value or
+one of the constants
+<tt>LC_CTYPE</tt>
+etc., defined in
+<tt>&lt;cctype&gt;</tt>.
+Such a
+<tt>category</tt>
+value identifies a set of locale categories.
+Each locale category,
+in turn, identifies a set of locale facets, including at least those
+shown in Table ??:
+<p><center><table border><caption>Locale Category Facets</caption>
+<br>
+<tr><td>Category</td><td>Includes Facets</td></tr>
+
+<tr><td>collate</td><td>collate&lt;char&gt;, collate&lt;wchar_t&gt;</td></tr>
+
+<tr><td>ctype</td><td>ctype&lt;char&gt;, ctype&lt;wchar_t&gt;</td></tr>
+<tr><td>&nbsp;</td><td>codecvt&lt;char,char,mbstate_t&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>codecvt&lt;wchar_t,char,mbstate_t&gt;</td></tr>
+
+<tr><td>monetary</td><td>moneypunct&lt;char&gt;, moneypunct&lt;wchar_t&gt;</td></tr>
+<tr><td>&nbsp;</td><td>moneypunct&lt;char,true&gt;, moneypunct&lt;wchar_t,true&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>money_get&lt;char&gt;, money_get&lt;wchar_t&gt;</td></tr>
+<tr><td>&nbsp;</td><td>money_put&lt;char&gt;, money_put&lt;wchar_t&gt;</td></tr>
+
+<tr><td>numeric</td><td>numpunct&lt;char&gt;, numpunct&lt;wchar_t&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>num_get&lt;char&gt;, num_get&lt;wchar_t&gt;</td></tr>
+<tr><td>&nbsp;</td><td>num_put&lt;char&gt;, num_put&lt;wchar_t&gt;</td></tr>
+
+<tr><td>time</td><td>time_get&lt;char&gt;, time_get&lt;wchar_t&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_put&lt;char&gt;, time_put&lt;wchar_t&gt;</td></tr>
+
+<tr><td>messages</td><td>messages&lt;char&gt;, messages&lt;wchar_t&gt;</td></tr>
+</table></center><p>
+</ul></ol></dl><p><b>-3-</b>
+For any locale <tt><i>loc</i></tt>
+either constructed, or returned by
+<tt>locale::classic()</tt>,
+and any facet <tt><i>Facet</i></tt>
+that is a member of a standard category,
+<tt>has_facet&lt;<tt><i>Facet</i></tt>&gt;(<tt><i>loc</i></tt>)</tt>
+is true.
+Each
+<tt>locale</tt>
+member function which takes a
+<tt>locale::category</tt>
+argument operates on the corresponding set of facets.
+</ul></ol></dl><p><b>-4-</b>
+An implementation is required to provide those instantiations for
+facet templates identified as members of a category, and for those
+shown in Table ??:
+<p><center><table border><caption>Required Instantiations</caption>
+<br>
+<tr><td>Category</td><td>Includes Facets</td></tr>
+
+<tr><td>collate</td><td>collate_byname&lt;char&gt;, collate_byname&lt;wchar_t&gt;</td></tr>
+
+<tr><td>ctype</td><td>ctype_byname&lt;char&gt;, ctype_byname&lt;wchar_t&gt;</td></tr>
+
+<tr><td>monetary</td><td>moneypunct_byname&lt;char,International&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>moneypunct_byname&lt;wchar_t,International&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>money_get&lt;C,InputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>money_put&lt;C,OutputIterator&gt;</td></tr>
+
+<tr><td>numeric</td><td>numpunct_byname&lt;char&gt;, numpunct_byname&lt;wchar_t&gt;</td></tr>
+<tr><td>&nbsp;</td><td>num_get&lt;C,InputIterator&gt;, num_put&lt;C,OutputIterator&gt;</td></tr>
+
+<tr><td>time</td><td>time_get&lt;char,InputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_get_byname&lt;char,InputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_get&lt;wchar_t,OutputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_get_byname&lt;wchar_t,OutputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_put&lt;char,OutputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_put_byname&lt;char,OutputIterator&gt;,</td></tr>
+<tr><td>&nbsp;</td><td>time_put&lt;wchar_t,OutputIterator&gt;</td></tr>
+<tr><td>&nbsp;</td><td>time_put_byname&lt;wchar_t,OutputIterator&gt;</td></tr>
+
+<tr><td>messages</td><td>messages_byname&lt;char&gt;, messages_byname&lt;wchar_t&gt;</td></tr>
+</table></center><p>
+</ul></ol></dl><p><b>-5-</b>
+The provided implementation of members of facets
+<tt>num_get&lt;charT&gt;</tt>
+and
+<tt>num_put&lt;charT&gt;</tt>
+calls
+<tt>use_facet&lt;F&gt;(l)</tt>
+only for facet
+<tt>F</tt>
+of types
+<tt>numpunct&lt;charT&gt;</tt>
+and
+<tt>ctype&lt;charT&gt;</tt>,
+and for locale
+<tt>l</tt>
+the value obtained
+by calling member
+<tt>getloc()</tt>
+on the
+<tt>ios_base&amp;</tt>
+argument to these functions.
+</ul></ol></dl><p><b>-6-</b>
+In declarations of facets, a template formal parameter with name
+<tt>InputIterator</tt>
+or
+<tt>OutputIterator</tt>
+indicates the set of
+all possible instantiations on parameters that satisfy the
+requirements of an Input Iterator or an Output Iterator, respectively
+(<a href="lib-iterators.html#lib.iterator.requirements">lib.iterator.requirements</a>).
+A template formal parameter with name
+<tt>C</tt>
+represents the set of all possible instantiations on a parameter that
+satisfies the requirements for a character on which any of the iostream
+components can be instantiated.
+A template formal parameter with name
+<tt>International</tt>
+represents the set of all possible instantiations on a bool parameter.
+</ul></ol></dl><a name="lib.locale.facet"><h5>22.1.1.1.2 - Class  <tt><b>locale::facet</b></tt>  [lib.locale.facet]</h5></a>
+<blockquote><tt><pre>
+namespace std {
+  class locale::facet {
+  protected:
+    explicit facet(size_t refs = 0);
+    virtual ~facet();
+  private:
+    facet(const facet&amp;);                //</tt><i>  not defined</i><tt>
+    void operator=(const facet&amp;);       //</tt><i>  not defined</i><tt>
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+Class
+<tt>facet</tt>
+is the base class for locale feature sets.
+A class is a
+<i>facet</i>
+if it is publicly derived from another facet, or if it is a class
+derived from
+<tt>locale::facet</tt>
+and containing a publicly-accessible declaration as follows:*
+<blockquote>[Footnote:
+This is a complete list of requirements;
+there are no other requirements.
+Thus, a facet class need not have a public copy constructor,
+assignment, default constructor, destructor, etc.
+--- end foonote]</blockquote>
+<blockquote><tt><pre>
+      static ::std::locale::id id;
+</pre></tt></blockquote>
+Template parameters in this clause which are required to be facets are those named
+<tt>Facet</tt>
+in declarations.
+A program that passes a type that is
+<i>not</i>
+a facet, as an (explicit or deduced) template parameter to a locale
+function expecting a facet, is ill-formed.
+</ul></ol></dl><p><b>-2-</b>
+The <tt><i>refs</i></tt>
+argument to the constructor is used for lifetime management.
+</ul><ul><li>
+For
+<tt><tt><i>refs</i></tt> == 0</tt>,
+the implementation performs
+<tt>delete&nbsp;static_cast&lt;locale::facet*&gt;(f)</tt>
+(where
+<tt>f</tt>
+is a pointer to the facet) when the last
+<tt>locale</tt>
+object containing the facet is destroyed;
+for
+<tt><tt><i>refs</i></tt> == 1</tt>,
+the implementation never destroys the facet.
+</ul></ol></dl><p><b>-3-</b>
+Constructors of all
+facets defined in this clause take such an argument and pass it
+along to their
+<tt>facet</tt>
+base class constructor.
+All one-argument constructors defined
+in this clause are
+<i>explicit</i>,
+preventing their participation in automatic conversions.
+</ul></ol></dl><p><b>-4-</b>
+For some standard facets a standard
+``...<tt>_byname</tt>''
+class, derived from it, implements the virtual function semantics
+equivalent to that facet of the locale constructed by
+<tt>locale(const char*)</tt>
+with the same name.
+Each such facet provides a constructor that takes a
+<tt>const char*</tt>
+argument, which names the locale, and a <tt><i>refs</i></tt>
+argument, which is passed to the base class constructor.
+If there is no
+``...<tt>_byname</tt>''
+version of a facet, the base class implements named locale
+semantics itself by reference to other facets.
+</ul></ol></dl><a name="lib.locale.id"><h5>22.1.1.1.3 - Class  <tt><b>locale::id</b></tt>  [lib.locale.id]</h5></a>
+<blockquote><tt><pre>
+namespace std {
+  class locale::id {
+  public:
+    id();
+  private:
+    void operator=(const id&amp;);  //</tt><i>  not defined</i><tt>
+    id(const id&amp;);              //</tt><i>  not defined</i><tt>
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The class locale::id provides identification of a locale facet
+interfaces, used as an index for lookup
+and to encapsulate initialization.
+</ul></ol></dl><p><b>-2-</b>
+[<i>Note:</i>
+Because facets are used by iostreams, potentially while static constructors are
+running, their initialization cannot depend on programmed static
+initialization.
+One initialization strategy is for
+<tt>locale</tt>
+to initialize each facet's
+<tt>id</tt>
+member the first time an instance of the facet is installed into a locale.
+This depends only on static storage being zero before constructors run
+(<a href="basic.html#basic.start.init">basic.start.init</a>).
+<br>--- end note]
+</ul></ol></dl><a name="lib.locale.cons"><h4>22.1.1.2 -  <tt><b>locale</b></tt>  constructors and destructor [lib.locale.cons]</h4></a>
+</dl></ol></ul><tt><blockquote><pre>
+locale() throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b>
+Default constructor: a snapshot of the current global locale.
+</ul></ol></dl><p><b>-2-</b> <b>Effects:</b>
+Constructs a copy of the argument last passed to
+<tt>locale::global(locale&amp;)</tt>,
+if it has been called; else, the resulting facets have virtual
+function semantics identical to those of
+<tt>locale::classic()</tt>.
+[<i>Note:</i>
+This constructor is commonly used as the default value for arguments
+of functions that take a
+<tt>const locale&amp;</tt>
+argument.
+<br>--- end note]
+</dl></ol></ul><tt><blockquote><pre>
+locale(const locale&amp; <tt><i>other</i></tt>) throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Effects:</b>
+Constructs a locale which is a copy of <tt><i>other</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+const locale&amp; operator=(const locale&amp; <tt><i>other</i></tt>) throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Effects:</b>
+Creates a copy of <tt><i>other</i></tt>, replacing the current value.
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+<tt>*this</tt>
+</dl></ol></ul><tt><blockquote><pre>
+explicit locale(const char* <tt><i>std_name</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-6-</b> <b>Effects:</b>
+Constructs a locale using standard C locale names, e.g. <tt>"POSIX"</tt>.
+The resulting locale implements semantics defined to be associated
+with that name.
+</ul></ol></dl><p><b>-7-</b> <b>Throws:</b>
+<tt>runtime_error</tt>
+if the argument is not valid, or is null.
+</ul></ol></dl><p><b>-8-</b> <b>Notes:</b>
+The set of valid string argument values is <tt>"C"</tt>, <tt>""</tt>,
+and any implementation-defined values.
+</dl></ol></ul><tt><blockquote><pre>
+locale(const locale&amp; <tt><i>other</i></tt>, const char* <tt><i>std_name</i></tt>, category);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-9-</b> <b>Effects:</b>
+Constructs a locale as a copy of
+<tt>other</tt>
+except for the facets identified by the
+<tt>category</tt>
+argument, which instead implement the same semantics as
+<tt>locale(<tt><i>std_name </i></tt>)</tt>.
+</ul></ol></dl><p><b>-10-</b> <b>Throws:</b>
+<tt>runtime_error</tt>
+if the argument is not valid, or is null.
+</ul></ol></dl><p><b>-11-</b> <b>Notes:</b>
+The locale has a name if and only if
+<tt>other</tt>
+has a name.
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class Facet&gt; locale(const locale&amp; <tt><i>other</i></tt>, Facet* <tt><i>f</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-12-</b> <b>Effects:</b>
+Constructs a locale incorporating all facets from the first
+argument except that of type
+<tt>Facet</tt>,
+and installs the second argument as the remaining facet.
+If  <tt><i>f</i></tt> 
+is null, the resulting object is a copy of  <tt><i>other</i></tt>.
+</ul></ol></dl><p><b>-13-</b> <b>Notes:</b>
+The resulting locale has no name.
+</dl></ol></ul><tt><blockquote><pre>
+locale(const locale&amp; <tt><i>other</i></tt>, const locale&amp; <tt><i>one</i></tt>, category <tt><i>cats</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-14-</b> <b>Effects:</b>
+Constructs a locale incorporating all facets from the first argument
+except those that implement
+<tt>cats</tt>,
+which are instead incorporated from the second argument.
+</ul></ol></dl><p><b>-15-</b> <b>Notes:</b>
+The resulting locale has a name if and only if the first two arguments
+have names.
+</dl></ol></ul><tt><blockquote><pre>
+~locale() throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-16-</b>
+A non-virtual destructor that throws no exceptions.
+</ul></ol></dl><a name="lib.locale.members"><h4>22.1.1.3 -  <tt><b>locale</b></tt>  members [lib.locale.members]</h4></a>
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class Facet&gt; locale combine(const locale&amp; <tt><i>other</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Constructs a locale incorporating
+all facets from
+<tt>*this</tt>
+except for that one facet of
+<tt>other</tt>
+that is identified by
+<tt>Facet</tt>.
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+The newly created locale.
+</ul></ol></dl><p><b>-3-</b> <b>Throws:</b>
+<tt>runtime_error</tt>
+if
+<tt>has_facet&lt;Facet&gt;(other)</tt>
+is false.
+</ul></ol></dl><p><b>-4-</b> <b>Notes:</b>
+The resulting locale has no name.
+</dl></ol></ul><tt><blockquote><pre>
+basic_string&lt;char&gt;  name() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+The name of
+<tt>*this</tt>,
+if it has one; otherwise, the string <tt>"*"</tt>.
+If
+<tt>*this</tt>
+has a name, then
+<tt>locale(name())</tt>
+is equivalent to
+<tt>*this</tt>.
+Details of
+the contents of the resulting string are otherwise implementation-defined.
+</ul></ol></dl><a name="lib.locale.operators"><h4>22.1.1.4 -  <tt><b>locale</b></tt>  operators [lib.locale.operators]</h4></a>
+</dl></ol></ul><tt><blockquote><pre>
+bool operator==(const locale&amp; <tt><i>other</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>true</tt>
+if both arguments are the same locale, or one is a copy of the
+other, or each has a name and the names are identical;
+<tt>false</tt>
+otherwise.
+</dl></ol></ul><tt><blockquote><pre>
+bool operator!=(const locale&amp; <tt><i>other</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+The result of the expression:
+<tt>!(*this == <tt><i>other</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class charT, class Traits, class Allocator&gt;
+  bool operator()(const basic_string&lt;charT,Traits,Allocator&gt;&amp; <tt><i>s1</i></tt>,
+                  const basic_string&lt;charT,Traits,Allocator&gt;&amp; <tt><i>s2</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Effects:</b>
+Compares two strings according to the
+<tt>collate&lt;charT&gt;</tt>
+facet.
+</ul></ol></dl><p><b>-4-</b> <b>Notes:</b>
+This member operator template (and therefore
+<tt>locale</tt>
+itself) satisfies requirements for a comparator predicate template argument
+(clause <a href="lib-algorithms.html#lib.algorithms">lib.algorithms</a>) applied to strings.
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+The result of the following expression:
+<blockquote><tt><pre>
+use_facet&lt; collate&lt;charT&gt; &gt;(*this).compare
+  (<tt><i>s1</i></tt>.data(), <tt><i>s1</i></tt>.data()+<tt><i>s1</i></tt>.size(), <tt><i>s2</i></tt>.data(), <tt><i>s2</i></tt>.data()+<tt><i>s2</i></tt>.size()) &lt; 0;
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-6-</b>
+[<i>Example:</i>
+A vector of strings
+<tt>v</tt>
+can be collated according to collation rules in locale
+<tt>loc</tt>
+simply by (<a href="lib-algorithms.html#lib.alg.sort">lib.alg.sort</a>, <a href="lib-containers.html#lib.vector">lib.vector</a>):
+<blockquote><tt><pre>
+  std::sort(v.begin(), v.end(), loc);
+</pre></tt></blockquote>
+<br>--- end example]
+</ul></ol></dl><a name="lib.locale.statics"><h4>22.1.1.5 -  <tt><b>locale</b></tt>  static members [lib.locale.statics]</h4></a>
+</dl></ol></ul><tt><blockquote><pre>
+static locale global(const locale&amp; <tt><i>loc</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b>
+Sets the global locale to its argument.
+</ul></ol></dl><p><b>-2-</b> <b>Effects:</b>
+Causes future calls to the constructor
+<tt>locale()</tt>
+to return a copy of the argument.
+If the argument has a name, does
+<blockquote><tt><pre>
+  std::setlocale(LC_ALL, loc.name().c_str());
+</pre></tt></blockquote>
+otherwise, the effect on the C locale, if any, is implementation-defined.
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+The previous value of
+<tt>locale()</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+static const locale&amp; classic();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b>
+The <tt>"C"</tt> locale.
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+A locale that implements the classic <tt>"C"</tt> locale semantics, equivalent
+to the value <tt>locale("C")</tt>.
+</ul></ol></dl><p><b>-6-</b> <b>Notes:</b>
+This locale, its facets, and their member functions, do not change
+with time.
+</ul></ol></dl><a name="lib.locale.global.templates"><h3>22.1.2 -  <tt><b>locale</b></tt>  globals [lib.locale.global.templates]</h3></a>
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class  <tt><i>Facet</i></tt>&gt; const  <tt><i>Facet</i></tt>&amp; use_facet(const locale&amp;  <tt><i>loc</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b>
+Get a reference to a facet of a locale.
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+a reference to the corresponding facet of  <tt><i>loc</i></tt>, if present.
+</ul></ol></dl><p><b>-3-</b> <b>Throws:</b>
+<tt>bad_cast</tt>
+if
+<tt>has_facet&lt;Facet&gt;(loc)</tt>
+is
+<tt>false</tt>.
+</ul></ol></dl><p><b>-4-</b> <b>Notes:</b>
+The reference returned remains valid at least as long as any copy of
+ <tt><i>loc</i></tt>  exists.
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class  <tt><i>Facet</i></tt>&gt; bool has_facet(const locale&amp;  <tt><i>loc</i></tt>) throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+true if the facet requested is present in  <tt><i>loc</i></tt>; otherwise false
+</ul></ol></dl><a name="lib.locale.convenience"><h3>22.1.3 - Convenience interfaces [lib.locale.convenience]</h3></a>
+</ul></ol></dl><a name="lib.classification"><h4>22.1.3.1 - Character classification [lib.classification]</h4></a>
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class charT&gt; bool isspace (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isprint (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool iscntrl (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isupper (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool islower (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isalpha (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isdigit (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool ispunct (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isxdigit(charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isalnum (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+template &lt;class charT&gt; bool isgraph (charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b>
+Each of these functions
+<tt>is<i><b>F</b></i></tt>
+returns the result of the expression:
+<blockquote><tt><pre>
+  use_facet&lt; ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).is(ctype_base::<i><b>F</b></i>,  <tt><i>c</i></tt>)
+</pre></tt></blockquote>
+where <i><b>F</b></i> is the
+<tt>ctype_base::mask</tt>
+value corresponding to that function (<a href="lib-locales.html#lib.category.ctype">lib.category.ctype</a>).*
+<blockquote>[Footnote:
+When used in a loop, it is faster to cache the
+<tt>ctype&lt;&gt;</tt>
+facet and use it directly, or use the vector form of
+<tt>ctype&lt;&gt;::is</tt>.
+--- end foonote]</blockquote>
+</ul></ol></dl><a name="lib.conversions"><h4>22.1.3.2 - Character conversions [lib.conversions]</h4></a>
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class charT&gt; charT toupper(charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>use_facet&lt;ctype&lt;charT&gt; &gt;(loc).toupper(c)</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+template &lt;class charT&gt; charT tolower(charT <tt><i>c</i></tt>, const locale&amp; <tt><i>loc</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>use_facet&lt;ctype&lt;charT&gt; &gt;(loc).tolower(c)</tt>.
+</ul></ol></dl><a name="lib.locale.categories"><h2>22.2 - Standard  <tt><b>locale</b></tt>  categories [lib.locale.categories]</h2></a>
+</ul></ol></dl><p><b>-1-</b>
+Each of the standard categories includes a family of facets.
+Some of these implement formatting or parsing of a datum, for use
+by standard or users' iostream operators
+<tt>&lt;&lt;</tt>
+and
+<tt>&gt;&gt;</tt>,
+as members
+<tt>put()</tt>
+and
+<tt>get()</tt>,
+respectively.
+Each such member function takes an
+<tt>ios_base&amp;</tt>
+argument whose members
+<tt>flags()</tt>,
+<tt>precision()</tt>,
+and
+<tt>width()</tt>,
+specify the format of the corresponding datum.
+(<a href="lib-iostreams.html#lib.ios.base">lib.ios.base</a>).
+Those functions which need to use other facets call its member
+<tt>getloc()</tt>
+to retrieve the locale imbued there.
+Formatting facets use the character argument
+<tt><tt><i>fill</i></tt></tt>
+to fill out the specified width where necessary.
+</ul></ol></dl><p><b>-2-</b>
+The
+<tt>put()</tt>
+members make no provision for error reporting.
+(Any failures of the
+OutputIterator argument must be extracted from the returned iterator.)
+The
+<tt>get()</tt>
+members take an
+<tt>ios_base::iostate&amp;</tt>
+argument whose value they ignore, but set to
+<tt>ios_base::failbit</tt>
+in case of a parse error.
+</ul></ol></dl><a name="lib.category.ctype"><h3>22.2.1 - The  <tt><b>ctype</b></tt>  category [lib.category.ctype]</h3></a>
+<blockquote><tt><pre>
+namespace std {
+  class ctype_base {
+  public:
+    enum mask {         //</tt><i>  numeric values are for exposition only.</i><tt>
+      space=1&lt;&lt;0, print=1&lt;&lt;1, cntrl=1&lt;&lt;2, upper=1&lt;&lt;3, lower=1&lt;&lt;4,
+      alpha=1&lt;&lt;5, digit=1&lt;&lt;6, punct=1&lt;&lt;7, xdigit=1&lt;&lt;8,
+      alnum=alpha|digit, graph=alnum|punct
+    };
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The type
+<tt>mask</tt>
+is a bitmask type.
+</ul></ol></dl><a name="lib.locale.ctype"><h4>22.2.1.1 - Template class  <tt><b>ctype</b></tt>  [lib.locale.ctype]</h4></a>
+<blockquote><tt><pre>
+  template &lt;class charT&gt;
+  class ctype : public locale::facet, public ctype_base {
+  public:
+    typedef charT char_type;
+    explicit ctype(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    bool         is(mask <tt><i>m</i></tt>, charT <tt><i>c</i></tt>) const;
+    const charT* is(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>, mask* <tt><i>vec</i></tt>) const;
+    const charT* scan_is(mask <tt><i>m</i></tt>,
+			 const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    const charT* scan_not(mask <tt><i>m</i></tt>,
+			  const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    charT        toupper(charT <tt><i>c</i></tt>) const;
+    const charT* toupper(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    charT        tolower(charT <tt><i>c</i></tt>) const;
+    const charT* tolower(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    charT        widen(char <tt><i>c</i></tt>) const;
+    const char*  widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>, charT* <tt><i>to</i></tt>) const;
+    char         narrow(charT <tt><i>c</i></tt>, char <tt><i>dfault</i></tt>) const;
+    const charT* narrow(const charT* <tt><i>low</i></tt>, const charT*, char <tt><i>dfault</i></tt>,
+			char* <tt><i>to</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~ctype();                    //</tt><i>  virtual</i><tt>
+    virtual bool         do_is(mask <tt><i>m</i></tt>, charT <tt><i>c</i></tt>) const;
+    virtual const charT* do_is(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+			       mask* <tt><i>vec</i></tt>) const;
+    virtual const charT* do_scan_is(mask <tt><i>m</i></tt>,
+			    const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual const charT* do_scan_not(mask <tt><i>m</i></tt>,
+			    const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual charT        do_toupper(charT) const;
+    virtual const charT* do_toupper(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual charT        do_tolower(charT) const;
+    virtual const charT* do_tolower(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual charT        do_widen(char) const;
+    virtual const char*  do_widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>,
+				  charT* <tt><i>dest</i></tt>) const;
+    virtual char         do_narrow(charT, char <tt><i>dfault</i></tt>) const;
+    virtual const charT* do_narrow(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+				   char <tt><i>dfault</i></tt>, char* <tt><i>dest</i></tt>) const;
+  };
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+Class
+<tt>ctype</tt>
+encapsulates the C library
+<tt>&lt;cctype&gt;</tt>
+features.
+<tt>istream</tt>
+members are required to use
+<tt>ctype&lt;&gt;</tt>
+for character classing during input parsing.
+</ul></ol></dl><p><b>-2-</b>
+The instantiations required in Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>ctype&lt;char&gt;</tt>
+and
+<tt>ctype&lt;wchar_t&gt;</tt>,
+implement character classing appropriate
+to the implementation's native character set.
+</ul></ol></dl><a name="lib.locale.ctype.members"><h5>22.2.1.1.1 -  <tt><b>ctype</b></tt>  members [lib.locale.ctype.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+bool         is(mask <tt><i>m</i></tt>, charT <tt><i>c</i></tt>) const;
+const charT* is(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+                mask* <tt><i>vec</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_is(<tt><i>m</i></tt>,<tt><i>c</i></tt>)</tt>
+or
+<tt>do_is(<tt><i>low</i></tt>,<tt><i>high</i></tt>,<tt><i>vec</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+const charT* scan_is(mask <tt><i>m</i></tt>,
+                     const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>do_scan_is(<tt><i>m</i></tt>,<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+const charT* scan_not(mask <tt><i>m</i></tt>,
+                      const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+<tt>do_scan_not(<tt><i>m</i></tt>,<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+charT        toupper(charT) const;
+const charT* toupper(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+<tt>do_toupper(<tt><i>c</i></tt>)</tt>
+or
+<tt>do_toupper(<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+charT        tolower(charT <tt><i>c</i></tt>) const;
+const charT* tolower(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+<tt>do_tolower(<tt><i>c</i></tt>)</tt>
+or
+<tt>do_tolower(<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+charT       widen(char <tt><i>c</i></tt>) const;
+const char* widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>, charT* <tt><i>to</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-6-</b> <b>Returns:</b>
+<tt>do_widen(<tt><i>c</i></tt>)</tt>
+or
+<tt>do_widen(<tt><i>low</i></tt>,<tt><i>high</i></tt>,<tt><i>to</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+char         narrow(charT <tt><i>c</i></tt>, char <tt><i>dfault</i></tt>) const;
+const charT* narrow(const charT* <tt><i>low</i></tt>, const charT*, char <tt><i>dfault</i></tt>,
+                    char* <tt><i>to</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-7-</b> <b>Returns:</b>
+<tt>do_narrow(<tt><i>c</i></tt>,<tt><i>dfault</i></tt>)</tt>
+or
+<tt>do_narrow(<tt><i>low</i></tt>,<tt><i>high</i></tt>,<tt><i>dfault</i></tt>,<tt><i>to</i></tt>)</tt>
+</ul></ol></dl><a name="lib.locale.ctype.virtuals"><h5>22.2.1.1.2 -  <tt><b>ctype</b></tt>  virtual functions [lib.locale.ctype.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+bool         do_is(mask <tt><i>m</i></tt>, charT <tt><i>c</i></tt>) const;
+const charT* do_is(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+                   mask* <tt><i>vec</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Classifies a character or sequence of characters.
+For each argument character, identifies a value
+<tt><i>M</i></tt>
+of type
+<tt>ctype_base::mask</tt>.
+The second form identifies a value <tt><i>M</i></tt> of type
+<tt>ctype_base::mask</tt>
+for each
+<tt>*<tt><i>p</i></tt></tt>
+where
+<tt>(<tt><i>low</i></tt>&lt;=<tt><i>p</i></tt> &amp;&amp; <tt><i>p</i></tt>&lt;<tt><i>high</i></tt>)</tt>,
+and places it into
+<tt><tt><i>vec</i></tt>[<tt><i>p</i></tt>-<tt><i>low</i></tt>]</tt>.
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+The first form returns the result of the expression
+<tt>(<tt><i>M</i></tt> &amp; <tt><i>m</i></tt>) != 0</tt>;
+i.e.,
+<tt>true</tt>
+if the character has the characteristics specified.
+The second form returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+const charT* do_scan_is(mask <tt><i>m</i></tt>,
+                       const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Effects:</b>
+Locates a character in a buffer that conforms to a classification
+<tt><i>m</i></tt>.
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+The smallest pointer <tt><i>p</i></tt> in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+such that
+<tt>is(*<tt><i>p</i></tt>)</tt>
+would return
+<tt>true</tt>;
+otherwise, returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+const charT* do_scan_not(mask <tt><i>m</i></tt>,
+                        const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Effects:</b>
+Locates a character in a buffer that fails to conform to a classification
+<tt>m</tt>.
+</ul></ol></dl><p><b>-6-</b> <b>Returns:</b>
+The smallest pointer <tt><i>p</i></tt>, if any, in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+such that
+<tt>is(*<tt><i>p</i></tt>)</tt>
+would return
+<tt>false</tt>;
+otherwise, returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+charT        do_toupper(charT <tt><i>c</i></tt>) const;
+const charT* do_toupper(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-7-</b> <b>Effects:</b>
+Converts a character or characters to upper case.
+The second form replaces each character
+<tt>*<tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+for which a corresponding upper-case character exists, with
+that character.
+</ul></ol></dl><p><b>-8-</b> <b>Returns:</b>
+The first form returns the corresponding upper-case character if it
+is known to exist, or its argument if not.
+The second form returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+charT        do_tolower(charT <tt><i>c</i></tt>) const;
+const charT* do_tolower(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-9-</b> <b>Effects:</b>
+Converts a character or characters to lower case.
+The second form replaces each character
+<tt>*<tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+and for which a corresponding lower-case character exists,
+with that character.
+</ul></ol></dl><p><b>-10-</b> <b>Returns:</b>
+The first form returns the corresponding lower-case character if it
+is known to exist, or its argument if not.
+The second form returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+charT        do_widen(char <tt><i>c</i></tt>) const;
+const char*  do_widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>,
+                      charT* <tt><i>dest</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-11-</b> <b>Effects:</b>
+Applies the simplest reasonable transformation from a
+<tt>char</tt>
+value or sequence of
+<tt>char</tt>
+values to the corresponding
+<tt>charT</tt>
+value or values.*
+<blockquote>[Footnote:
+The char argument of
+<tt>do_widen</tt>
+is intended to accept values derived from character literals for conversion
+the locale's encoding.
+--- end foonote]</blockquote>
+The only characters for which unique transformations are required
+are those in the basic source character set (<a href="lex.html#lex.charset">lex.charset</a>).
+<br>
+For any named
+<tt>ctype</tt>
+category with a
+<tt>ctype&lt;charT&gt;</tt>
+facet <tt><i>ctw</i></tt> and valid
+<tt>ctype_base::mask</tt>
+value <tt><i>M</i></tt>
+<tt>(is(<tt><i>M</i></tt>, <tt><i>c</i></tt>) || !<tt><i>ctw</i></tt>.is(<tt><i>M</i></tt>, do_widen(<tt><i>c</i></tt>)) )</tt>
+is
+<tt>true</tt>.*
+<blockquote>[Footnote:
+In other words, the transformed character is not a member
+of any character classification that <tt><i>c</i></tt> is not also a member of.
+--- end foonote]</blockquote>
+<br>
+The second form transforms each character
+<tt>*<tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>,
+placing the result in
+<tt><tt><i>dest</i></tt>[<tt><i>p</i></tt>-<tt><i>low</i></tt>]</tt>.
+</ul></ol></dl><p><b>-12-</b> <b>Returns:</b>
+The first form returns the transformed value.
+The second form returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+char         do_narrow(charT <tt><i>c</i></tt>, char <tt><i>dfault</i></tt>) const;
+const charT* do_narrow(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+                       char <tt><i>dfault</i></tt>, char* <tt><i>dest</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-13-</b> <b>Effects:</b>
+Applies the simplest reasonable transformation from a
+<tt>charT</tt>
+value or sequence of
+<tt>charT</tt>
+values to the corresponding
+<tt>char</tt>
+value or values.
+<br>
+For any character <tt><i>c</i></tt> in the basic source character set(<a href="lex.html#lex.charset">lex.charset</a>)
+the transformation is such that
+<blockquote><tt><pre>
+do_widen(do_narrow(c),0) == c
+</pre></tt></blockquote>
+<br>
+For any named
+<tt>ctype</tt>
+category with a
+<tt>ctype&lt;char&gt;</tt>
+facet <tt><i>ctc</i></tt> however, and
+<tt>ctype_base::mask</tt>
+value <tt><i>M</i></tt>,
+<blockquote><tt><pre>
+  (is(<tt><i>M</i></tt>,<tt><i>c</i></tt>) || !<tt><i>ctc</i></tt>.is(<tt><i>M</i></tt>, do_narrow(<tt><i>c</i></tt>),<tt><i>dfault</i></tt>) )"
+</pre></tt></blockquote>
+is
+<tt>true</tt>
+(unless
+<tt>do_narrow</tt>
+returns
+<tt><tt><i>dfault</i></tt></tt>).
+In addition, for any digit character <tt><i>c</i></tt>,
+the expression
+<tt>(do_narrow(<tt><i>c</i></tt>,<tt><i>dfault</i></tt>)-'0')</tt>
+evaluates to the digit value of the character.
+The second form transforms each character
+<tt>*<tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>,
+placing the result (or <tt><i>dfault</i></tt>
+if no simple transformation is readly available) in
+<tt><tt><i>dest</i></tt>[<tt><i>p</i></tt>-<tt><i>low</i></tt>]</tt>.
+</ul></ol></dl><p><b>-14-</b> <b>Returns:</b>
+The first form returns the transformed value; or <tt><i>dfault</i></tt>
+if no mapping is readily available.
+The second form returns <tt><i>high</i></tt>.
+<br>
+</ul></ol></dl><a name="lib.locale.ctype.byname"><h4>22.2.1.2 - Template class  <tt><b>ctype_byname</b></tt>  [lib.locale.ctype.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT&gt;
+  class ctype_byname : public ctype&lt;charT&gt; {
+  public:
+    typedef ctype&lt;charT&gt;::mask mask;
+    explicit ctype_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+  protected:
+   ~ctype_byname();             //</tt><i>  virtual</i><tt>
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    virtual bool         do_is(mask <tt><i>m</i></tt>, charT <tt><i>c</i></tt>) const;
+    virtual const charT* do_is(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+			       mask* <tt><i>vec</i></tt>) const;
+    virtual const char*  do_scan_is(mask <tt><i>m</i></tt>,
+			     const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual const char*  do_scan_not(mask <tt><i>m</i></tt>,
+			     const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual charT        do_toupper(charT) const;
+    virtual const charT* do_toupper(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual charT        do_tolower(charT) const;
+    virtual const charT* do_tolower(charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual charT        do_widen(char) const;
+    virtual const char*  do_widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>,
+				  charT* <tt><i>dest</i></tt>) const;
+    virtual char         do_narrow(charT, char <tt><i>dfault</i></tt>) const;
+    virtual const charT* do_narrow(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>,
+				   char <tt><i>dfault</i></tt>, char* <tt><i>dest</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.facet.ctype.special"><h4>22.2.1.3 -  <tt><b>ctype</b></tt>  specializations [lib.facet.ctype.special]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;&gt; class ctype&lt;char&gt;
+    : public locale::facet, public ctype_base {
+  public:
+    typedef char char_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit ctype(const mask* <tt><i>tab</i></tt> = 0, bool <tt><i>del</i></tt> = false,
+		   size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    bool is(mask <tt><i>m</i></tt>, char <tt><i>c</i></tt>) const;
+    const char* is(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>, mask* <tt><i>vec</i></tt>) const;
+    const char* scan_is (mask <tt><i>m</i></tt>,
+			 const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+    const char* scan_not(mask <tt><i>m</i></tt>,
+			 const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    char        toupper(char <tt><i>c</i></tt>) const;
+    const char* toupper(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+    char        tolower(char <tt><i>c</i></tt>) const;
+    const char* tolower(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    char  widen(char <tt><i>c</i></tt>) const;
+    const char* widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>, char* <tt><i>to</i></tt>) const;
+    char  narrow(char <tt><i>c</i></tt>, char <tt><i>dfault</i></tt>) const;
+    const char* narrow(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>, char <tt><i>dfault</i></tt>,
+		       char* <tt><i>to</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+    static const size_t table_size =  <tt><i>IMPLEMENTATION_DEFINED</i></tt>;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+    const mask* table() const throw();
+    static const mask* classic_table() throw();
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+   ~ctype();                    //</tt><i>  virtual</i><tt>
+    virtual char        do_toupper(char <tt><i>c</i></tt>) const;
+    virtual const char* do_toupper(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+    virtual char        do_tolower(char <tt><i>c</i></tt>) const;
+    virtual const char* do_tolower(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+
+    virtual char        do_widen(char <tt><i>c</i></tt>) const;
+    virtual const char* do_widen(const char* <tt><i>low</i></tt>,
+				 const char* <tt><i>high</i></tt>,
+				 char* <tt><i>to</i></tt>) const;
+    virtual char        do_narrow(char <tt><i>c</i></tt>, char <tt><i>dfault</i></tt>) const;
+    virtual const char* do_narrow(const char* <tt><i>low</i></tt>,
+				  const char* <tt><i>high</i></tt>,
+				  char <tt><i>dfault</i></tt>, char* <tt><i>to</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+A specialization
+<tt>ctype&lt;char&gt;</tt>
+is provided so that the member functions on type
+<tt>char</tt>
+can be implemented
+<tt>inline</tt>.*
+<blockquote>[Footnote:
+Only the
+<tt>char</tt>
+(not
+<tt>unsigned char</tt>
+and
+<tt>signed char</tt>)
+form is provided.
+The specialization is specified in the standard, and not left as an
+implementation detail, because it affects the derivation interface for
+<tt>ctype&lt;char&gt;</tt>.
+--- end foonote]</blockquote>
+The implementation-defined value of member
+<tt>table_size</tt>
+is at least 256.
+</ul></ol></dl><a name="lib.facet.ctype.char.dtor"><h5>22.2.1.3.1 -  <tt><b>ctype&lt;char&gt;</b></tt>  destructor [lib.facet.ctype.char.dtor]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+~ctype();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+If the constructor's first argument was nonzero, and its second argument
+was true, does
+<tt>delete [] table()</tt>.
+</ul></ol></dl><a name="lib.facet.ctype.char.members"><h5>22.2.1.3.2 -  <tt><b>ctype&lt;char&gt;</b></tt>  members [lib.facet.ctype.char.members]</h5></a>
+</ul></ol></dl><p><b>-1-</b>
+In the following member descriptions, for
+<tt>unsigned char</tt>
+values  <tt><i>v</i></tt>  where  <tt>(</tt><tt><i>v</i></tt><tt> &gt;= table_size)</tt>,
+ <tt>table()[</tt><tt><i>v</i></tt><tt>]</tt>  is assumed to have an
+implementation-defined value (possibly different for each
+such value  <tt><i>v</i></tt>) without performing the array lookup.
+</dl></ol></ul><tt><blockquote><pre>
+explicit ctype(const mask* <tt><i>tbl</i></tt> = 0, bool <tt><i>del</i></tt> = false,
+               size_t <tt><i>refs</i></tt> = 0);
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Precondition:</b>
+ <tt><i>tbl</i></tt>  either 0 or an array of at least
+<tt>table_size</tt>
+elements.
+</ul></ol></dl><p><b>-3-</b> <b>Effects:</b>
+Passes its <tt><i>refs</i></tt> argument to its base class constructor.
+</dl></ol></ul><tt><blockquote><pre>
+bool        is(mask <tt><i>m</i></tt>, char <tt><i>c</i></tt>) const;
+const char* is(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>,
+               mask* <tt><i>vec</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Effects:</b>
+The second form, for all
+<tt>*<tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>,
+assigns
+<tt><tt><i>vec</i></tt>[<tt><i>p</i></tt>-<tt><i>low</i></tt>]</tt>
+to
+<tt>table()[(unsigned char)*<tt><i>p</i></tt>]</tt>.
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+The first form returns
+<tt>table()[(unsigned char)c] &amp; m</tt>;
+the second form returns <tt><i>high</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+const char* scan_is(mask <tt><i>m</i></tt>,
+                    const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-6-</b> <b>Returns:</b>
+The smallest
+<tt><tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+such that
+<blockquote><tt><pre>
+table()[(unsigned char) *<tt><i>p</i></tt>] &amp; m
+</pre></tt></blockquote>
+is
+<tt>true</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+const char* scan_not(mask <tt><i>m</i></tt>,
+                     const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-7-</b> <b>Returns:</b>
+The smallest
+<tt><tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+such that
+<blockquote><tt><pre>
+table()[(unsigned char) *<tt><i>p</i></tt>] &amp; m
+</pre></tt></blockquote>
+is
+<tt>false</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+char        toupper(char <tt><i>c</i></tt>) const;
+const char* toupper(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-8-</b> <b>Returns:</b>
+<tt>do_toupper(<tt><i>c</i></tt>)</tt>
+or
+<tt>do_toupper(<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+char        tolower(char <tt><i>c</i></tt>) const;
+const char* tolower(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-9-</b> <b>Returns:</b>
+<tt>do_tolower(<tt><i>c</i></tt>)</tt>
+or
+<tt>do_tolower(<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+char  widen(char <tt><i>c</i></tt>) const;
+const char* widen(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>,
+    char* <tt><i>to</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-10-</b> <b>Returns:</b>
+<tt>do_widen(<tt><i>low</i></tt>, <tt><i>high</i></tt>, <tt><i>to</i></tt>)</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+char        narrow(char <tt><i>c</i></tt>, char /*dfault*/) const;
+const char* narrow(const char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>,
+                   char /*dfault*/, char* <tt><i>to</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-11-</b> <b>Returns:</b>
+<tt>do_narrow(<tt><i>low</i></tt>, <tt><i>high</i></tt>, <tt><i>to</i></tt>)</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+const mask* table() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-12-</b> <b>Returns:</b>
+The first constructor argument, if it was non-zero, otherwise
+<tt>classic_table()</tt>.
+</ul></ol></dl><a name="lib.facet.ctype.char.statics"><h5>22.2.1.3.3 -  <tt><b>ctype&lt;char&gt;</b></tt>  static members [lib.facet.ctype.char.statics]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+static const mask* classic_table() throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+A pointer to the initial element of an array of size
+<tt>table_size</tt>
+which represents the classifications of characters in the "C" locale.
+<br>
+</ul></ol></dl><a name="lib.facet.ctype.char.virtuals"><h5>22.2.1.3.4 -  <tt><b>ctype&lt;char&gt;</b></tt>  virtual functions [lib.facet.ctype.char.virtuals]</h5></a>
+<blockquote><tt><pre>
+char        do_toupper(char) const;
+const char* do_toupper(char* low, const char* high) const;
+char        do_tolower(char) const;
+const char* do_tolower(char* low, const char* high) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+virtual char        do_widen(char <tt><i>c</i></tt>) const;
+virtual const char* do_widen(const char* <tt><i>low</i></tt>,
+                             const char* <tt><i>high</i></tt>,
+                             char* <tt><i>to</i></tt>) const;
+virtual char        do_narrow(char <tt><i>c</i></tt>, char <tt><i>dfault</i></tt>) const;
+virtual const char* do_narrow(const char* <tt><i>low</i></tt>,
+                              const char* <tt><i>high</i></tt>,
+                              char <tt><i>dfault</i></tt>, char* <tt><i>to</i></tt>) const;
+</pre></tt></blockquote>
+These functions are described identically as those members of the
+same name in the
+<tt>ctype</tt>
+class template (<a href="lib-locales.html#lib.locale.ctype.members">lib.locale.ctype.members</a>).
+</ul></ol></dl><a name="lib.locale.ctype.byname.special"><h4>22.2.1.4 - Class ctype_byname&lt;char&gt; [lib.locale.ctype.byname.special]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;&gt; class ctype_byname&lt;char&gt; : public ctype&lt;char&gt; {
+  public:
+    explicit ctype_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+  protected:
+   ~ctype_byname();             //</tt><i>  virtual</i><tt>
+    virtual char        do_toupper(char <tt><i>c</i></tt>) const;
+    virtual const char* do_toupper(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+    virtual char        do_tolower(char <tt><i>c</i></tt>) const;
+    virtual const char* do_tolower(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+
+    virtual char        do_widen(char <tt><i>c</i></tt>) const;
+    virtual const char* do_widen(char* <tt><i>low</i></tt>,
+				 const char* <tt><i>high</i></tt>,
+				 char* <tt><i>to</i></tt>) const;
+    virtual char        do_widen(char <tt><i>c</i></tt>) const;
+    virtual const char* do_widen(char* <tt><i>low</i></tt>, const char* <tt><i>high</i></tt>) const;
+
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+</ul></ol></dl><a name="lib.locale.codecvt"><h4>22.2.1.5 - Template class  <tt><b>codecvt</b></tt>  [lib.locale.codecvt]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+ class codecvt_base {
+ public:
+  enum result { ok, partial, error, noconv };
+ };
+ template &lt;class internT, class externT, class stateT&gt;
+ class codecvt : public locale::facet, public codecvt_base {
+ public:
+  typedef internT  intern_type;
+  typedef externT  extern_type;
+  typedef stateT state_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  explicit codecvt(size_t <tt><i>refs</i></tt> = 0)
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  result out(stateT&amp; <tt><i>state</i></tt>,
+   const internT* <tt><i>from</i></tt>, const internT* <tt><i>from_end</i></tt>, const internT*&amp; <tt><i>from_next</i></tt>,
+	 externT*   <tt><i>to</i></tt>,       externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  result unshift(stateT&amp; <tt><i>state</i></tt>,
+	 externT*   <tt><i>to</i></tt>,        externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  result in(stateT&amp; <tt><i>state</i></tt>,
+   const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>, const externT*&amp; <tt><i>from_next</i></tt>,
+	 internT*   <tt><i>to</i></tt>,       internT* <tt><i>to_limit</i></tt>, internT*&amp; <tt><i>to_next</i></tt>) const;
+  int encoding() const throw();
+  bool always_noconv() const throw();
+  int length(const stateT&amp;, const externT* <tt><i>from</i></tt>, const externT* <tt><i>end</i></tt>,
+	     size_t <tt><i>max</i></tt>) const;
+  int max_length() const throw();
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+ protected:
+  ~codecvt();                   //</tt><i>  virtual</i><tt>
+  virtual result do_out(stateT&amp; <tt><i>state</i></tt>,
+   const internT* <tt><i>from</i></tt>, const internT* <tt><i>from_end</i></tt>, const internT*&amp; <tt><i>from_next</i></tt>,
+         externT* <tt><i>to</i></tt>,         externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual result do_in(stateT&amp; <tt><i>state</i></tt>,
+   const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>, const externT*&amp; <tt><i>from_next</i></tt>,
+	 internT* <tt><i>to</i></tt>,         internT* <tt><i>to_limit</i></tt>, internT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual result do_unshift(stateT&amp; <tt><i>state</i></tt>,
+	 externT* <tt><i>to</i></tt>,         externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual int do_encoding() const throw();
+  virtual bool do_always_noconv() const throw();
+  virtual int do_length(const stateT&amp;, const externT* <tt><i>from</i></tt>,
+			const externT* <tt><i>end</i></tt>, size_t <tt><i>max</i></tt>) const;
+  virtual int do_max_length() const throw();
+ };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The class
+<tt>codecvt&lt;internT,externT,stateT&gt;</tt>
+is for use when
+converting from one codeset to another, such as from wide characters
+to multibyte  characters, between wide character encodings such as
+Unicode and EUC.
+</ul></ol></dl><p><b>-2-</b>
+The
+<tt>stateT</tt>
+argument selects the pair of codesets being mapped between.
+</ul></ol></dl><p><b>-3-</b>
+The instantiations required in the Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>codecvt&lt;wchar_t,char,mbstate_t&gt;</tt>
+and
+<tt>codecvt&lt;char,char,mbstate_t&gt;</tt>,
+convert the implementation-defined native character set.
+<tt>codecvt&lt;char,char,mbstate_t&gt;</tt>
+implements a degenerate conversion;
+it does not convert at all.
+<tt>codecvt&lt;wchar_t,char,mbstate_t&gt;</tt>
+converts between the native character sets for tiny and wide characters.
+Instantiations on
+<tt>mbstate_t</tt>
+perform conversion between encodings known to the library implementor.
+Other encodings can be converted by specializing on a user-defined
+<tt>stateT</tt>
+type.
+The
+<tt>stateT</tt>
+object can contain any state that is useful to communicate to or from
+the specialized
+<tt>do_convert</tt>
+member.
+</ul></ol></dl><a name="lib.locale.codecvt.members"><h5>22.2.1.5.1 -  <tt><b>codecvt</b></tt>  members [lib.locale.codecvt.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+result out(stateT&amp; <tt><i>state</i></tt>,
+  const internT* <tt><i>from</i></tt>, const internT* <tt><i>from_end</i></tt>, const internT*&amp; <tt><i>from_next</i></tt>,
+        externT* <tt><i>to</i></tt>, externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_out(<tt><i>state</i></tt>, <tt><i>from</i></tt>, <tt><i>from_end</i></tt>, <tt><i>from_next</i></tt>, <tt><i>to</i></tt>,<tt><i>to_limit</i></tt>, <tt><i>to_next</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+result unshift(stateT&amp; <tt><i>state</i></tt>,
+        externT* <tt><i>to</i></tt>, externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>do_unshift(<tt><i>state</i></tt>, <tt><i>to</i></tt>, <tt><i>to_limit</i></tt>, <tt><i>to_next</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+result in(stateT&amp; <tt><i>state</i></tt>,
+  const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>, const externT*&amp; <tt><i>from_next</i></tt>,
+        internT* <tt><i>to</i></tt>, internT* <tt><i>to_limit</i></tt>, internT*&amp; <tt><i>to_next</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+<tt>do_in(<tt><i>state</i></tt>, <tt><i>from</i></tt>,<tt><i>from_end</i></tt>,<tt><i>from_next</i></tt>, <tt><i>to</i></tt>,<tt><i>to_limit</i></tt>,<tt><i>to_next</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+int encoding() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+<tt>do_encoding()</tt>
+</dl></ol></ul><tt><blockquote><pre>
+bool always_noconv() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+<tt>do_always_noconv()</tt>
+</dl></ol></ul><tt><blockquote><pre>
+int length(stateT&amp; <tt><i>state</i></tt>, const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>,
+           size_t <tt><i>max</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-6-</b> <b>Returns:</b>
+<tt>do_length(<tt><i>state</i></tt>, <tt><i>from</i></tt>,<tt><i>from_end</i></tt>,<tt><i>max</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+int max_length() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-7-</b> <b>Returns:</b>
+<tt>do_max_length()</tt>
+</ul></ol></dl><a name="lib.locale.codecvt.virtuals"><h5>22.2.1.5.2 -  <tt><b>codecvt</b></tt>  virtual functions [lib.locale.codecvt.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+result do_out(stateT&amp; <tt><i>state</i></tt>,
+  const internT* <tt><i>from</i></tt>, const internT* <tt><i>from_end</i></tt>, const internT*&amp; <tt><i>from_next</i></tt>,
+  externT* <tt><i>to</i></tt>, externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+
+result do_in(stateT&amp; <tt><i>state</i></tt>,
+  const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>, const externT*&amp; <tt><i>from_next</i></tt>,
+        internT* <tt><i>to</i></tt>, internT* <tt><i>to_limit</i></tt>, internT*&amp; <tt><i>to_next</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Preconditions:</b>
+<tt>(<tt><i>from</i></tt>&lt;=<tt><i>from_end</i></tt> &amp;&amp; <tt><i>to</i></tt>&lt;=<tt><i>to_end</i></tt>)</tt>
+well-defined and
+<tt>true</tt>;
+<tt><i>state</i></tt> initialized, if at the beginning of a sequence, or else equal to
+the result of converting the preceding characters in the sequence.
+</ul></ol></dl><p><b>-2-</b> <b>Effects:</b>
+Translates characters in the source range
+<tt>[<tt><i>from</i></tt>,<tt><i>from_end</i></tt>)</tt>,
+placing the results in sequential positions starting at destination <tt><i>to</i></tt>.
+Converts no more than
+<tt>(<tt><i>from_end</i></tt>-<tt><i>from</i></tt>)</tt>
+source elements, and
+stores no more than
+<tt>(<tt><i>to_limit</i></tt>-<tt><i>to</i></tt>)</tt>
+destination elements.
+<br>
+Stops if it encounters a character it cannot convert.
+It always leaves the  <tt><i>from_next</i></tt>  and  <tt><i>to_next</i></tt>  pointers
+pointing one beyond the last element successfully converted.
+[<i>Note:</i>
+If no translation is needed (returns
+<tt>noconv</tt>),
+sets <tt><i>to_next</i></tt> equal to argument <tt><i>to</i></tt>, and <tt><i>from_next</i></tt>
+equal to argument <tt><i>from</i></tt>.
+<br>--- end note]
+</ul></ol></dl><p><b>-3-</b> <b>Notes:</b>
+Its operations on <tt><i>state</i></tt> are unspecified.
+<br>
+[<i>Note:</i>
+This argument can be used, for example, to maintain
+shift state, to specify conversion options (such as count only), or to
+identify a cache of seek offsets.
+<br>--- end note]
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+An enumeration value, as summarized in Table ??:
+<p><center><table border><caption><tt><b>convert result</b></tt> values</caption>
+<tr><td>Value</td><td>Meaning</td></tr>
+
+<tr><td>ok</td><td>completed the conversion</td></tr>
+<tr><td>partial</td><td>not all source characters converted</td></tr>
+<tr><td>error</td><td>encountered a <tt>from_type</tt> character it could not convert</td></tr>
+<tr><td>noconv</td><td>no conversion was needed</td></tr>
+</table></center><p>
+A return value of
+<tt>partial</tt>,
+if
+<tt>(<tt><i>from_next</i></tt>==<tt><i>from_end</i></tt>)</tt>,
+indicates that either the destination sequence has not absorbed all the
+available destination elements, or that additional source elements are
+needed before another destination element can be produced.
+</dl></ol></ul><tt><blockquote><pre>
+result do_unshift(stateT&amp; <tt><i>state</i></tt>,
+  externT* <tt><i>to</i></tt>, externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Effects</b>
+Places characters starting at <tt><i>to</i></tt> that should be appended
+to terminate a sequence when the current
+<tt>stateT</tt>
+is given by <tt><i>state</i></tt>.*
+<blockquote>[Footnote:
+Typically these will be characters to return the state to
+<tt>stateT()</tt>
+--- end foonote]</blockquote>
+The instantiations required in Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>codecvt&lt;wchar_t,char,mbstate_t&gt;</tt>
+and
+<tt>codecvt&lt;char,char,mbstate_t&gt;</tt>,
+store no characters.
+Stores no more than
+<tt>(<tt><i>to_limit</i></tt>-<tt><i>to</i></tt>)</tt>
+destination elements.
+It always leaves the  <tt><i>to_next</i></tt>  pointer
+pointing one beyond the last element successfully stored.
+</ul></ol></dl><p><b>-6-</b> <b>Returns</b>
+An enumeration value, as summarized in Table ??:
+<p><center><table border><caption><tt><b>convert result</b></tt> values</caption>
+<tr><td>Value</td><td>Meaning</td></tr>
+
+<tr><td>ok</td><td>completed the sequence</td></tr>
+<tr><td>partial</td><td>more characters need to be supplied to complete termination</td></tr>
+<tr><td>error</td><td><tt><i>state</i></tt> has invalid value.</td></tr>
+<tr><td>noconv</td><td>no termination is needed for this  <tt>state_type</tt> </td></tr>
+</table></center><p>
+<tt>codecvt&lt;char,char,mbstate_t&gt;</tt>,
+returns
+<tt>noconv</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+int do_encoding() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-7-</b> <b>Returns:</b>
+-1 if the encoding of the externT sequence is state-dependent; else the
+constant number of externT characters needed to produce an internal
+character; or 0 if this number is not a constant*.
+<blockquote>[Footnote:
+If encoding() yields -1, then more than max_length() externT elements
+may be consumed when producing a single internT character, and additional
+externT elements may appear at the end of a sequence after those that
+yield the final internT character.
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+bool do_always_noconv() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-8-</b> <b>Returns:</b>
+<tt>true</tt>
+if
+<tt>do_convert()</tt>
+returns
+<tt>noconv</tt>
+for all valid argument values.
+<tt>codecvt&lt;char,char,mbstate_t&gt;</tt>
+returns
+<tt>true</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+int do_length(stateT&amp; <tt><i>state</i></tt>, const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>,
+              size_t <tt><i>max</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-9-</b> <b>Preconditions:</b>
+<tt>(<tt><i>from</i></tt>&lt;=<tt><i>from_end</i></tt>)</tt>
+well-defined and
+<tt>true</tt>;
+<tt><i>state</i></tt> initialized, if at the beginning of a sequence, or else equal to
+the result of converting the preceding characters in the sequence.
+</ul></ol></dl><p><b>-10-</b> <b>Returns:</b>
+<tt>(<tt><i>from_next</i></tt>-<tt><i>from</i></tt>)</tt>
+where
+<tt><tt><i>from_next</i></tt></tt>
+is the largest value in the range
+<tt>[<tt><i>from</i></tt>,<tt><i>from_end</i></tt>]</tt>
+such that the sequence of values in the range
+<tt>[<tt><i>from</i></tt>,<tt><i>from_next</i></tt>)</tt>
+represents
+<tt><tt><i>max</i></tt></tt>
+or fewer valid complete characters of type
+<tt><tt><i>internT</i></tt></tt>.
+The instantiations required in Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>codecvt&lt;wchar_t, char, mbstate_t&gt;</tt>
+and
+<tt>codecvt&lt;char, char, mbstate_t&gt;</tt>,
+return the lesser of
+<tt><tt><i>max</i></tt></tt>
+and
+<tt>(<tt><i>from_end</i></tt>-<tt><i>from</i></tt>)</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+int do_max_length() const throw();
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-11-</b> <b>Returns:</b>
+The maximum value that
+1)<tt>do_length(<tt><i>state</i></tt>,</tt><tt><i>from</i></tt>,n<tt><i>from_end</i></tt>,
+can return for any valid range
+<tt>[<tt><i>from</i></tt>,</tt><tt><i>from_end</i></tt>)
+and
+<tt>stateT</tt>
+value
+<tt><tt><i>state</i></tt></tt>.
+<tt>codecvt&lt;char, char, mbstate_t&gt;</tt>
+returns 1.
+<br>
+</ul></ol></dl><a name="lib.locale.codecvt.byname"><h4>22.2.1.6 - Template class  <tt><b>codecvt_byname</b></tt>  [lib.locale.codecvt.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+ template &lt;class internT, class externT, class stateT&gt;
+ class codecvt_byname : public codecvt&lt;internT, externT, stateT&gt; {
+ public:
+  explicit codecvt_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+ protected:
+ ~codecvt_byname();             //</tt><i>  virtual</i><tt>
+  virtual result do_out(stateT&amp; <tt><i>state</i></tt>,
+    const internT* <tt><i>from</i></tt>, const internT* <tt><i>from_end</i></tt>, const internT*&amp; <tt><i>from_next</i></tt>,
+	  externT* <tt><i>to</i></tt>,         externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual result do_in(stateT&amp; <tt><i>state</i></tt>,
+    const externT* <tt><i>from</i></tt>, const externT* <tt><i>from_end</i></tt>, const externT*&amp; <tt><i>from_next</i></tt>,
+	  internT* <tt><i>to</i></tt>,         internT* <tt><i>to_limit</i></tt>, internT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual result do_unshift(stateT&amp; <tt><i>state</i></tt>,
+	  externT* <tt><i>to</i></tt>,         externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual int do_encoding() const throw();
+  virtual bool do_always_noconv() const throw();
+  virtual int do_length(const stateT&amp;, const externT* <tt><i>from</i></tt>,
+			const externT* <tt><i>end</i></tt>, size_t <tt><i>max</i></tt>) const;
+  virtual result do_unshift(stateT&amp; <tt><i>state</i></tt>,
+	 externT* <tt><i>to</i></tt>, externT* <tt><i>to_limit</i></tt>, externT*&amp; <tt><i>to_next</i></tt>) const;
+  virtual int do_max_length() const throw();
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.category.numeric"><h3>22.2.2 - The numeric category [lib.category.numeric]</h3></a>
+</ul></ol></dl><p><b>-1-</b>
+The classes
+<tt>num_get&lt;&gt;</tt>
+and
+<tt>num_put&lt;&gt;</tt>
+handle numeric formatting and parsing.
+Virtual functions are provided for several numeric types.
+Implementations may (but are not required to) delegate extraction
+of smaller types to extractors for larger types.*
+<blockquote>[Footnote:
+Parsing <tt>"-1"</tt> correctly into (e.g.) an
+<tt>unsigned short</tt>
+requires that the corresponding member
+<tt>get()</tt>
+at least extract the sign before delegating.
+--- end foonote]</blockquote>
+</ul></ol></dl><p><b>-2-</b>
+All specifications of member functions for
+num_put
+and
+num_get
+in the subclauses of <a href="lib-locales.html#lib.category.numeric">lib.category.numeric</a> only apply to the
+instantiations required in Tables ?? and ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>num_get&lt;char&gt;</tt>,
+<tt>num_get&lt;wchar_t&gt;</tt>,
+<tt>num_get&lt;C,InputIterator&gt;</tt>,
+<tt>num_put&lt;char&gt;</tt>,
+<tt>num_put&lt;wchar_t&gt;</tt>,
+and
+<tt>num_put&lt;C,OutputIterator&gt;</tt>.
+These instantiations refer to the
+<tt>ios_base&amp;</tt>
+argument for formatting specifications (<a href="lib-locales.html#lib.locale.categories">lib.locale.categories</a>),
+and to its imbued locale for the
+<tt>numpunct&lt;&gt;</tt>
+facet to identify all numeric punctuation preferences,
+and also for the
+<tt>ctype&lt;&gt;</tt>
+facet to perform character classification.
+</ul></ol></dl><p><b>-3-</b>
+Extractor and inserter members of the standard iostreams use
+<tt>num_get&lt;&gt;</tt>
+and
+<tt>num_put&lt;&gt;</tt>
+member functions for formatting and parsing numeric values
+(<a href="lib-iostreams.html#lib.istream.formatted.reqmts">lib.istream.formatted.reqmts</a>, <a href="lib-iostreams.html#lib.ostream.formatted.reqmts">lib.ostream.formatted.reqmts</a>).
+</ul></ol></dl><a name="lib.locale.num.get"><h4>22.2.2.1 - Template class  <tt><b>num_get</b></tt>  [lib.locale.num.get]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT, class InputIterator = istreambuf_iterator&lt;charT&gt; &gt;
+  class num_get : public locale::facet {
+  public:
+    typedef charT            char_type;
+    typedef InputIterator    iter_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit num_get(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, bool&amp; <tt><i>v</i></tt>)           const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; ,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, long&amp; <tt><i>v</i></tt>)           const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned short&amp; <tt><i>v</i></tt>) const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned int&amp; <tt><i>v</i></tt>)   const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned long&amp; <tt><i>v</i></tt>)  const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, float&amp; <tt><i>v</i></tt>)          const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, double&amp; <tt><i>v</i></tt>)         const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, long double&amp; <tt><i>v</i></tt>)    const;
+    iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+		  ios_base::iostate&amp; <tt><i>err</i></tt>, void*&amp; <tt><i>v</i></tt>)          const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~num_get();                  //</tt><i>  virtual</i><tt>
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, bool&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, long&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned short&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned int&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned long&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, float&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, double&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, long double&amp; <tt><i>v</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, ios_base&amp;,
+	ios_base::iostate&amp; <tt><i>err</i></tt>, void*&amp; <tt><i>v</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The facet
+<tt>num_get</tt>
+is used to parse numeric values from an input sequence such as an istream.
+<br>
+</ul></ol></dl><a name="lib.facet.num.get.members"><h5>22.2.2.1.1 -  <tt><b>num_get</b></tt>  members [lib.facet.num.get.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, long&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned short&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned int&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned long&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, short&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, double&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, long double&amp; <tt><i>val</i></tt>) const;
+iter_type get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, void*&amp; <tt><i>val</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_get(<tt><i>in</i></tt>, <tt><i>end</i></tt>, <tt><i>str</i></tt>, <tt><i>err</i></tt>, <tt><i>val</i></tt>)</tt>.
+</ul></ol></dl><a name="lib.facet.num.get.virtuals"><h5>22.2.2.1.2 -  <tt><b>num_get</b></tt>  virtual functions [lib.facet.num.get.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, long&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned short&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned int&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, unsigned long&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, float&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, double&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, long double&amp; <tt><i>val</i></tt>) const;
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, void*&amp; <tt><i>val</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Reads characters from <tt><i>in</i></tt>,
+interpreting them according to
+<tt><tt><i>str</i></tt>.flags()</tt>,
+<tt>use_facet&lt; ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>)</tt>,
+and
+<tt>use_facet&lt; numpunct&lt;charT&gt; &gt;(<tt><i>loc</i></tt>)</tt>,
+where
+<i>loc</i>
+is
+<tt><tt><i>str</i></tt>.getloc()</tt>.
+If an error occurs, <tt><i>val</i></tt>
+is unchanged; otherwise it is set to the resulting value.
+</ul></ol></dl><p><b>-2-</b>
+The details of this operation occur in three stages
+</ul><ul><li>
+Stage 1: Determine a conversion specifier
+</ul><ul><li>
+Stage 2: Extract characters from <tt><i>in</i></tt> and determine a corresponding
+<tt>char</tt>
+value for the format expected by the conversion specification determined
+in stage 1.
+</ul><ul><li>
+Stage 3:
+Store results
+<br>
+The details of the stages are presented below.
+<i>in</i>.
+</ul></ol></dl><p><b>-3-</b> <b>Stage 1:</b>
+The function initializes local variables via
+<blockquote><tt><pre>
+    fmtflags flags = <tt><i>str</i></tt> .flags();
+    fmtflags basefield = (flags &amp; ios_base::basefield);
+    fmtflags uppercase = (flags &amp; ios_base::uppercase);
+    fmtflags boolalpha = (flags &amp; ios_base::boolalpha);
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-4-</b> <b></b>
+For conversion to an integral type, the
+function determines the integral conversion specifier as indicated in Table ??.
+The table is ordered.
+That is, the first line whose condition is true applies.
+<p><center><table border><caption>Integer conversions</caption>
+<br>
+<tr><td>State</td><td> <tt><b>stdio</b></tt>  equivalent</td></tr>
+
+<tr><td>basefield == oct</td><td>%o</td></tr>
+
+<tr><td>basefield == hex</td><td>%X</td></tr>
+
+<tr><td>basefield == 0</td><td>%i</td></tr>
+
+<tr><td>signed integral type</td><td>%d</td></tr>
+
+<tr><td>unsigned integral type</td><td>%u</td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><p><b>-5-</b> <b></b>
+For conversions to a  floating type the specifier is
+<tt>%g</tt>.
+</ul></ol></dl><p><b>-6-</b> <b></b>
+For conversions to
+<tt>void*</tt>
+the specifier is
+<tt>%p</tt>.
+</ul></ol></dl><p><b>-7-</b> <b></b>
+A length specifier is added to the conversion specification, if needed,
+as indicated in Table  ??.
+<p><center><table border><caption>Length Modifier</caption>
+<br>
+<tr><td>type</td><td>length modifier</td></tr>
+
+<tr><td>short</td><td>h</td></tr>
+
+<tr><td>unsigned short</td><td>h</td></tr>
+
+<tr><td>long</td><td>l</td></tr>
+
+<tr><td>unsigned long</td><td>l</td></tr>
+
+<tr><td>long double</td><td>L</td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><p><b>-8-</b> <b>Stage 2:</b>
+If
+<tt><tt><i>in</i></tt>==<tt><i>end</i></tt></tt>
+then stage 2 terminates.
+Otherwise a
+<tt>charT</tt>
+is taken from <tt><i>in</i></tt> and local variables are initialized as if by
+<blockquote><tt><pre>
+    char_type ct = *in ;
+    char c = src[find(atoms, atoms + sizeof(src) - 1, ct) - atoms];
+    if ( ct ==  use_facet&lt;numpunct&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).decimal_point() )
+	c = '.';
+    bool discard =
+	( ct == use_facet&lt;numpunct&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).thousands_sep()
+	    &amp;&amp;
+	 use_facet&lt;numpunct&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).grouping().length() != 0 );
+</pre></tt></blockquote>
+where the values
+<tt>src</tt>
+and
+<tt>atoms</tt>
+are defined as if by:
+<blockquote><tt><pre>
+    static const char src[] = "0123456789abcdefABCDEF+-";
+    char_type atoms[sizeof(src)];
+    use_facet&lt;ctype&lt;charT&gt; &gt;(loc).widen(src, src + sizeof(src), atoms);
+</pre></tt></blockquote>
+for this value of
+<tt>loc</tt>.
+</ul></ol></dl><p><b>-9-</b> <b></b>
+If <tt><i>discard</i></tt> is true then the position of the character is remembered,
+but the character is otherwise ignored.
+If it is not discarded, then a check is made to determine
+if <tt><i>c</i></tt> is allowed as the
+next character of an input field of the conversion specifier
+returned by stage 1.
+If so it is accumulated.
+</ul></ol></dl><p><b>-10-</b> <b></b>
+If the character is either discarded or accumulated then <tt><i>in</i></tt>
+is advanced by
+<tt>++in</tt>
+and processing returns to the beginning of stage 2.
+</ul></ol></dl><p><b>-11-</b> <b>Stage 3:</b>
+The result of stage 2 processing can be one of
+</ul><ul><li>
+A sequence of
+<tt>char</tt>s
+has been accumulated in stage 2 that is converted (according to the
+rules of
+<tt>scanf)</tt>
+to a value of the type of <tt><i>val</i></tt>.
+This value is
+stored in <tt><i>val</i></tt>  and
+<tt>ios_base::goodbit</tt>
+is stored in  <tt><i>err</i></tt>.
+</ul><ul><li>
+The sequence of
+<tt>char</tt>s
+accumulated in stage 2 would have caused scanf to report an input failure.
+<tt>ios_base::failbit</tt>
+is assigned to
+<i>err</i>.
+<br>
+</ul></ol></dl><p><b>-12-</b>
+Digit grouping is checked.
+That is, the positions of discarded
+separators is examined for consistency with
+<tt>use_facet&lt;numpunct&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).grouping()</tt>.
+If they are not consistent then
+<tt>ios_base::failbit</tt>
+is assigned to  <tt><i>err</i></tt>.
+</ul></ol></dl><p><b>-13-</b>
+In any case, if stage 2 processing was terminated by the test for
+<tt><tt><i>in</i></tt>==<tt><i>end</i></tt></tt>
+then
+<tt><tt><i>err</i></tt> |=ios_base::eofbit</tt>
+is performed.
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get(iter_type <tt><i>in</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 ios_base::iostate&amp; <tt><i>err</i></tt>, bool&amp; <tt><i>val</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-14-</b> <b>Effects:</b>
+If
+<tt>(<tt><i>str</i></tt><tt><b>.flags()&amp;&amp;ios_base::boolalpha)==0</b></tt></tt>
+then input proceeds as it would for a
+<tt>long</tt>
+except that if a value is being stored into <tt><i>val</i></tt>,
+the value is determined according to the following:
+If the value to be stored is 0 then
+<tt>false</tt>
+is stored.
+If the value is 1
+then
+<tt>true</tt>
+is stored.
+Otherwise  <tt><i>err</i></tt><tt>|=ios_base::failbit</tt> 
+is performed and no value is stored.
+</ul></ol></dl><p><b>-15-</b>
+Otherwise a target string to be matched is determined by calling
+either
+<tt>use_facet&lt;ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).truename()</tt>
+or
+<tt>use_facet&lt;ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).falsename()</tt>
+depending on whether  <tt><i>val</i></tt> 
+is
+<tt>true</tt>
+or
+<tt>false</tt>
+(respectively).
+</ul></ol></dl><p><b>-16-</b>
+As long as
+<tt><tt><i>in</i></tt>!=<tt><i>end</i></tt></tt>
+and characters continue to match the target string
+<tt>charT</tt>'s
+are obtained by doing
+<tt>*in++</tt>.
+A value is assigned to <tt><i>err</i></tt> as follows
+</ul><ul><li>
+If the target string was matched completely,
+then
+<tt>goodbit</tt>.
+</ul><ul><li>
+If input was terminated because
+<tt><tt><i>in</i></tt>==<tt><i>end</i></tt></tt>,
+then
+<tt>eofbit</tt>
+</ul><ul><li>
+Otherwise,
+<tt>failbit</tt>.
+<br>
+</ul></ol></dl><p><b>-17-</b> <b>Returns:</b>
+<tt><i>in</i></tt>.
+</ul></ol></dl><a name="lib.locale.nm.put"><h4>22.2.2.2 - Template class  <tt><b>num_put</b></tt>  [lib.locale.nm.put]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT, class OutputIterator = ostreambuf_iterator&lt;charT&gt; &gt;
+  class num_put : public locale::facet {
+  public:
+    typedef charT            char_type;
+    typedef OutputIterator   iter_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit num_put(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>, bool <tt><i>v</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>, long <tt><i>v</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+		  unsigned long <tt><i>v</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+		  double <tt><i>v</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+		  long double <tt><i>v</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+		  const void* <tt><i>v</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~num_put();                  //</tt><i>  virtual</i><tt>
+    virtual iter_type do_put(iter_type, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+			     bool <tt><i>v</i></tt>) const;
+    virtual iter_type do_put(iter_type, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+			     long <tt><i>v</i></tt>) const;
+    virtual iter_type do_put(iter_type, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+			     unsigned long) const;
+    virtual iter_type do_put(iter_type, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+			     double <tt><i>v</i></tt>) const;
+    virtual iter_type do_put(iter_type, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+			     long double <tt><i>v</i></tt>) const;
+    virtual iter_type do_put(iter_type, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+			     const void* <tt><i>v</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The facet
+<tt>num_put</tt>
+is used to format numeric values to a character sequence such as an ostream.
+</ul></ol></dl><a name="lib.facet.num.put.members"><h5>22.2.2.2.1 -  <tt><b>num_put</b></tt>  members [lib.facet.num.put.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              bool <tt><i>val</i></tt>) const;
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              long <tt><i>val</i></tt>) const;
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              unsigned long <tt><i>val</i></tt>) const;
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              double <tt><i>val</i></tt>) const;
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              long double <tt><i>val</i></tt>) const;
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              const void* <tt><i>val</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_put(<tt><i>out</i></tt>, <tt><i>str</i></tt>, <tt><i>fill</i></tt>, <tt><i>val</i></tt>)</tt>.
+</ul></ol></dl><a name="lib.facet.num.put.virtuals"><h5>22.2.2.2.2 -  <tt><b>num_put</b></tt>  virtual functions [lib.facet.num.put.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+                 bool <tt><i>val</i></tt>) const;
+iter_type do_put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+                 long <tt><i>val</i></tt>) const;
+iter_type do_put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+                 unsigned long <tt><i>val</i></tt>) const;
+iter_type do_put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+                 double <tt><i>val</i></tt>) const;
+iter_type do_put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+                 long double <tt><i>val</i></tt>) const;
+iter_type do_put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+                 const void* <tt><i>val</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Writes characters to the sequence <tt><i>out</i></tt>,
+formatting <tt><i>val</i></tt> as desired.
+In the following description,
+a local variable initialized with
+<blockquote><tt><pre>
+    locale <tt><i>loc</i></tt> = <tt><i>str</i></tt>.getloc();
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-2-</b>
+The details of this operation occur in several stages:
+</ul><ul><li>
+Stage 1:
+Determine a printf conversion specifier <tt><i>spec</i></tt> and
+determining the characters that would be printed by
+<tt>printf</tt>(<a href="lib-iostreams.html#lib.c.files">lib.c.files</a>)
+given this conversion specifier for
+<blockquote><tt><pre>
+    printf( <tt><i>spec</i></tt>, <tt><i>val</i></tt> )
+</pre></tt></blockquote>
+assuming that the current locale is
+the "C" locale.
+</ul><ul><li>
+Stage 2:
+Adjust the representation by converting each
+<tt>char</tt>
+determined by stage 1 to a
+<tt>charT</tt>
+using a conversion and values returned by members of
+<tt>use_facet&lt; numpunct&lt;charT&gt; &gt;(<tt><i>str.getloc()</i></tt>)</tt>
+</ul><ul><li>
+Stage 3:
+Determine where padding is required.
+</ul><ul><li>
+Stage 4:
+Insert the sequence into the <tt><i>out</i></tt>.
+<br>
+</ul></ol></dl><p><b>-3-</b> <b></b>
+Detailed descriptions of each stage follow.
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+<tt><i>out</i></tt>.
+<p>
+</ul></ol></dl><p><b>-5-</b> <b>Stage 1:</b>
+The first action of stage 1 is to determine a conversion specifier.
+The tables that describe this determination use the following local variables
+<blockquote><tt><pre>
+    fmtflags flags = str.flags() ;
+    fmtflags basefield =  (flags &amp; (ios_base::basefield));
+    fmtflags uppercase =  (flags &amp; (ios_base::uppercase));
+    fmtflags floatfield = (flags &amp; (ios_base::floatfield));
+    fmtflags showpos =    (flags &amp; (ios_base::showpos));
+    fmtflags showbase =   (flags &amp; (ios_base::showbase));
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-6-</b> <b></b>
+All tables used in describing stage 1 are ordered.
+That is, the first line whose condition is true applies.
+A line without a condition is the default behavior when none of the earlier
+lines apply.
+</ul></ol></dl><p><b>-7-</b> <b></b>
+For conversion from an integral type other than a character type, the
+function determines the integral conversion specifier as indicated in Table ??.
+<p><center><table border><caption>Integer conversions</caption>
+<br>
+<tr><td>State</td><td> <tt><b>stdio</b></tt>  equivalent</td></tr>
+
+<tr><td>basefield == ios_base::oct</td><td>%o</td></tr>
+
+<tr><td>(basefield == ios_base::hex) &amp;&amp; !uppercase </td><td>%x</td></tr>
+
+<tr><td>(basefield == ios_base::hex)  </td><td>%X</td></tr>
+
+<tr><td>for a signed integral type</td><td>%d</td></tr>
+
+<tr><td>for an unsigned integral type</td><td>%u</td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><p><b>-8-</b> <b></b>
+For conversion from a floating-point type, the function determines
+the floating-point conversion specifier as indicated in Table ??:
+<p><center><table border><caption>Floating-point conversions</caption>
+<br>
+<tr><td>State</td><td> <tt><b>stdio</b></tt>  equivalent</td></tr>
+
+<tr><td>floatfield == ios_base::fixed</td><td>%f</td></tr>
+
+<tr><td>floatfield == ios_base::scientific &amp;&amp; !uppercase</td><td>%e</td></tr>
+
+<tr><td>floatfield == ios_base::scientific</td><td>%E</td></tr>
+
+<tr><td>!uppercase</td><td>%g</td></tr>
+
+<tr><td><tt><i>otherwise</i></tt> </td><td>%G</td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><p><b>-9-</b> <b></b>
+For conversions from an integral or floating
+type a length modifier is added to the
+conversion specifier as indicated in  Table ??.
+<p><center><table border><caption>Length modifier</caption>
+<br>
+<tr><td>type</td><td>length modifier</td></tr>
+
+<tr><td>long</td><td>l</td></tr>
+
+<tr><td>unsigned long</td><td>l</td></tr>
+
+<tr><td>long double</td><td>L</td></tr>
+
+<tr><td><tt><i>otherwise</i></tt></td><td><tt><i>none</i></tt></td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><p><b>-10-</b> <b></b>
+The conversion specifier has the following optional additional qualifiers
+prepended as indicated in Table ??:
+<p><center><table border><caption>Numeric conversions</caption>
+<br>
+<tr><td>Type(s)</td><td>State</td><td> <tt><b>stdio</b></tt>  equivalent</td></tr>
+
+<tr><td>
+an integral type
+</td><td>flags &amp; showpos</td><td>+</td></tr>
+<tr><td>&nbsp;</td><td>flags &amp; showbase  </td><td>#</td></tr>
+
+<tr><td>a floating-point type</td><td>flags &amp; showpos</td><td>+</td></tr>
+<tr><td>&nbsp;</td><td>flags &amp; showpoint </td><td>#</td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><p><b>-11-</b> <b></b>
+For conversion from a floating-point type, if
+<tt>(flags &amp; fixed) != 0</tt>
+or if
+<tt><tt><i>str</i></tt>.precision() &gt; 0</tt>,
+then
+<tt><tt><i>str</i></tt>.precision()</tt>
+is specified in the conversion specification.
+</ul></ol></dl><p><b>-12-</b> <b></b>
+For conversion from
+<tt>void*</tt>
+the specifier is
+<tt>%p</tt>.
+</ul></ol></dl><p><b>-13-</b> <b></b>
+The representations at the end of stage 1 consists of the
+<tt>char's</tt>
+that would be printed by a call of
+<tt>printf( <tt><i>s</i></tt> , <tt><i>val</i></tt> )</tt>
+where <tt><i>s</i></tt> is the conversion specifier determined above.
+<p>
+</ul></ol></dl><p><b>-14-</b> <b>Stage 2:</b>
+Any character <tt><i>c</i></tt> other than a decimal point(.) is converted to a
+<tt>charT</tt>
+via
+<tt>use_facet&lt;ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).widen( <tt><i>c</i></tt> )</tt>
+</ul></ol></dl><p><b>-15-</b>
+A local variable <tt><i>punct</i></tt> is initialized via
+<blockquote><tt><pre>
+    numpunct&lt;charT&gt; punct = use_facet&lt; numpunct&lt;charT&gt; &gt;(<tt><i>str.getloc()</i></tt>)
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-16-</b> <b></b>
+For integral types,
+<tt><tt><i>punct</i></tt>.thousands_sep()</tt>
+characters are inserted into the sequence as determined by the value returned
+by
+<tt><tt><i>punct</i></tt>.do_grouping()</tt>
+using the method described in <a href="lib-locales.html#lib.facet.numpunct.virtuals">lib.facet.numpunct.virtuals</a>
+</ul></ol></dl><p><b>-17-</b> <b></b>
+Decimal point characters(.) are replaced by
+<tt><tt><i>punct</i></tt>.decimal_point()</tt>
+<p>
+</ul></ol></dl><p><b>-18-</b> <b>Stage 3:</b>
+A local variable is initialized as
+<blockquote><tt><pre>
+    fmtflags adjustfield=   (flags &amp; (ios_base::adjustfield));
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-19-</b> <b></b>
+The location of any padding* is determined according to Table ??:
+<blockquote>[Footnote:
+The conversion specification
+<tt>#o</tt>
+generates a leading
+<tt>0</tt>
+which is
+<i>not</i>
+a padding character.
+--- end foonote]</blockquote>
+<p><center><table border><caption>Fill padding</caption>
+<br>
+<tr><td>State</td><td>Location</td></tr>
+
+<tr><td>adjustfield == ios_base::left</td><td>pad after</td></tr>
+
+<tr><td>adjustfield == ios_base::right</td><td>pad before</td></tr>
+
+<tr><td>
+adjustfield == internal
+and a sign occurs in the representation
+</td><td>pad after the sign</td></tr>
+
+<tr><td>
+adjustfield == internal
+and representation after stage 1 began with 0x 1or 0X
+</td><td>pad after x or X</td></tr>
+
+<tr><td><tt><i>otherwise</i></tt></td><td>pad before</td></tr>
+<br>
+</table></center><p>
+</ul></ol></dl><h0> <b></b>
+If
+<tt><tt><i>str</i></tt>.width()</tt>
+is nonzero and the number of
+<tt>charT</tt>'s
+in the sequence after stage 2 is less than
+<tt><tt><i>str</i></tt>.width()</tt>,
+then enough <tt><i>fill</i></tt> characters are added to the sequence at the position
+indicated for padding to bring the length of the sequence to
+<tt><tt><i>str</i></tt>.width()</tt>.
+</ul></ol></dl><h0> <b></b>
+<tt><tt><i>str</i></tt>.width(0)</tt>
+is called.
+<p>
+</ul></ol></dl><h0> <b>Stage 4:</b>
+The sequence of
+<tt>charT's</tt>
+at the end of stage 3 are output via
+<blockquote><tt><pre>
+    *<tt><i>out</i></tt>++ = c
+</pre></tt></blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type put(iter_type <tt><i>out</i></tt>, ios_base&amp; <tt><i>str</i></tt>, char_type <tt><i>fill</i></tt>,
+              bool <tt><i>val</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><h0> <b>Effects:</b>
+If
+<tt>(<tt><i>str</i></tt>.flags()&amp;ios_base::boolalpha)==0</tt>
+then do
+<blockquote><tt><pre>
+    <tt><i>out</i></tt> = do_put(<tt><i>out</i></tt> , <tt><i>str</i></tt> , <tt><i>fill</i></tt> , (int)<tt><i>val</i></tt> )
+</pre></tt></blockquote>
+Otherwise do
+<blockquote><tt><pre>
+    string_type <tt><i>s</i></tt> =
+	<tt><i>val</i></tt> ? use_facet&lt;ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).truename()
+		  : use_facet&lt;ctype&lt;charT&gt; &gt;(<tt><i>loc</i></tt>).falsename() ;
+</pre></tt></blockquote>
+and then insert the characters of <tt><i>s</i></tt> into <tt><i>out</i></tt>.
+<i>out</i>.
+</ul></ol></dl><a name="lib.facet.numpunct"><h3>22.2.3 - The numeric punctuation facet [lib.facet.numpunct]</h3></a>
+</ul></ol></dl><a name="lib.locale.numpunct"><h4>22.2.3.1 - Template class  <tt><b>numpunct</b></tt>  [lib.locale.numpunct]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT&gt;
+  class numpunct : public locale::facet {
+  public:
+    typedef charT               char_type;
+    typedef basic_string&lt;charT&gt; string_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit numpunct(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    char_type    decimal_point()   const;
+    char_type    thousands_sep()   const;
+    string       grouping()        const;
+    string_type  truename()        const;
+    string_type  falsename()       const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~numpunct();                 //</tt><i>  virtual</i><tt>
+    virtual char_type    do_decimal_point() const;
+    virtual char_type    do_thousands_sep() const;
+    virtual string       do_grouping()      const;
+    virtual string_type  do_truename()      const;      //</tt><i>  for  </i><tt>bool
+    virtual string_type  do_falsename()     const;      //</tt><i>  for  </i><tt>bool
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+<tt>numpunct&lt;&gt;</tt>
+specifies numeric punctuation.
+The instantiations required in Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>numpunct&lt;wchar_t&gt;</tt>
+and
+<tt>numpunct&lt;char&gt;</tt>,
+provide classic
+``<tt>C</tt>''
+numeric formats,
+i.e. they contain information equivalent to that contained in the
+``<tt>C</tt>''
+locale or their wide character counterparts as if obtained by
+a call to
+<tt>widen</tt>.
+</ul></ol></dl><p><b>-2-</b>
+The syntax for number formats is as follows, where
+<tt>digit</tt>
+represents the radix set specified by the
+<tt>fmtflags</tt>
+argument value,
+<tt>whitespace</tt>
+is as determined by the facet
+<tt>ctype&lt;charT&gt;</tt>
+(<a href="lib-locales.html#lib.locale.ctype">lib.locale.ctype</a>), and
+<tt>thousands-sep</tt>
+and
+<tt>decimal-point</tt>
+are the results of corresponding
+<tt>numpunct&lt;charT&gt;</tt>
+members.
+Integer values have the format:
+<blockquote><tt><pre>
+  integer   ::= [sign] units
+  sign      ::= plusminus [whitespace]
+  plusminus ::= '+' | '-'
+  units     ::= digits [thousands-sep units]
+  digits    ::= digit [digits]
+</pre></tt></blockquote>
+and floating-point values have:
+<blockquote><tt><pre>
+  floatval ::= [sign] units [decimal-point [digits]] [e [sign] digits] |
+	       [sign]        decimal-point  digits   [e [sign] digits]
+  e        ::= 'e' | 'E'
+</pre></tt></blockquote>
+where the number of digits between
+<tt>thousands-sep</tt>s
+is as specified by
+<tt>do_grouping()</tt>.
+For parsing, if the
+<tt>digits</tt>
+portion contains no thousands-separators, no grouping constraint
+is applied.
+</ul></ol></dl><a name="lib.facet.numpunct.members"><h5>22.2.3.1.1 -  <tt><b>numpunct</b></tt>  members [lib.facet.numpunct.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+char_type decimal_point() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_decimal_point()</tt>
+</dl></ol></ul><tt><blockquote><pre>
+char_type thousands_sep() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>do_thousands_sep()</tt>
+</dl></ol></ul><tt><blockquote><pre>
+string grouping()  const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+<tt>do_grouping()</tt>
+</dl></ol></ul><tt><blockquote><pre>
+string_type truename()  const;
+string_type falsename() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+<tt>do_truename()</tt>
+or
+<tt>do_falsename()</tt>,
+respectively.
+<br>
+</ul></ol></dl><a name="lib.facet.numpunct.virtuals"><h5>22.2.3.1.2 -  <tt><b>numpunct</b></tt>  virtual functions [lib.facet.numpunct.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+char_type do_decimal_point() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+A character for use as the decimal radix separator.
+The required instantiations return <tt>'.'</tt> or <tt>L'.'</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+string_type do_thousands_sep() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+A character for use as the digit group separator.
+The required instantiations return <tt>','</tt> or <tt>L','</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+string do_grouping() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+A basic_string&lt;char&gt; <tt><i>vec</i></tt> used as a vector of integer values,
+in which each element
+<tt><tt><i>vec</i></tt>[<tt><i>i</i></tt>]</tt>
+represents the number of digits*
+<blockquote>[Footnote:
+Thus, the string <tt>"\003"</tt> specifies groups of 3 digits each, and
+<tt>"3"</tt> probably indicates groups of 51 (!) digits each,
+because 51 is the ASCII value of <tt>"3"</tt>.
+--- end foonote]</blockquote>
+in the group at position <tt><i>i</i></tt>, starting with position 0 as the
+rightmost group.
+If
+<tt><tt><i>vec</i></tt>.size() &lt;= <tt><i>i</i></tt></tt>,
+the number is the same as group
+<tt>(<tt><i>i</i></tt>-1)</tt>;
+if
+<tt>(<tt><i>i</i></tt>&lt;0 || <tt><i>vec</i></tt>[<tt><i>i</i></tt>]&lt;=0 || <tt><i>vec</i></tt>[<tt><i>i</i></tt>]==CHAR_MAX)</tt>,
+the size of the digit group is unlimited.
+<br>
+The required instantiations return the empty string, indicating
+no grouping.
+</dl></ol></ul><tt><blockquote><pre>
+string_type do_truename()  const;
+string_type do_falsename() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+A string representing the name of the boolean value
+<tt>true</tt>
+or
+<tt>false</tt>,
+respectively.
+<br>
+In the base class implementation these names are
+<tt>"true"</tt> and <tt>"false"</tt>, or <tt>L"true"</tt> and <tt>L"false"</tt>.
+</ul></ol></dl><a name="lib.locale.numpunct.byname"><h4>22.2.3.2 - Template class  <tt><b>numpunct_byname</b></tt>  [lib.locale.numpunct.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT&gt;
+  class numpunct_byname : public numpunct&lt;charT&gt; {
+//</tt><i>  this class is specialized for  </i><tt>char</tt><i>  and  </i><tt>wchar_t</tt><i>.</i><tt>
+  public:
+    typedef charT                char_type;
+    typedef basic_string&lt;charT&gt;  string_type;
+    explicit numpunct_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+  protected:
+   ~numpunct_byname();          //</tt><i>  virtual</i><tt>
+    virtual char_type    do_decimal_point() const;
+    virtual char_type    do_thousands_sep() const;
+    virtual string       do_grouping()      const;
+    virtual string_type  do_truename()      const;      //</tt><i>  for  </i><tt>bool
+    virtual string_type  do_falsename()     const;      //</tt><i>  for  </i><tt>bool
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.category.collate"><h3>22.2.4 - The collate category [lib.category.collate]</h3></a>
+</ul></ol></dl><a name="lib.locale.collate"><h4>22.2.4.1 - Template class  <tt><b>collate</b></tt>  [lib.locale.collate]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT&gt;
+  class collate : public locale::facet {
+  public:
+    typedef charT               char_type;
+    typedef basic_string&lt;charT&gt; string_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit collate(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    int compare(const charT* <tt><i>low1</i></tt>, const charT* <tt><i>high1</i></tt>,
+		const charT* <tt><i>low2</i></tt>, const charT* <tt><i>high2</i></tt>) const;
+    string_type transform(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    long hash(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~collate();                  //</tt><i>  virtual</i><tt>
+    virtual int    do_compare(const charT* <tt><i>low1</i></tt>, const charT* <tt><i>high1</i></tt>,
+			      const charT* <tt><i>low2</i></tt>, const charT* <tt><i>high2</i></tt>) const;
+    virtual string_type do_transform
+			     (const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual long   do_hash   (const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The class
+<tt>collate&lt;charT&gt;</tt>
+provides features for use in the
+collation (comparison) and hashing of strings.
+A locale member function template,
+<tt>operator()</tt>,
+uses the collate facet to allow a locale to act directly as the predicate
+argument for standard algorithms (clause <a href="lib-algorithms.html#lib.algorithms">lib.algorithms</a>) and containers operating on strings.
+The instantiations required in Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>collate&lt;char&gt;</tt>
+and
+<tt>collate&lt;wchar_t&gt;</tt>,
+apply lexicographic ordering (<a href="lib-algorithms.html#lib.alg.lex.comparison">lib.alg.lex.comparison</a>).
+</ul></ol></dl><p><b>-2-</b>
+Each function compares a string of characters
+<tt>*<tt><i>p</i></tt></tt>
+in the range
+<tt>[<tt><i>low</i></tt>,<tt><i>high</i></tt>)</tt>.
+</ul></ol></dl><a name="lib.locale.collate.members"><h5>22.2.4.1.1 -  <tt><b>collate</b></tt>  members [lib.locale.collate.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+int compare(const charT* <tt><i>low1</i></tt>, const charT* <tt><i>high1</i></tt>,
+            const charT* <tt><i>low2</i></tt>, const charT* <tt><i>high2</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_compare(<tt><i>low</i></tt>1, <tt><i>high1</i></tt>, <tt><i>low2</i></tt>, <tt><i>high2</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+string_type transform(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>do_transform(<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+long hash(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+<tt>do_hash(<tt><i>low</i></tt>, <tt><i>high</i></tt>)</tt>
+</ul></ol></dl><a name="lib.locale.collate.virtuals"><h5>22.2.4.1.2 -  <tt><b>collate</b></tt>  virtual functions [lib.locale.collate.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+int do_compare(const charT* <tt><i>low1</i></tt>, const charT* <tt><i>high1</i></tt>,
+               const charT* <tt><i>low2</i></tt>, const charT* <tt><i>high2</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>1</tt>
+if the first string is greater than the second,
+<tt>-1</tt>
+if less, zero otherwise.
+The instantiations required in the Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>collate&lt;char&gt;</tt>
+and
+<tt>collate&lt;wchar_t&gt;</tt>,
+implement
+a lexicographical comparison (<a href="lib-algorithms.html#lib.alg.lex.comparison">lib.alg.lex.comparison</a>).
+</dl></ol></ul><tt><blockquote><pre>
+string_type do_transform(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+A
+<tt>basic_string&lt;charT&gt;</tt>
+value that, compared lexicographically with the result of calling
+<tt>transform()</tt>
+on another string, yields the same result as calling
+<tt>do_compare()</tt>
+on the same two strings.*
+<blockquote>[Footnote:
+This function is useful when one string is being compared to many other strings.
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+long do_hash(const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+An integer value equal to the result of calling
+<tt>hash()</tt>
+on any other string for which
+<tt>do_compare()</tt>
+returns 0 (equal) when passed the two strings.
+[<i>Note:</i>
+The probability that the result equals that for another string which does
+not compare equal should be very small, approaching
+<tt>(1.0/numeric_limits&lt;unsigned long&gt;::max())</tt>.
+<br>--- end note]
+</ul></ol></dl><a name="lib.locale.collate.byname"><h4>22.2.4.2 - Template class  <tt><b>collate_byname</b></tt>  [lib.locale.collate.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT&gt;
+  class collate_byname : public collate&lt;charT&gt; {
+  public:
+    typedef basic_string&lt;charT&gt; string_type;
+    explicit collate_byname(const char*, size_t refs = 0);
+  protected:
+   ~collate_byname();           //</tt><i>  virtual</i><tt>
+    virtual int    do_compare(const charT* <tt><i>low1</i></tt>, const charT* <tt><i>high1</i></tt>,
+			      const charT* <tt><i>low2</i></tt>, const charT* <tt><i>high2</i></tt>) const;
+    virtual string_type do_transform
+			     (const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+    virtual long   do_hash   (const charT* <tt><i>low</i></tt>, const charT* <tt><i>high</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.category.time"><h3>22.2.5 - The time category [lib.category.time]</h3></a>
+</ul></ol></dl><p><b>-1-</b>
+Templates
+<tt>time_get&lt;charT,InputIterator&gt;</tt>
+and
+<tt>time_put&lt;charT,OutputIterator&gt;</tt>
+provide date and time formatting and parsing.
+All specifications of member functions for
+time_put
+and
+time_get
+in the subclauses of <a href="lib-locales.html#lib.category.time">lib.category.time</a> only apply to the
+instantiations required in Tables ?? and ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>).
+Their members use their
+<tt>ios_base&amp;</tt>,
+<tt>ios_base::iostate&amp;</tt>,
+and
+<tt><tt><i>fill</i></tt></tt>
+arguments as described in (<a href="lib-locales.html#lib.locale.categories">lib.locale.categories</a>), and the
+<tt>ctype&lt;&gt;</tt>
+facet, to determine formatting details.
+</ul></ol></dl><a name="lib.locale.time.get"><h4>22.2.5.1 - Template class  <tt><b>time_get</b></tt>  [lib.locale.time.get]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  class time_base {
+  public:
+    enum dateorder { no_order, dmy, mdy, ymd, ydm };
+  };
+
+  template &lt;class charT, class InputIterator = istreambuf_iterator&lt;charT&gt; &gt;
+  class time_get : public locale::facet, public time_base {
+  public:
+    typedef charT            char_type;
+    typedef InputIterator    iter_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit time_get(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    dateorder date_order()  const { return do_date_order(); }
+    iter_type get_time(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+		       ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>)  const;
+    iter_type get_date(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+		       ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>)  const;
+    iter_type get_weekday(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+			  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    iter_type get_monthname(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+			    ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    iter_type get_year(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+		       ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~time_get();                 //</tt><i>  virtual</i><tt>
+    virtual dateorder do_date_order()  const;
+    virtual iter_type do_get_time(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_date(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_weekday(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				     ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_monthname(iter_type <tt><i>s</i></tt>, ios_base&amp;,
+				       ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_year(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+<tt>time_get</tt>
+is used to
+parse a character sequence, extracting components of a time or date
+into a
+<tt>struct tm</tt>
+record.
+Each
+<tt>get</tt>
+member parses a format as produced by a corresponding format specifier to
+<tt>time_put&lt;&gt;::put</tt>.
+If the sequence being parsed matches the correct format, the corresponding
+members of the
+<tt>struct tm</tt>
+argument are set to the values used to produce the sequence; otherwise
+either an error is reported or unspecified values are assigned.*
+<blockquote>[Footnote:
+In other words, user confirmation is required for reliable parsing of
+user-entered dates and times, but machine-generated formats can be
+parsed reliably.
+This allows parsers to be aggressive about
+interpreting user variations on standard formats.
+--- end foonote]</blockquote>
+</ul></ol></dl><a name="lib.locale.time.get.members"><h5>22.2.5.1.1 -  <tt><b>time_get</b></tt>  members [lib.locale.time.get.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+dateorder date_order() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_date_order()</tt>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type get_time(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                   ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>do_get_time(<tt><i>s</i></tt>, <tt><i>end</i></tt>, <tt><i>str</i></tt>, <tt><i>err</i></tt>, <tt><i>t</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type get_date(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                   ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+<tt>do_get_date(<tt><i>s</i></tt>, <tt><i>end</i></tt>, <tt><i>str</i></tt>, <tt><i>err</i></tt>, <tt><i>t</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type get_weekday(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                      ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+iter_type get_monthname(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                        ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+<tt>do_get_weekday(<tt><i>s</i></tt>, <tt><i>end</i></tt>, <tt><i>str</i></tt>, <tt><i>err</i></tt>, <tt><i>t</i></tt>)</tt>
+or
+<tt>do_get_monthname(<tt><i>s</i></tt>, <tt><i>end</i></tt>, <tt><i>str</i></tt>, <tt><i>err</i></tt>, <tt><i>t</i></tt>)</tt>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type get_year(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                   ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+<tt>do_get_year(<tt><i>s</i></tt>, <tt><i>end</i></tt>, <tt><i>str</i></tt>, <tt><i>err</i></tt>, <tt><i>t</i></tt>)</tt>
+</ul></ol></dl><a name="lib.locale.time.get.virtuals"><h5>22.2.5.1.2 -  <tt><b>time_get</b></tt>  virtual functions [lib.locale.time.get.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+dateorder do_date_order() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+An enumeration value indicating the preferred order of components for
+those date formats that are composed of day, month, and year.*
+<blockquote>[Footnote:
+This function is intended as a convenience only, for common
+formats, and may return
+<tt>no_order</tt>
+in valid locales.
+--- end foonote]</blockquote>
+Returns
+<tt>no_order</tt>
+if the date format specified by
+<tt>'x'</tt>
+contains other variable components (e.g. Julian day, week number, week day).
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get_time(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                      ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Effects:</b>
+Reads characters starting at <tt><i>s</i></tt>
+until it has extracted those
+<tt>struct tm</tt>
+members, and remaining format characters, used by
+<tt>time_put&lt;&gt;::put</tt>
+to produce the format specified by
+<tt>'X'</tt>,
+or until it encounters an error or end of sequence.
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+An iterator pointing immediately beyond the last character recognized
+as possibly part of a valid time.
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get_date(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                      ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Effects:</b>
+Reads characters starting at <tt><i>s</i></tt>
+until it has extracted those
+<tt>struct tm</tt>
+members, and remaining format characters, used by
+<tt>time_put&lt;&gt;::put</tt>
+to produce the format specified by
+<tt>'x'</tt>,
+or until it encounters an error.
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+An iterator pointing immediately beyond the last character recognized
+as possibly part of a valid date.
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get_weekday(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                         ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+iter_type do_get_monthname(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                           ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-6-</b> <b>Effects:</b>
+Reads characters starting at <tt><i>s</i></tt>
+until it has extracted the (perhaps abbreviated) name of a weekday or month.
+If it finds an abbreviation that is followed by characters that could
+match a full name, it continues reading until it matches the full name or
+fails.
+It sets the appropriate
+<tt>struct tm</tt>
+member accordingly.
+</ul></ol></dl><p><b>-7-</b> <b>Returns:</b>
+An iterator pointing immediately beyond the last character recognized
+as part of a valid name.
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get_year(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                      ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-8-</b> <b>Effects:</b>
+Reads characters starting at <tt><i>s</i></tt>
+until it has extracted an unambiguous year identifier.
+It is
+implementation-defined whether two-digit year numbers are accepted,
+and (if so) what century they are assumed to lie in.
+Sets the
+<tt><tt><i>t</i></tt>-&gt;tm_year</tt>
+member accordingly.
+</ul></ol></dl><p><b>-9-</b> <b>Returns:</b>
+An iterator pointing immediately beyond the last character recognized
+as part of a valid year identifier.
+<br>
+</ul></ol></dl><a name="lib.locale.time.get.byname"><h4>22.2.5.2 - Template class  <tt><b>time_get_byname</b></tt>  [lib.locale.time.get.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT, class InputIterator = istreambuf_iterator&lt;charT&gt; &gt;
+  class time_get_byname : public time_get&lt;charT, InputIterator&gt; {
+  public:
+    typedef time_base::dateorder dateorder;
+    typedef InputIterator        iter_type
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit time_get_byname(const char*, size_t refs = 0);
+  protected:
+   ~time_get_byname();          //</tt><i>  virtual</i><tt>
+    virtual dateorder do_date_order()  const;
+    virtual iter_type do_get_time(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    virtual iter_type do_get_date(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_weekday(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				     ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_monthname(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				       ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+    virtual iter_type do_get_year(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, ios_base&amp;,
+				  ios_base::iostate&amp; <tt><i>err</i></tt>, tm* <tt><i>t</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.locale.time.put"><h4>22.2.5.3 - Template class  <tt><b>time_put</b></tt>  [lib.locale.time.put]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT, class OutputIterator = ostreambuf_iterator&lt;charT&gt; &gt;
+  class time_put : public locale::facet {
+  public:
+    typedef charT            char_type;
+    typedef OutputIterator   iter_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit time_put(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    //</tt><i>  the following is implemented in terms of other member functions.</i><tt>
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>, const tm* <tt><i>tmb</i></tt>,
+		  const charT* <tt><i>pattern</i></tt>, const charT* <tt><i>pat_end</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+		  const tm* <tt><i>tmb</i></tt>, char <tt><i>format</i></tt>, char <tt><i>modifier</i></tt> = 0) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~time_put();                 //</tt><i>  virtual</i><tt>
+    virtual iter_type do_put(iter_type <tt><i>s</i></tt>, ios_base&amp;, char_type, const tm* <tt><i>t</i></tt>,
+			     char <tt><i>format</i></tt>, char <tt><i>modifier</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.locale.time.put.members"><h5>22.2.5.3.1 -  <tt><b>time_put</b></tt>  members [lib.locale.time.put.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; str, char_type <tt><i>fill</i></tt>, const tm* <tt><i>t</i></tt>,
+              const charT* <tt><i>pattern</i></tt>, const charT* <tt><i>pat_end</i></tt>) const;
+iter_type put(iter_type <tt><i>s</i></tt>, ios_base&amp; str, char_type <tt><i>fill</i></tt>, const tm* <tt><i>t</i></tt>,
+              char <tt><i>format</i></tt>, char <tt><i>modifier</i></tt> = 0) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+The first form steps through the sequence from
+<tt>pattern</tt>
+to
+<tt>end</tt>,
+identifying characters that are part of a format sequence.
+Each character that is not part of a format sequence is written to
+<tt>s</tt>
+immediately, and each format sequence, as it is identified, results in
+a call to
+<tt>do_put</tt>;
+thus, format elements and other characters are interleaved in the output
+in the order in which they appear in the pattern.
+Format sequences are identified by converting each character
+<tt>c</tt>
+to a
+<tt>char</tt>
+value as if by
+<tt>ct.narrow(c,&nbsp;0)</tt>,
+where
+<tt>ct</tt>
+is a reference to
+<tt>ctype&lt;charT&gt;</tt>
+obtained from
+<tt>str.getloc()</tt>.
+The first character of each sequence is equal to
+<tt>'%'</tt>,
+followed by an optional modifier character
+<tt>mod*</tt>
+<blockquote>[Footnote:
+Although the C programming language defines no modifiers,
+most vendors do.
+--- end foonote]</blockquote>
+and a format specifier character
+<tt>spec</tt>
+as defined for the function
+<tt>strftime</tt>.
+If no modifier character is present,
+<tt>mod</tt>
+is zero.
+For each valid format sequence identified, calls
+<tt>do_put(s, str, fill, t, spec, mod)</tt>.
+</ul></ol></dl><p><b>-2-</b>
+The second form calls
+<tt>do_put(s, str, fill, t, format, modifier)</tt>.
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+An iterator pointing immediately after the last character produced.
+</ul></ol></dl><a name="lib.locale.time.put.virtuals"><h5>22.2.5.3.2 -  <tt><b>time_put</b></tt>  virtual functions [lib.locale.time.put.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_put(iter_type <tt><i>s</i></tt>, ios_base&amp;, char_type <tt><i>fill</i></tt>, const tm* <tt><i>t</i></tt>,
+                 char <tt><i>format</i></tt>, char <tt><i>modifier</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Formats the contents of the parameter <tt><i>t</i></tt>
+into characters placed on the output sequence <tt><i>s</i></tt>.
+Formatting is controlled by the parameters <tt><i>format</i></tt> and <tt><i>modifier</i></tt>,
+interpreted identically as the format specifiers in the string
+argument to the standard library function
+<tt>strftime()</tt>.*
+<blockquote>[Footnote:
+Interpretation of the <tt><i>modifier</i></tt>
+argument is implementation-defined, but should follow POSIX
+conventions.
+--- end foonote]</blockquote>
+except that the sequence of characters produced for those specifiers
+that are described as depending on the C locale are instead implementation-defined.*
+<blockquote>[Footnote:
+Implementations are encouraged to refer to other standards (such as POSIX)
+for these definitions.
+--- end foonote]</blockquote>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+An iterator pointing immediately after the last character produced.
+</ul></ol></dl><a name="lib.locale.time.put.byname"><h4>22.2.5.4 - Template class  <tt><b>time_put_byname</b></tt>  [lib.locale.time.put.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT, class OutputIterator = ostreambuf_iterator&lt;charT&gt; &gt;
+  class time_put_byname : public time_put&lt;charT, OutputIterator&gt;
+  {
+  public:
+    typedef charT          char_type;
+    typedef OutputIterator iter_type;
+
+    explicit time_put_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+  protected:
+   ~time_put_byname();          //</tt><i>  virtual</i><tt>
+    virtual iter_type do_put(iter_type <tt><i>s</i></tt>, ios_base&amp;, char_type, const tm* <tt><i>t</i></tt>,
+			     char <tt><i>format</i></tt>, char <tt><i>modifier</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.category.monetary"><h3>22.2.6 - The monetary category [lib.category.monetary]</h3></a>
+</ul></ol></dl><p><b>-1-</b>
+These templates handle monetary formats.
+A template parameter indicates whether
+local or international monetary formats are to be used.
+</ul></ol></dl><p><b>-2-</b>
+All specifications of member functions for
+<tt>money_put</tt>
+and
+<tt>money_get</tt>
+in the subclauses of <a href="lib-locales.html#lib.category.monetary">lib.category.monetary</a> only apply to the
+instantiations required in Tables ?? and ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>).
+Their members use their
+<tt>ios_base&amp;</tt>,
+<tt>ios_base::iostate&amp;</tt>,
+and
+<tt><tt><i>fill</i></tt></tt>
+arguments as described in (<a href="lib-locales.html#lib.locale.categories">lib.locale.categories</a>), and the
+<tt>moneypunct&lt;&gt;</tt>
+and
+<tt>ctype&lt;&gt;</tt>
+facets, to determine formatting details.
+</ul></ol></dl><a name="lib.locale.money.get"><h4>22.2.6.1 - Template class  <tt><b>money_get</b></tt>  [lib.locale.money.get]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT,
+	    class InputIterator = istreambuf_iterator&lt;charT&gt; &gt;
+  class money_get : public locale::facet {
+  public:
+    typedef charT               char_type;
+    typedef InputIterator       iter_type;
+    typedef basic_string&lt;charT&gt; string_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit money_get(size_t refs = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    iter_type get(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, bool <tt><i>intl</i></tt>,
+		  ios_base&amp; <tt><i>f</i></tt>, ios_base::iostate&amp; <tt><i>err</i></tt>,
+		  long double&amp; <tt><i>units</i></tt>) const;
+    iter_type get(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, bool <tt><i>intl</i></tt>,
+		  ios_base&amp; <tt><i>f</i></tt>, ios_base::iostate&amp; <tt><i>err</i></tt>,
+		  string_type&amp; <tt><i>digits</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~money_get();                //</tt><i>  virtual</i><tt>
+    virtual iter_type do_get(iter_type, iter_type, bool, ios_base&amp;,
+		     ios_base::iostate&amp; <tt><i>err</i></tt>, long double&amp; <tt><i>units</i></tt>) const;
+    virtual iter_type do_get(iter_type, iter_type, bool, ios_base&amp;,
+		     ios_base::iostate&amp; <tt><i>err</i></tt>, string_type&amp; <tt><i>digits</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.locale.money.get.members"><h5>22.2.6.1.1 -  <tt><b>money_get</b></tt>  members [lib.locale.money.get.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type get(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, bool <tt><i>intl</i></tt>,
+              ios_base&amp; <tt><i>f</i></tt>, ios_base::iostate&amp; <tt><i>err</i></tt>,
+              long double&amp; <tt><i>quant</i></tt>) const;
+iter_type get(<tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp;<tt><i>f</i></tt>,
+              ios_base::iostate&amp; <tt><i>err</i></tt>, string_type&amp; <tt><i>quant</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_get(<tt><i>s</i></tt>, <tt><i>end</i></tt>, <tt><i>intl</i></tt>, <tt><i>f</i></tt>, <tt><i>err</i></tt>, <tt><i>quant</i></tt>)</tt>
+</ul></ol></dl><a name="lib.locale.money.get.virtuals"><h5>22.2.6.1.2 -  <tt><b>money_get</b></tt>  virtual functions [lib.locale.money.get.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_get(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, bool <tt><i>intl</i></tt>,
+                 ios_base&amp; <tt><i>str</i></tt>, ios_base::iostate&amp; <tt><i>err</i></tt>,
+                 long double&amp; <tt><i>units</i></tt>) const;
+iter_type do_get(iter_type <tt><i>s</i></tt>, iter_type <tt><i>end</i></tt>, bool <tt><i>intl</i></tt>,
+                 ios_base&amp; <tt><i>str</i></tt>, ios_base::iostate&amp; <tt><i>err</i></tt>,
+                 string_type&amp; <tt><i>digits</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Reads characters from
+<tt>s</tt>
+to parse and construct a monetary value according to the
+format specified by a
+<tt>moneypunct&lt;charT,&nbsp;Intl&gt;</tt>
+facet reference
+<tt>mp</tt>
+and the character mapping specified by a
+<tt>ctype&lt;charT&gt;</tt>
+facet reference
+<tt>ct</tt>
+obtained from the locale returned by
+<tt>str.getloc()</tt>,
+and
+<tt>str.flags()</tt>.
+If a valid sequence is recognized,
+does not change <tt><i>err</i></tt>;
+otherwise, sets <tt><i>err</i></tt> to
+<tt>(<tt><i>err</i></tt>|<tt><i>str</i></tt>.failbit)</tt>,
+or
+<tt>(<tt><i>err</i></tt>|<tt><i>str</i></tt>.failbit|<tt><i>str</i></tt>.eofbit)</tt>
+if no more characters are available,
+and does not change <tt><i>units</i></tt> or <tt><i>digits</i></tt>.
+Uses the pattern returned by
+<tt>mp.neg_format()</tt>
+to parse all values.
+The result is returned as an integral value stored in
+<tt>units</tt>
+or as a sequence of digits possibly preceded by a minus sign
+(as produced by
+<tt>ct.widen(c)</tt>
+where
+<tt>c</tt>
+is
+<tt>'-'</tt>
+or in the range from
+<tt>'0'</tt>
+through
+<tt>'9'</tt>,
+inclusive)
+stored in
+<tt>digits</tt>.
+[<i>Example:</i>
+The sequence
+<tt>$1,056.23</tt>
+in a common United States locale would yield, for
+<tt>units</tt>,
+<tt>105623</tt>,
+or, for
+<tt>digits</tt>,
+<tt>"105623"</tt>.
+<br>--- end example]
+If
+<tt>mp.grouping()</tt>
+indicates that no thousands separators are permitted,
+any such characters are not read, and parsing is terminated at the point
+where they first appear.
+Otherwise, thousands separators are optional;
+if present, they are checked for correct placement only after
+all format components have been read.
+</ul></ol></dl><p><b>-2-</b>
+Where
+<tt>space</tt>
+or
+<tt>none</tt>
+appears in the format pattern, except at the end, optional white space
+(as recognized by
+<tt>ct.is</tt>)
+is consumed after any required space.
+If
+<tt>(str.flags() &amp; str.showbase)</tt>
+is false, the currency symbol is optional and is consumed only if
+other characters are needed to complete the format;
+otherwise, the currency symbol is required.
+</ul></ol></dl><p><b>-3-</b>
+If the first character (if any) in the string
+<tt>pos</tt>
+returned by
+<tt>mp.positive_sign()</tt>
+or the string
+<tt>neg</tt>
+returned by
+<tt>mp.negative_sign()</tt>
+is recognized in the position indicated by
+<tt>sign</tt>
+in the format pattern, it is consumed and any remaining characters
+in the string are required after all the other format components.
+[<i>Example:</i>
+If
+<tt>showbase</tt>
+is off, then for a
+<tt>neg</tt>
+value of <tt>"()"</tt> and a currency symbol of <tt>"L"</tt>,
+in <tt>"(100 L)"</tt> the <tt>"L"</tt> is consumed;
+but if
+<tt>neg</tt>
+is <tt>"-"</tt>, the <tt>"L"</tt> in <tt>"-100 L"</tt> is not consumed.
+]
+If
+<tt>pos</tt>
+or
+<tt>neg</tt>
+is empty, the sign component is optional, and if no sign is
+detected, the result is given the sign that corresponds to the source
+of the empty string.
+Otherwise, the character in the indicated position must
+match the first character of
+<tt>pos</tt>
+or
+<tt>net</tt>,
+and the result is given the corresponding sign.
+If the first character of
+<tt>pos</tt>
+is equal to the first character of
+<tt>neg</tt>,
+or if both strings are empty, the result is given a positive sign.
+</ul></ol></dl><p><b>-4-</b>
+Digits in the numeric monetary component are extracted and placed in
+<tt>digits</tt>,
+or into a character buffer
+<tt>buf1</tt>
+for conversion to produce a value for
+<tt>units</tt>,
+in the order in which they appear,
+preceded by a minus sign if and only if the result is negative.
+The value
+<tt>units</tt>
+is produced as if by*
+<blockquote>[Footnote:
+The semantics here are different from
+<tt>ct.narrow</tt>.
+--- end foonote]</blockquote>
+<blockquote><tt><pre>
+for (int i = 0; i &lt; n; ++i)
+	buf2[i] = src[find(atoms, atoms+sizeof(src), buf1[i]) - atoms];
+buf2[n] = 0;
+sscanf(buf2, "%Lf", &amp;units);
+</pre></tt></blockquote>
+where
+<tt>n</tt>
+is the number of characters placed in
+<tt>buf1</tt>,
+<tt>buf2</tt>
+is a character buffer, and the values
+<tt>src</tt>
+and
+<tt>atoms</tt>
+are defined as if by
+<blockquote><tt><pre>
+static const char src[] = "0123456789-";
+charT atoms[sizeof(src)];
+ct.widen(src, src + sizeof(src) - 1, atoms);
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+An iterator pointing immediately beyond the last character recognized
+as part of a valid monetary quantity.
+<br>
+</ul></ol></dl><a name="lib.locale.money.put"><h4>22.2.6.2 - Template class  <tt><b>money_put</b></tt>  [lib.locale.money.put]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT,
+	    class OutputIterator = ostreambuf_iterator&lt;charT&gt; &gt;
+  class money_put : public locale::facet {
+  public:
+    typedef charT               char_type;
+    typedef OutputIterator      iter_type;
+    typedef basic_string&lt;charT&gt; string_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit money_put(size_t refs = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    iter_type put(iter_type <tt><i>s</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+		  char_type <tt><i>fill</i></tt>, long double <tt><i>units</i></tt>) const;
+    iter_type put(iter_type <tt><i>s</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp; <tt><i>f</i></tt>,
+		  char_type <tt><i>fill</i></tt>, const string_type&amp; <tt><i>digits</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~money_put();                //</tt><i>  virtual</i><tt>
+    virtual iter_type
+      do_put(iter_type, bool, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+	     long double <tt><i>units</i></tt>) const;
+    virtual iter_type
+      do_put(iter_type, bool, ios_base&amp;, char_type <tt><i>fill</i></tt>,
+	     const string_type&amp; <tt><i>digits</i></tt>) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.locale.money.put.members"><h5>22.2.6.2.1 -  <tt><b>money_put</b></tt>  members [lib.locale.money.put.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type put(iter_type <tt><i>s</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+              long double <tt><i>quant</i></tt>) const;
+iter_type put(iter_type <tt><i>s</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp; <tt><i>f</i></tt>, char_type <tt><i>fill</i></tt>,
+              const string_type&amp; <tt><i>quant</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_put(<tt><i>s</i></tt>, <tt><i>intl</i></tt>, <tt><i>f</i></tt>, <tt><i>loc</i></tt>, <tt><i>quant</i></tt>)</tt>
+</ul></ol></dl><a name="lib.locale.money.put.virtuals"><h5>22.2.6.2.2 -  <tt><b>money_put</b></tt>  virtual functions [lib.locale.money.put.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+iter_type do_put(iter_type <tt><i>s</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 char_type <tt><i>fill</i></tt>, long double <tt><i>units</i></tt>) const;
+iter_type do_put(iter_type <tt><i>s</i></tt>, bool <tt><i>intl</i></tt>, ios_base&amp; <tt><i>str</i></tt>,
+                 char_type <tt><i>fill</i></tt>, const string_type&amp; <tt><i>digits</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Effects:</b>
+Writes characters to
+<tt>s</tt>
+according to the format specified by a
+<tt>moneypunct&lt;charT,&nbsp;Intl&gt;</tt>
+facet reference
+<tt>mp</tt>
+and the character mapping specified by a
+<tt>ctype&lt;charT&gt;</tt>
+facet reference
+<tt>ct</tt>
+obtained from the locale returned by
+<tt>str.getloc()</tt>,
+and
+<tt>str.flags()</tt>.
+The argument
+<tt>units</tt>
+is transformed into a sequence of wide characters as if by
+<blockquote><tt><pre>
+ct.widen(buf1, buf1 + sprintf(buf1, "%.01f", units), buf2)
+</pre></tt></blockquote>
+for character buffers
+<tt>buf1</tt>
+and
+<tt>buf2</tt>.
+If the first character in
+<tt>digits</tt>
+or
+<tt>buf2</tt>
+is equal to
+<tt>ct.widen('-')</tt>,
+then the pattern used for formatting is the result of
+<tt>mp.neg_format()</tt>;
+otherwise the pattern is the result of
+<tt>mp.pos_format()</tt>.
+Digit characters are written, interspersed with any thousands separators
+and decimal point specified by the format, in the order they appear
+(after the optional leading minus sign)
+in
+<tt>digits</tt>
+or
+<tt>buf2</tt>.
+In
+<tt>digits</tt>,
+only the optional leading minus sign and the immediately subsequent
+digit characters (as classified according to
+<tt>ct</tt>)
+are used; any trailing characters (including digits appearing
+after a non-digit character) are ignored.
+Calls
+<tt>str.width(0)</tt>.
+</ul></ol></dl><p><b>-2-</b> <b>Notes:</b>
+The currency symbol is generated if and only if
+<tt>(str.flags() &amp; str.showbase)</tt>
+is nonzero.
+If the number of characters generated for the specified format is less than the value
+returned by
+<tt>str.width()</tt>
+on entry to the function, then copies of
+<tt>fill</tt>
+are inserted as necessary to pad to the specified width.
+For the value
+<tt>af</tt>
+equal to
+<tt>(str.flags() &amp; str.adjustfield)</tt>,
+if
+<tt>(af == str.internal)</tt>
+is true, the fill characters are placed where
+<tt>none</tt>
+or
+<tt>space</tt>
+appears in the formatting pattern; otherwise if
+<tt>(af == str.left)</tt>
+is true, they are placed after the other characters;
+otherwise, they are placed before the other characters.
+[<i>Note:</i>
+It is possible, with some combinations of format patterns and flag values,
+to produce output that cannot be parsed using
+<tt>num_get&lt;&gt;::get</tt>.
+<br>--- end note]
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+An iterator pointing immediately after the last character produced.
+</ul></ol></dl><a name="lib.locale.moneypunct"><h4>22.2.6.3 - Template class  <tt><b>moneypunct</b></tt>  [lib.locale.moneypunct]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  class money_base {
+  public:
+    enum part { none, space, symbol, sign, value };
+    struct pattern { char field[4]; };
+  };
+
+  template &lt;class charT, bool International = false&gt;
+  class moneypunct : public locale::facet, public money_base {
+  public:
+    typedef charT char_type;
+    typedef basic_string&lt;charT&gt; string_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit moneypunct(size_t refs = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    charT        decimal_point() const;
+    charT        thousands_sep() const;
+    string       grouping()      const;
+    string_type  curr_symbol()   const;
+    string_type  positive_sign() const;
+    string_type  negative_sign() const;
+    int          frac_digits()   const;
+    pattern      pos_format()    const;
+    pattern      neg_format()    const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+    static const bool intl = International;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~moneypunct();               //</tt><i>  virtual</i><tt>
+    virtual charT        do_decimal_point() const;
+    virtual charT        do_thousands_sep() const;
+    virtual string       do_grouping()      const;
+    virtual string_type  do_curr_symbol()   const;
+    virtual string_type  do_positive_sign() const;
+    virtual string_type  do_negative_sign() const;
+    virtual int          do_frac_digits()   const;
+    virtual pattern      do_pos_format()    const;
+    virtual pattern      do_neg_format()    const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+The
+<tt>moneypunct&lt;&gt;</tt>
+facet defines monetary formatting parameters used by
+<tt>money_get&lt;&gt;</tt>
+and
+<tt>money_put&lt;&gt;</tt>.
+A monetary format is a sequence of four components,
+specified by a
+<tt>pattern</tt>
+value
+<tt>p</tt>,
+such that the
+<tt>part</tt>
+value
+<tt>static_cast&lt;part&gt;(p.field[i])</tt>
+determines the
+<tt>i</tt>th
+component of the format*
+<blockquote>[Footnote:
+An array of
+<tt>char</tt>,
+rather than an array of
+<tt>part</tt>,
+is specified for
+<tt>pattern::field</tt>
+purely for efficiency.
+--- end foonote]</blockquote>
+In the
+<tt>field</tt>
+member of a
+<tt>pattern</tt>
+object, each value
+<tt>symbol</tt>,
+<tt>sign</tt>,
+<tt>value</tt>,
+and either
+<tt>space</tt>
+or
+<tt>none</tt>
+appears exactly once.
+The value
+<tt>none</tt>,
+if present, is not first;
+the value
+<tt>space</tt>,
+if present, is neither first nor last.
+</ul></ol></dl><p><b>-2-</b>
+Where
+<tt>none</tt>
+or
+<tt>space</tt>
+appears, white space is permitted in the format,
+except where
+<tt>none</tt>
+appears at the end, in which case no white space is permitted.
+The value
+<tt>space</tt>
+indicates that at least one space is required at that position.
+Where
+<tt>symbol</tt>
+appears, the sequence of characters returned by
+<tt>curr_symbol()</tt>
+is permitted, and can be required.
+Where
+<tt>sign</tt>
+appears, the first (if any) of the sequence of characters returned by
+<tt>positive_sign()</tt>
+or
+<tt>negative_sign()</tt>
+(respectively as the monetary value is non-negative or negative) is required.
+Any remaining characters of the sign sequence are required after all
+other format components.
+Where
+<tt>value</tt>
+appears, the absolute numeric monetary value is required.
+</ul></ol></dl><p><b>-3-</b>
+The format of the numeric monetary value is a decimal number:
+<blockquote><tt><pre>
+  value ::= units [ decimal-point [ digits]] |
+    decimal-point digits
+</pre></tt></blockquote>
+If
+<tt>frac_digits()</tt>
+returns a positive value, or
+<blockquote><tt><pre>
+  value ::= units
+</pre></tt></blockquote>
+otherwise.
+The symbol
+<tt>decimal-point</tt>
+indicates the character returned by
+<tt>decimal_point()</tt>.
+The other symbols are defined as follows:
+<blockquote><tt><pre>
+  units ::= digits [ thousands-sep units ]
+  digits ::= adigit [ digits ]
+</pre></tt></blockquote>
+In the syntax specification, the symbol
+<tt>adigit</tt>
+is any of the values
+<tt>ct.widen(c)</tt>
+for
+<tt>c</tt>
+in the range
+<tt>'0'</tt>
+through
+<tt>'9'</tt>,
+inclusive, and
+<tt>ct</tt>
+is a reference of type
+<tt>const&nbsp;ctype&lt;charT&gt;&amp;</tt>
+obtained as described in the definitions of
+<tt>money_get&lt;&gt;</tt>
+and
+<tt>money_put&lt;&gt;</tt>.
+The symbol
+<tt>thousands-sep</tt>
+is the character returned by
+<tt>thousands_sep()</tt>.
+The space character used is the value
+<tt>ct.widen(' ')</tt>.
+White space characters are those characters
+<tt>c</tt>
+for which
+<tt>ci.is(space,&nbsp;c)</tt>
+returns
+<tt>true</tt>.
+The number of digits required after the decimal point (if any)
+is exactly the value returned by
+<tt>frac_digits()</tt>.
+</ul></ol></dl><p><b>-4-</b>
+The placement of thousands-separator characters (if any)
+is determined by the value returned by
+<tt>grouping()</tt>,
+defined identically as the member
+<tt>numpunct&lt;&gt;::do_grouping()</tt>.
+</ul></ol></dl><a name="lib.locale.moneypunct.members"><h5>22.2.6.3.1 -  <tt><b>moneypunct</b></tt>  members [lib.locale.moneypunct.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+    charT        decimal_point() const;
+    charT        thousands_sep() const;
+    string       grouping()      const;
+    string_type  curr_symbol()   const;
+    string_type  positive_sign() const;
+    string_type  negative_sign() const;
+    int          frac_digits()   const;
+    pattern      pos_format()    const;
+    pattern      neg_format()    const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b>
+Each of these functions <tt>F</tt>
+returns the result of calling the corresponding
+virtual member function
+<tt>do_<i><b>F</b></i>()</tt>.
+</ul></ol></dl><a name="lib.locale.moneypunct.virtuals"><h5>22.2.6.3.2 -  <tt><b>moneypunct</b></tt>  virtual functions [lib.locale.moneypunct.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+charT do_decimal_point() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+The radix separator to use in case
+<tt>do_frac_digits()</tt>
+is greater than zero.*
+<blockquote>[Footnote:
+In common U.S. locales this is
+<tt>'.'</tt>.
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+charT do_thousands_sep() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+The digit group separator to use in case
+<tt>do_grouping()</tt>
+specifies a digit grouping pattern.*
+<blockquote>[Footnote:
+In common U.S. locales this is
+<tt>','</tt>.
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+string       do_grouping() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Returns:</b>
+A pattern defined identically as the result of
+<tt>numpunct&lt;charT&gt;::do_grouping()</tt>.*
+<blockquote>[Footnote:
+This is most commonly the value <tt>"\003"</tt>
+(<i>not</i>
+<tt>"3"</tt>).
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+string_type do_curr_symbol() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+A string to use as the currency identifier symbol.*
+<blockquote>[Footnote:
+For international instantiations (second template parameter
+<tt>true</tt>)
+this is always four characters long, usually three letters and a space.
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+string_type do_positive_sign() const;
+string_type do_negative_sign() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Returns:</b>
+<tt>do_positive_sign()</tt>
+returns the string to use to indicate a
+positive monetary value;*
+<blockquote>[Footnote:
+This is usually the empty string.
+--- end foonote]</blockquote>
+<tt>do_negative_sign()</tt>
+returns the string to use to indicate a negative value.
+</dl></ol></ul><tt><blockquote><pre>
+int do_frac_digits() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-6-</b> <b>Returns:</b>
+The number of digits after the decimal radix separator, if any.*
+<blockquote>[Footnote:
+In common U.S. locales, this is 2.
+--- end foonote]</blockquote>
+</dl></ol></ul><tt><blockquote><pre>
+pattern do_pos_format() const;
+pattern do_neg_format() const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-7-</b> <b>Returns:</b>
+The instantiations required in Table ?? (<a href="lib-locales.html#lib.locale.category">lib.locale.category</a>), namely
+<tt>moneypunct&lt;char&gt;</tt>,
+<tt>moneypunct&lt;wchar_t&gt;</tt>,
+<tt>moneypunct&lt;char,true&gt;</tt>,
+and
+<tt>moneypunct&lt;wchar_t,true&gt;</tt>,
+return an object of type
+<tt>pattern</tt>
+initialized to
+<tt>{ symbol, sign, none, value }</tt>.*
+<blockquote>[Footnote:
+Note that the international symbol returned by
+<tt>do_curr_sym()</tt>
+usually contains a space, itself;
+for example, <tt>"USD "</tt>.
+--- end foonote]</blockquote>
+</ul></ol></dl><a name="lib.locale.moneypunct.byname"><h4>22.2.6.4 - Template class  <tt><b>moneypunct_byname</b></tt>  [lib.locale.moneypunct.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT, bool Intl = false&gt;
+  class moneypunct_byname : public moneypunct&lt;charT, Intl&gt; {
+  public:
+    typedef money_base::pattern pattern;
+    typedef basic_string&lt;charT&gt; string_type;
+
+    explicit moneypunct_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+  protected:
+   ~moneypunct_byname();        //</tt><i>  virtual</i><tt>
+    virtual charT        do_decimal_point() const;
+    virtual charT        do_thousands_sep() const;
+    virtual string       do_grouping()      const;
+    virtual string_type  do_curr_symbol()   const;
+    virtual string_type  do_positive_sign() const;
+    virtual string_type  do_negative_sign() const;
+    virtual int          do_frac_digits()   const;
+    virtual pattern      do_pos_format()    const;
+    virtual pattern      do_neg_format()    const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.category.messages"><h3>22.2.7 - The message retrieval category [lib.category.messages]</h3></a>
+</ul></ol></dl><p><b>-1-</b>
+Class
+<tt>messages&lt;charT&gt;</tt>
+implements retrieval of strings from message catalogs.
+<br>
+</ul></ol></dl><a name="lib.locale.messages"><h4>22.2.7.1 - Template class  <tt><b>messages</b></tt>  [lib.locale.messages]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  class messages_base {
+  public:
+    typedef int catalog;
+  };
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  template &lt;class charT&gt;
+  class messages : public locale::facet, public messages_base {
+  public:
+    typedef charT char_type;
+    typedef basic_string&lt;charT&gt; string_type;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    explicit messages(size_t <tt><i>refs</i></tt> = 0);
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    catalog open(const basic_string&lt;char&gt;&amp; <tt><i>fn</i></tt>, const locale&amp;) const;
+    string_type  get(catalog <tt><i>c</i></tt>, int <tt><i>set</i></tt>, int <tt><i>msgid</i></tt>,
+		     const string_type&amp; <tt><i>dfault</i></tt>) const;
+    void    close(catalog <tt><i>c</i></tt>) const;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+    static locale::id id;
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  protected:
+   ~messages();                 //</tt><i>  virtual</i><tt>
+    virtual catalog do_open(const basic_string&lt;char&gt;&amp;, const locale&amp;) const;
+    virtual string_type  do_get(catalog, int <tt><i>set</i></tt>, int <tt><i>msgid</i></tt>,
+			   const string_type&amp; <tt><i>dfault</i></tt>) const;
+    virtual void    do_close(catalog) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-1-</b>
+Values of type
+<tt>messages_base::catalog</tt>
+usable as arguments to members
+<tt>get</tt>
+and
+<tt>close</tt>
+can be obtained only by calling member
+<tt>open</tt>.
+</ul></ol></dl><a name="lib.locale.messages.members"><h5>22.2.7.1.1 -  <tt><b>messages</b></tt>  members [lib.locale.messages.members]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+catalog open(const basic_string&lt;char&gt;&amp; <tt><i>name</i></tt>, const locale&amp; <tt><i>loc</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+<tt>do_open(<tt><i>name</i></tt>, <tt><i>loc</i></tt>)</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+string_type get(catalog <tt><i>cat</i></tt>, int <tt><i>set</i></tt>, int <tt><i>msgid</i></tt>,
+                const string_type&amp; <tt><i>dfault</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-2-</b> <b>Returns:</b>
+<tt>do_get(<tt><i>cat</i></tt>, <tt><i>set</i></tt>, <tt><i>msgid</i></tt>, <tt><i>dfault</i></tt>)</tt>.
+</dl></ol></ul><tt><blockquote><pre>
+void  close(catalog <tt><i>cat</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Effects:</b>
+Calls
+<tt>do_close(<tt><i>cat</i></tt>)</tt>.
+<br>
+</ul></ol></dl><a name="lib.locale.messages.virtuals"><h5>22.2.7.1.2 -  <tt><b>messages</b></tt>  virtual functions [lib.locale.messages.virtuals]</h5></a>
+</dl></ol></ul><tt><blockquote><pre>
+catalog do_open(const basic_string&lt;char&gt;&amp; <tt><i>name</i></tt>,
+                const locale&amp; <tt><i>loc</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-1-</b> <b>Returns:</b>
+A value that may be passed to
+<tt>get()</tt>
+to retrieve a message, from the message catalog identified by the string
+<tt><i>name</i></tt> according to an implementation-defined mapping.
+The result can be used until it is passed to
+<tt>close()</tt>.
+<br>
+Returns a value less than 0 if no such catalog can be opened.
+</ul></ol></dl><p><b>-2-</b> <b>Notes:</b>
+The locale argument <tt><i>loc</i></tt>
+is used for character set code conversion when retrieving
+messages, if needed.
+</dl></ol></ul><tt><blockquote><pre>
+string_type do_get(catalog <tt><i>cat</i></tt>, int <tt><i>set</i></tt>, int <tt><i>msgid</i></tt>,
+              const string_type&amp; <tt><i>dfault</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-3-</b> <b>Requires:</b>
+A catalog <tt><i>cat</i></tt> obtained from
+<tt>open()</tt>
+and not yet closed.
+</ul></ol></dl><p><b>-4-</b> <b>Returns:</b>
+A message identified by arguments <tt><i>set</i></tt>, <tt><i>msgid</i></tt>, and <tt><i>dfault</i></tt>,
+according to an implementation-defined mapping.
+If no such message can be found, returns <tt><i>dfault</i></tt>.
+</dl></ol></ul><tt><blockquote><pre>
+void do_close(catalog <tt><i>cat</i></tt>) const;
+</pre></blockquote></tt>
+</ul></ol></dl><p><b>-5-</b> <b>Requires:</b>
+A catalog <tt><i>cat</i></tt> obtained from
+<tt>open()</tt>
+and not yet closed.
+</ul></ol></dl><p><b>-6-</b> <b>Effects:</b>
+Releases unspecified resources associated with  <tt><i>cat</i></tt>.
+</ul></ol></dl><p><b>-7-</b> <b>Notes:</b>
+The limit on such resources, if any, is implementation-defined.
+</ul></ol></dl><a name="lib.locale.messages.byname"><h4>22.2.7.2 - Template class  <tt><b>messages_byname</b></tt>  [lib.locale.messages.byname]</h4></a>
+<blockquote><tt><pre>
+namespace std {
+  template &lt;class charT&gt;
+  class messages_byname : public messages&lt;charT&gt; {
+  public:
+    typedef messages_base::catalog catalog;
+    typedef basic_string&lt;charT&gt;    string_type;
+
+    explicit messages_byname(const char*, size_t <tt><i>refs</i></tt> = 0);
+  protected:
+   ~messages_byname();          //</tt><i>  virtual</i><tt>
+    virtual catalog do_open(const basic_string&lt;char&gt;&amp;, const locale&amp;) const;
+    virtual string_type  do_get(catalog, int <tt><i>set</i></tt>, int <tt><i>msgid</i></tt>,
+			   const string_type&amp; <tt><i>dfault</i></tt>) const;
+    virtual void    do_close(catalog) const;
+  };
+}
+</pre></tt></blockquote>
+</ul></ol></dl><a name="lib.facets.examples"><h3>22.2.8 - Program-defined facets [lib.facets.examples]</h3></a>
+</ul></ol></dl><p><b>-1-</b>
+A C++ program may define facets to be added to a locale and used identically as
+the built-in facets.
+To create a new facet interface, C++ programs simply derive from
+<tt>locale::facet</tt>
+a class containing a static member:
+<tt>static locale::id id</tt>.
+</ul></ol></dl><p><b>-2-</b>
+[<i>Note:</i>
+The locale member function templates verify its type and storage class.
+<br>--- end note]
+</ul></ol></dl><p><b>-3-</b>
+This initialization/identification system depends only on the
+initialization to 0 of static objects, before static constructors
+are called.
+When an instance of a facet is installed in a locale,
+the locale checks whether an id has been assigned, and if not,
+assigns one.
+Before this occurs, any attempted
+<tt>use</tt>
+of its interface causes the
+<tt>bad_cast</tt>
+exception to be thrown.
+<br>
+</ul></ol></dl><p><b>-4-</b>
+[<i>Example:</i>
+Traditional global localization is still easy:
+<blockquote><tt><pre>
+  #include &lt;iostream&gt;
+  #include &lt;locale&gt;
+  int main(int argc, char** argv)
+  {
+    using namespace std;
+    locale::global(locale(""));         //</tt><i>  set the global locale</i><tt>
+					//</tt><i>  imbue it on all the std streams</i><tt>
+    cin.imbue(locale());
+    cout.imbue(locale());
+    cerr.imbue(locale());
+    wcin.imbue(locale());
+    wcout.imbue(locale());
+    wcerr.imbue(locale());
+
+    return MyObject(argc, argv).doit();
+  }
+</pre></tt></blockquote>
+<br>--- end example]
+</ul></ol></dl><p><b>-5-</b>
+[<i>Example:</i>
+Greater flexibility is possible:
+<blockquote><tt><pre>
+  #include &lt;iostream&gt;
+  #include &lt;locale&gt;
+  int main()
+  {
+    using namespace std;
+    cin.imbue(locale(""));      //</tt><i>  the user's preferred locale</i><tt>
+    cout.imbue(locale::classic());
+    double f;
+    while (cin &gt;&gt; f) cout &lt;&lt; f &lt;&lt; endl;
+    return (cin.fail() != 0);
+  }
+</pre></tt></blockquote>
+In a European locale, with input
+<tt>3.456,78</tt>,
+output is
+<tt>3456.78</tt>.
+<br>--- end example]
+</ul></ol></dl><p><b>-6-</b>
+This can be important even for simple programs, which may need to
+write a data file in a fixed format, regardless of a user's preference.
+</ul></ol></dl><p><b>-7-</b>
+[<i>Example:</i>
+Here is an example of the use of locales in a library interface.
+<blockquote><tt><pre>
+  //</tt><i>  file:  </i><tt>Date.h
+  #include &lt;iosfwd&gt;
+  #include &lt;string&gt;
+  #include &lt;locale&gt;
+     ...
+  class Date {
+    ...
+   public:
+    Date(unsigned day, unsigned month, unsigned year);
+    std::string asString(const std::locale&amp; = std::locale());
+  };
+  istream&amp; operator&gt;&gt;(istream&amp; s, Date&amp; d);
+  ostream&amp; operator&lt;&lt;(ostream&amp; s, Date d);
+  ...
+</pre></tt></blockquote>
+This example illustrates two architectural uses of class
+<tt>locale</tt>.
+</ul></ol></dl><p><b>-8-</b>
+The first is as a default argument in
+<tt>Date::asString()</tt>,
+where the
+default is the global (presumably user-preferred) locale.
+</ul></ol></dl><p><b>-9-</b>
+The second is in the operators
+<tt>&lt;&lt;</tt>
+and
+<tt>&gt;&gt;</tt>,
+where a locale ``hitchhikes''
+on another object, in this case a stream, to the point where it
+is needed.
+<blockquote><tt><pre>
+  //</tt><i>  file:  </i><tt>Date.C
+  #include "Date"               //</tt><i>  includes  </i><tt>&lt;ctime&gt;
+  #include &lt;sstream&gt;
+  std::string Date::asString(const std::locale&amp; l)
+  {
+    using namespace std;
+    ostringstream s; s.imbue(l);
+    s &lt;&lt; *this; return s.str();
+  }
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  std::istream&amp; operator&gt;&gt;(std::istream&amp; s, Date&amp; d)
+  {
+    using namespace std;
+    istream::sentry cerberos(s);
+    if (cerberos) {
+      ios_base::iostate err = goodbit;
+      struct tm t;
+      use_facet&lt; time_get&lt;char&gt; &gt;(s.getloc()).get_date(s, 0, s, err, &amp;t);
+      if (!err) d = Date(t.tm_day, t.tm_mon + 1, t.tm_year + 1900);
+      s.setstate(err);
+    }
+    return s;
+  }
+</pre></tt></blockquote>
+<br>--- end example]
+</ul></ol></dl><p><b>-10-</b>
+A locale object may be extended with a new facet simply by constructing
+it with an instance of a class derived from
+<tt>locale::facet</tt>.
+The only member a C++ program must define is the static member
+<tt>id</tt>,
+which identifies your class interface as a new facet.
+</ul></ol></dl><p><b>-11-</b>
+[<i>Example:</i>
+Classifying Japanese characters:
+<blockquote><tt><pre>
+  //</tt><i>  file:  </i><tt>&lt;jctype&gt;
+  #include &lt;locale&gt;
+  namespace My {
+    using namespace std;
+    class JCtype : public locale::facet {
+    public:
+      static locale::id id;     //</tt><i>  required for use as a new locale facet</i><tt>
+      bool is_kanji(wchar_t c);
+      JCtype() {}
+    protected:
+     ~JCtype() {}
+    };
+  }
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  //</tt><i>  file:  </i><tt>filt.C
+  #include &lt;iostream&gt;
+  #include &lt;locale&gt;
+  #include "jctype"             //</tt><i>  above</i><tt>
+  std::locale::id JCtype::id;   //</tt><i>  the static  </i><tt>JCtype</tt><i>  member declared above.</i><tt>
+  int main()
+  {
+    using namespace std;
+    typedef ctype&lt;wchar_t&gt; wctype;
+    locale loc(locale(""),      //</tt><i>  the user's preferred locale ...</i><tt>
+	       new My::JCType);         //</tt><i>  and a new feature ...</i><tt>
+    wchar_t c = use_facet&lt;wctype&gt;(loc).widen('!');
+    if (use_facet&lt;My::JCType&gt;(loc).is_kanji(c))
+      cout &lt;&lt; "no it isn't!" &lt;&lt; endl;
+    return 0;
+  }
+</pre></tt></blockquote>
+</ul></ol></dl><p><b>-12-</b>
+The new facet is used exactly like the built-in facets.
+<br>--- end example]
+</ul></ol></dl><p><b>-13-</b>
+[<i>Example:</i>
+Replacing an existing facet is even easier.
+Here we do not define a member
+<tt>id</tt>
+because we are reusing the
+<tt>numpunct&lt;charT&gt;</tt>
+facet interface:
+<blockquote><tt><pre>
+  //</tt><i>  file:  </i><tt>my_bool.C
+  #include &lt;iostream&gt;
+  #include &lt;locale&gt;
+  #include &lt;string&gt;
+  namespace My {
+    using namespace std;
+    typedef numpunct_byname&lt;char&gt; cnumpunct;
+    class BoolNames : public cnumpunct {
+     protected:
+      string do_truename()  { return "Oui Oui!"; }
+      string do_falsename() { return "Mais Non!"; }
+     ~BoolNames() {}
+    public:
+      BoolNames(const char* name) : cnumpunct(name) {}
+    };
+  }
+</pre></tt></blockquote>
+<blockquote><tt><pre>
+  int main(int argc, char** argv)
+  {
+    using namespace std;
+    //</tt><i>  make the user's preferred locale, except for...</i><tt>
+    locale loc(locale(""), new My::BoolNames(""));
+    cout.imbue(loc);
+    cout &lt;&lt; boolalpha &lt;&lt; "Any arguments today? " &lt;&lt; (argc &gt; 1) &lt;&lt; endl;
+    return 0;
+  }
+</pre></tt></blockquote>
+<br>--- end example]
+<br>
+</ul></ol></dl><a name="lib.c.locales"><h2>22.3 - C Library Locales [lib.c.locales]</h2></a>
+</ul></ol></dl><p><b>-1-</b>
+Header
+<tt>&lt;clocale&gt;</tt>
+(Table ??):
+<p><center><table border><caption>Header  <tt><b>&lt;clocale&gt;</b></tt>  synopsis</caption>
+<tr><td>Type</td><td>Name(s)</td></tr>
+
+<tr><td>Macros:</td></tr>
+<tr><td>&nbsp;</td><td>LC_ALL</td><td>LC_COLLATE</td><td>LC_CTYPE</td></tr>
+<tr><td>&nbsp;</td><td>LC_MONETARY</td><td>LC_NUMERIC</td><td>LC_TIME</td></tr>
+<tr><td>&nbsp;</td><td>NULL</td></tr>
+
+<tr><td>Struct:</td><td>lconv</td></tr>
+
+<tr><td>Functions:</td><td>localeconv</td><td>setlocale</td></tr>
+</table></center><p>
+</ul></ol></dl><p><b>-2-</b>
+The contents are the same as the Standard C library header
+<tt>&lt;locale.h&gt;</tt>.
+<p>See also
+ISO C clause 7.4.

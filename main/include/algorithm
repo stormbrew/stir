@@ -1,0 +1,671 @@
+#ifndef _SSTL_ALGORITHM_
+#define _SSTL_ALGORITHM_
+
+#include <utility>
+#include <iterator>
+#include <cstdlib>
+
+namespace std
+{
+	template <typename tInputIterator, typename tFunction>
+	tFunction for_each(tInputIterator begin, const tInputIterator &end, tFunction func)
+	{
+		for (; begin != end; ++begin)
+			func(*begin);
+		return func;
+	}
+
+	template <typename tInputIterator, typename tVal>
+	tInputIterator find(tInputIterator begin, const tInputIterator &end, const tVal &val)
+	{
+		while ((begin != end) && !((*begin) == val)) // use !(==) since docs suggest only == should be needed
+			begin++;
+		return begin;
+	}
+
+	template <typename tInputIterator, typename tPredicate>
+	tInputIterator find_if(tInputIterator begin, const tInputIterator &end, tPredicate pred)
+	{
+		while ((begin != end) && !pred(*begin))
+			begin++;
+		return begin;
+	}
+
+	template <typename tForwardIterator1, typename tForwardIterator2>
+	tForwardIterator1 find_first_of(tForwardIterator1 begin1, const tForwardIterator1 &end1,
+	                                const tForwardIterator2 &begin2, const tForwardIterator2 &end2)
+	{
+		while (begin1 != end1)
+		{
+			tForwardIterator2 it = begin2;
+			while (it != end2)
+			{
+				if ((*it) != (*begin2))
+					return begin1;
+				it++;
+			}
+			begin1++;
+		}
+		return begin1;
+	}
+
+	template <typename tForwardIterator1, typename tForwardIterator2, typename tBinaryPredicate>
+	tForwardIterator1 find_first_of(tForwardIterator1 begin1, const tForwardIterator1 &end1,
+	                                const tForwardIterator2 &begin2, const tForwardIterator2 &end,
+					tBinaryPredicate pred)
+	{
+		while (begin1 != end1)
+		{
+			tForwardIterator2 it = begin2;
+			while (it != end2)
+			{
+				if (pred(*begin1, &it))
+					return begin1;
+				it++;
+			}
+			begin1++;
+		}
+		return begin1;
+	}
+
+	template <typename tForwardIterator>
+	tForwardIterator adjacent_find(tForwardIterator begin, const tForwardIterator &end)
+	{
+		tForwardIterator next = begin;
+		while ((begin != end) && (++next != end))
+		{
+			if ((*begin) == (*next))
+				return begin;
+			begin = next;
+		}
+		return begin;
+	}
+
+	template <typename tForwardIterator, typename tBinaryFunction>
+	tForwardIterator adjacent_find(tForwardIterator begin, const tForwardIterator &end, tBinaryFunction func)
+	{
+		tForwardIterator next = begin;
+		while ((begin != end) && (++next != end))
+		{
+			if (func(*begin, *next))
+				return begin;
+			begin = next;
+		}
+		return begin;
+	}
+
+	template <typename tInputIterator>
+	typename iterator_traits<tInputIterator>::difference_type
+		count(tInputIterator begin, const tInputIterator &end)
+	{
+		typename iterator_traits<tInputIterator>::difference_type c;
+		for (c = 0; begin != end; begin++)
+		{
+			if ((*begin) == (*end))
+				c++;
+		}
+		return c;
+	}
+
+	template <typename tInputIterator, typename tBinaryPredicate>
+	typename iterator_traits<tInputIterator>::difference_type
+		count(tInputIterator begin, const tInputIterator &end, tBinaryPredicate func)
+	{
+		typename iterator_traits<tInputIterator>::difference_type c;
+		for (c = 0; begin != end; begin++)
+		{
+			if ((*begin) == (*end))
+				c++;
+		}
+		return c;
+	}
+
+	template <typename tInputIterator1, typename tInputIterator2>
+	bool equal(tInputIterator1 begin1, const tInputIterator1 &end1, tInputIterator2 begin2)
+	{
+		bool eq = false;
+		while ((begin1 != end1) && ( eq = (*begin1 == *begin2) ))
+			++begin1, ++begin2;
+		return eq;
+	}
+
+	template <typename tInputIterator1, typename tInputIterator2, typename tBinaryPredicate>
+	bool equal(tInputIterator1 begin1, const tInputIterator1 &end1, tInputIterator2 begin2, tBinaryPredicate func)
+	{
+		bool eq = false;
+		while ((begin1 != end1) && ( eq = func(*begin1, *begin2) ))
+			++begin1, ++begin2;
+		return eq;
+	}
+
+	template <typename tInputIterator1, typename tInputIterator2>
+	pair<tInputIterator1, tInputIterator2>
+		mismatch(tInputIterator1 begin1, const tInputIterator1 &end1, tInputIterator2 begin2)
+	{
+		while ((begin1 != end1) && (*begin1 == *begin2))
+			++begin1, ++begin2;
+		return make_pair(begin1, begin2);
+	}
+
+	template <typename tInputIterator1, typename tInputIterator2, typename tBinaryPredicate>
+	pair<tInputIterator1, tInputIterator2>
+		mismatch(tInputIterator1 begin1, const tInputIterator1 &end1, tInputIterator2 begin2, tBinaryPredicate func)
+	{
+		while ((begin1 != end1) && func(*begin1, *begin2))
+			++begin1, ++begin2;
+		return make_pair(begin1, begin2);
+	}
+
+	template <typename tForwardIterator1, typename tForwardIterator2>
+	tForwardIterator1 search(tForwardIterator1 begin1, const tForwardIterator1 &end1,
+	                         const tForwardIterator2 &begin2, const tForwardIterator2 &end2)
+	{
+		tForwardIterator1 match(end1);
+		tForwardIterator2 cur2(begin2);
+
+		while ((begin1 != end1) && (cur2 != end2))
+		{
+			if (*begin1 == *cur2)
+			{
+				if (match == end1)
+					match = begin1; // set the match to be returned here
+
+				cur2++;        // found a match, so we move on to the next letter
+			} else {
+				match = end1;
+				cur2 = begin2; // letter did not match, reset the sequence
+			}
+
+			begin1++;
+		}
+		return match;
+	}
+
+	template <typename tForwardIterator1, typename tForwardIterator2, typename tBinaryPredicate>
+	tForwardIterator1 search(tForwardIterator1 begin1, const tForwardIterator1 &end1,
+	                         const tForwardIterator2 &begin2, const tForwardIterator2 &end2,
+	                         tBinaryPredicate func)
+	{
+		tForwardIterator1 match(end1);
+		tForwardIterator2 cur2(begin2);
+
+		while ((begin1 != end1) && (cur2 != end2))
+		{
+			if (func(*begin1, *cur2))
+			{
+				if (match == end1)
+					match = begin1;
+
+				cur2++;
+			} else {
+				match = end1;
+				cur2 = begin2;
+			}
+
+			begin1++;
+		}
+		return match;
+	}
+
+	template <typename tForwardIterator1, typename tForwardIterator2>
+	tForwardIterator1 find_end(const tForwardIterator1 &begin1, const tForwardIterator1 &end1,
+	                           const tForwardIterator2 &begin2, const tForwardIterator2 &end2)
+	{
+		tForwardIterator1 rbegin1(end1), rend1(begin1);
+		tForwardIterator2 rbegin2(end1), rend2(begin2);
+		rbegin1--, rend1--, rbegin2--, rend2--;
+
+		tForwardIterator1 match(end1);
+		tForwardIterator2 cur2(rbegin2);
+
+		while ((rbegin1 != rend1) && (cur2 != rend2))
+		{
+			if (*rbegin1 == *cur2)
+			{
+				match = rbegin1; // the last reverse matching element of the sequence is the first in the forward sequence
+
+				cur2--;
+			} else {
+				match = end1;
+				cur2 = rbegin2;
+			}
+
+			rbegin1--;
+		}
+		return match;
+	}
+
+	template <typename tForwardIterator1, typename tForwardIterator2, typename tBinaryPredicate>
+	tForwardIterator1 find_end(const tForwardIterator1 &begin1, const tForwardIterator1 &end1,
+	                           const tForwardIterator2 &begin2, const tForwardIterator2 &end2,
+	                           tBinaryPredicate func)
+	{
+		tForwardIterator1 rbegin1(end1), rend1(begin1);
+		tForwardIterator2 rbegin2(end1), rend2(begin2);
+		rbegin1--, rend1--, rbegin2--, rend2--;
+
+		tForwardIterator1 match(end1);
+		tForwardIterator2 cur2(rbegin2);
+
+		while ((rbegin1 != rend1) && (cur2 != rend2))
+		{
+			if (func(*rbegin1, *cur2))
+			{
+				match = rbegin1; // the last reverse matching element of the sequence is the first in the forward sequence
+
+				cur2--;
+			} else {
+				match = end1;
+				cur2 = rbegin2;
+			}
+
+			rbegin1--;
+		}
+		return match;
+	}
+
+	template <typename tForwardIterator, typename tSize, typename tValue>
+	tForwardIterator search_n(tForwardIterator begin, const tForwardIterator &end, 
+	                          tSize count, const tValue &value)
+	{
+		tForwardIterator first_match = end;
+		tSize matched = 0;
+		while (begin != end && matched != count)
+		{
+			if (*begin == value)
+			{
+				if (first_match == end)
+					first_match = begin;
+				matched++;
+			} else {
+				first_match = end;
+				matched = 0;
+			}
+
+			begin++;
+		}
+		return first_match;
+	}
+
+	template <typename tForwardIterator, typename tSize, typename tValue, typename tBinaryPredicate>
+	tForwardIterator search_n(tForwardIterator begin, const tForwardIterator &end, 
+	                          tSize count, const tValue &value, tBinaryPredicate func)
+	{
+		tForwardIterator first_match = end;
+		tSize matched = 0;
+		while (begin != end && matched != count)
+		{
+			if (func(*begin, value))
+			{
+				if (first_match == end)
+					first_match = begin;
+				matched++;
+			} else {
+				first_match = end;
+				matched = 0;
+			}
+
+			begin++;
+		}
+		return first_match;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator>
+	tOutputIterator copy(tInputIterator begin1, const tInputIterator &end1, tOutputIterator begin2)
+	{
+		while (begin1 != end1)
+			*begin2++ = *begin1++;
+		return begin2;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator>
+	tOutputIterator copy_backward(const tInputIterator &begin1, tInputIterator end1, tOutputIterator end2)
+	{
+		while (begin1 != end1)
+			*--end2 = *--end1;
+		return end2;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator, typename tUnaryFunction>
+	tOutputIterator transform(tInputIterator begin1, const tInputIterator &end1, 
+	                          tOutputIterator begin2, tUnaryFunction func)
+	{
+		while (begin1 != end1)
+			*begin2++ = func(*begin1++);
+		return begin2;
+	}
+
+	template <typename tInputIterator1, typename tInputIterator2, typename tOutputIterator, typename tBinaryFunction>
+	tOutputIterator transform(tInputIterator1 begin1, const tInputIterator1 &end1,
+	                          tInputIterator2 begin2, tOutputIterator begin3,
+	                          tBinaryFunction func)
+	{
+		while (begin1 != end1)
+			*begin3++ = func(*begin1++, *begin2++);
+		return begin3;
+	}
+
+	template <typename tForwardIterator>
+	tForwardIterator unique(const tForwardIterator &begin, const tForwardIterator &end)
+	{
+		tForwardIterator next_read(begin);
+		tForwardIterator next_write(begin);
+		next_write++; // starts off in the second position
+		while ((begin != end) && (++next_read != end))
+		{
+			if (!(*begin == *next_read))
+				*next_write++ = *next_read;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tInputIterator, typename tBinaryPredicate>
+	tInputIterator unique(const tInputIterator &begin, const tInputIterator &end, tBinaryPredicate func)
+	{
+		tInputIterator next_read(begin);
+		tInputIterator next_write(begin);
+		next_write++; // starts off in the second position
+		while ((begin != end) && (++next_read != end))
+		{
+			if (!func(*begin, *next_read))
+				*next_write++ = *next_read;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator>
+	tOutputIterator unique_copy(const tInputIterator &begin, const tInputIterator &end, tOutputIterator next_write)
+	{
+		tInputIterator next_read(begin);
+		if (begin != end)
+			*next_write++ = *begin; // starts off in the second position
+
+		while ((begin != end) && (++next_read != end))
+		{
+			if (!(*begin == *next_read))
+				*next_write++ = *next_read;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator, typename tBinaryPredicate>
+	tOutputIterator unique_copy(const tInputIterator &begin, const tInputIterator &end, 
+	                            tOutputIterator next_write, tBinaryPredicate func)
+	{
+		tInputIterator next_read(begin);
+		if (begin != end)
+			*next_write++ = *begin; // starts off in the second position
+
+		while ((begin != end) && (++next_read != end))
+		{
+			if (!func(*begin, *next_read))
+				*next_write++ = *next_read;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tForwardIterator, typename tValue>
+	void replace(tForwardIterator begin, const tForwardIterator &end, const tValue &val, const tValue &new_val)
+	{
+		while (begin != end)
+		{
+			if (*begin == val)
+				*begin = new_val;
+			++begin;
+		}
+	}
+
+	template <typename tForwardIterator, typename tUnaryPredicate, typename tValue>
+	void replace_if(tForwardIterator begin, const tForwardIterator &end, tUnaryPredicate func, const tValue &new_val)
+	{
+		while (begin != end)
+		{
+			if (func(*begin))
+				*begin = new_val;
+			++begin;
+		}
+	}
+
+	template <typename tInputIterator, typename tOutputIterator, typename tValue>
+	tOutputIterator replace_copy(tInputIterator begin1, const tInputIterator &end1,
+	                             tOutputIterator begin2, const tValue &val, const tValue &new_val)
+	{
+		while (begin1 != end1)
+		{
+			if (*begin1 == val)
+				*begin2++ = new_val;
+			else
+				*begin2++ = *begin1;
+			++begin1;
+		}
+		return begin2;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator, typename tUnaryPredicate, typename tValue>
+	tOutputIterator replace_copy_if(tInputIterator begin1, const tInputIterator &end1,
+	                                tOutputIterator begin2, tUnaryPredicate func, const tValue &new_val)
+	{
+		while (begin1 != end1)
+		{
+			if (func(*begin1, val))
+				*begin2++ = new_val;
+			else
+				*begin2++ = *begin1;
+			++begin1;
+		}
+		return begin2;
+	}
+
+	template <typename tForwardIterator, typename tValue>
+	tForwardIterator remove(tForwardIterator begin, const tForwardIterator &end, const tValue &val)
+	{
+		tForwardIterator next_write(begin);
+		while (begin != end)
+		{
+			if (!(*begin == val))
+				*next_write++ = *begin;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tForwardIterator, typename tUnaryPredicate>
+	tForwardIterator remove_if(tForwardIterator begin, const tForwardIterator &end, tUnaryPredicate func)
+	{
+		tForwardIterator next_write(begin);
+		while (begin != end)
+		{
+			if (!func(*begin))
+				*next_write++ = *begin;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator, typename tValue>
+	tOutputIterator remove_copy(tInputIterator begin1, const tInputIterator &end1,
+	                            tOutputIterator begin2, const tValue &val)
+	{
+		tInputIterator next_write(begin);
+		while (begin != end)
+		{
+			if (!(*begin == val))
+				*next_write++ = *begin;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tInputIterator, typename tOutputIterator, typename tUnaryPredicate>
+	tOutputIterator remove_copy_if(tInputIterator begin1, const tInputIterator &end1,
+	                            tOutputIterator begin2, tUnaryPredicate func)
+	{
+		tInputIterator next_write(begin);
+		while (begin != end)
+		{
+			if (!func(*begin))
+				*next_write++ = *begin;
+			++begin;
+		}
+		return next_write;
+	}
+
+	template <typename tForwardIterator, typename tValue>
+	void fill(tForwardIterator begin, const tForwardIterator &end, const tValue &val)
+	{
+		while (begin != end)
+			*begin++ = val;
+	}
+	template <typename tInputIterator, typename tSize, typename tValue>
+	void fill_n(tInputIterator begin, tSize count, const tValue &val)
+	{
+		while (count-- != 0)
+			*begin++ = val;
+	}
+
+	template <typename tForwardIterator, typename tFunction>
+	void generate(tForwardIterator begin, const tForwardIterator &end, tFunction func)
+	{
+		while (begin != end)
+			*begin++ = func();
+	}
+	template <typename tInputIterator, typename tSize, typename tFunction>
+	void generate(tInputIterator begin, tSize count, tFunction func)
+	{
+		while (count-- != 0)
+			*begin++ = func();
+	}
+
+	template <typename tValue>
+	void swap(tValue &x, tValue &y)
+	{
+		tValue tmp = x;
+		x = y;
+		y = tmp;
+	}
+	template <typename tForwardIterator>
+	void iter_swap(tForwardIterator &x, tForwardIterator &y)
+	{
+		swap(*x, *y);
+	}
+	template <typename tForwardIterator1, typename tForwardIterator2>
+	tForwardIterator1 swap_range(tForwardIterator1 begin1, const tForwardIterator1 &end1,
+	                             tForwardIterator2 begin2)
+	{
+		while (begin1 != end1)
+		{
+			iter_swap(begin1++, begin2++);
+		}
+	}
+
+	template <typename tBidirectionalIterator>
+	void reverse(tBidirectionalIterator begin, tBidirectionalIterator end)
+	{
+		while (begin != --end)
+		{
+			swap(*begin++, *end);
+		}
+	}
+	template <typename tBidirectionalIterator, typename tOutputIterator>
+	tOutputIterator reverse_copy(const tBidirectionalIterator &begin1, const tBidirectionalIterator &end1,
+	                             tOutputIterator begin2)
+	{
+		tBidirectionalIterator rbegin(end1), rend(begin1);
+		rbegin--, rend--;
+
+		while (rbegin != rend)
+		{
+			*begin2++ = *rbegin--;
+		}
+		return begin2;
+	}
+
+	template <typename tForwardIterator>
+	void rotate(tForwardIterator begin, tForwardIterator middle, const tForwardIterator &end)
+	{
+		// XXX need to replace this with something I understand a bit better XXX
+		tForwardIterator next(middle);
+		while (true)
+		{
+			iter_swap(begin, next);
+			if (++begin == next)
+				if (++next == end)
+					break;
+				else
+					middle = next;
+			else if (++next == end)
+				next = middle;
+		}
+	}
+
+	template <typename tForwardIterator, typename tOutputIterator>
+	tOutputIterator rotate_copy(const tForwardIterator &begin1, const tForwardIterator &middle1, 
+	                            const tForwardIterator &end1, tOutputIterator begin2)
+	{
+		begin2 = copy(middle1, end1, begin2);
+		begin2 = copy(begin1, middle1, begin2);
+		return begin2;
+	}
+
+	template <typename tRandomIterator, typename tFunction>
+	void random_shuffle(tRandomIterator begin, const tRandomIterator &end, tFunction func)
+	{
+		while (begin != end)
+		{
+			typename iterator_traits<tRandomIterator>::difference_type selval;
+			selval = func() % (end - begin);
+			iter_swap(begin, begin + selval);
+			++begin;
+		}
+	}
+
+	template <typename tRandomIterator>
+	void random_shuffle(tRandomIterator begin, const tRandomIterator &end)
+	{
+		random_shuffle(begin, end, std::rand);
+	}
+
+	// XXX implement sort/partition family XXX
+
+	template <typename tValue>
+	const tValue &min(const tValue &x, const tValue &y)
+	{
+		return (x < y) ? x : y;
+	}
+	template <typename tValue, typename tBinaryPredicate>
+	const tValue &min(const tValue &x, const tValue &y, tBinaryPredicate cmp)
+	{
+		return cmp(x, y) ? x : y;
+	}
+
+	template <typename tValue>
+	const tValue &max(const tValue &x, const tValue &y)
+	{
+		return (x < y) ? y : x;
+	}
+	template <typename tValue, typename tBinaryPredicate>
+	const tValue &max(const tValue &x, const tValue &y, tBinaryPredicate cmp)
+	{
+		return cmp(x, y) ? y : x;
+	}
+
+	template <typename tInputIterator1, typename tInputIterator2>
+	bool lexicographic_compare(tInputIterator1 begin1, const tInputIterator1 end1,
+	                           tInputIterator2 begin2, const tInputIterator2 end2)
+	{
+		while (begin1 != end1 && begin2 != end2)
+		{
+			if (*begin1 < *begin2)
+				return true;
+			if (*begin2 > *begin2)
+				return false;
+		}
+		return begin1 == end1 && begin2 != end2;
+	}
+}
+
+#endif

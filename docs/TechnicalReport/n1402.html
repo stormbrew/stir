@@ -1,0 +1,746 @@
+<html>
+<head>
+<title>A Proposal to add a Polymorphic Function Object Wrapper to the Standard Library</title>
+</head>
+<body>
+<h1>A Proposal to add a Polymorphic Function Object Wrapper to the Standard Library</h1>
+
+<br>Document number: N1402=02-0060
+<br>Date: 22 October 2002
+<br>Project: Programming Language C++ 
+<br>Reply-to: Douglas Gregor &lt;<a
+href="mailto:gregod@cs.rpi.edu">gregod@cs.rpi.edu</a>&gt; 
+
+<h2>I. Motivation</h2>
+<p> Function pointers in C and C++ are used in both user and library
+code to customize the behavior of components by substituting a
+user-supplied function for part of a computation. This proposal
+introduces a class template that generalizes the notion of a
+function pointer to subsume function pointers, member function
+pointers, and arbitrary function objects while maintaining similar
+syntax and semantics to function pointers.
+
+<p> Several function object wrappers (often referred to as
+"callbacks") have appeared with similar interfaces
+[<a href="#huber">1</a>, <a href="#alexandrescu">2</a>, <a href="#fporg">10</a>, <a href="#hickey">11</a>], suggesting that
+this class template is appropriate for standardization. This
+proposal is based on the design and implementation of the
+<a href="http://www.boost.org/libs/function/index.html">Boost.Function
+library</a> [<a href="#function_lib">8</a>].
+
+<h3>Ia. Callbacks</h3>
+<p> Experience with Boost.Function has shown that polymorphic function
+object wrappers are often used for callbacks. Callbacks can be
+constructed in many ways, but in C++ they are often constructed in the
+"OO-style" using
+virtual functions and abstract callback classes. For instance, an
+abstract callback class that receives updates when a computer mouse is
+moved may be constructed as follows:
+
+<pre>
+class mouse_move_listener {
+public:
+  virtual void on_mouse_move(int x, int y) = 0;
+};
+</pre>
+
+<p> Callbacks in this "OO-style" are stored by holding a pointer to an
+object derived from <code>mouse_move_listener</code>, and invoked by
+calling the <code>on_mouse_move</code> virtual function:
+
+<pre>
+mouse_move_listener* move_listener;
+
+void fire_mouse_move(int x, int y)
+{
+  if (move_listener)
+    move_listener->on_mouse_move(x, y);
+}
+</pre>
+
+<p> Suppose we wish to create a listener for this event that prints
+the mouse position to an output stream. We must create a new subclass
+of <code>mouse_move_listener</code> and implement the
+<code>on_mouse_move</code> virtual function:
+
+<pre>
+class mouse_loc_printer : public mouse_move_listener
+{
+public:
+  virtual void on_mouse_move(int x, int y)
+  {
+    out &lt;&lt; '(' &lt;&lt; x &lt;&lt; ", " &lt;&lt; y &lt;&lt; "\n";
+  }
+
+private:
+  std::ostream& out;
+};
+</pre>
+
+<p> The proposed class template <code>function</code> greatly reduces
+the amount of boilerplate code required to create a callback but also
+allows much greater leeway in the creation of a receiver. Using the
+proposed <code>function</code> class template, the
+<code>on_mouse_move</code> event would be created and stored as such:
+<pre>
+function&lt;void (int x, int y)&gt; on_mouse_move;
+
+void fire_mouse_move(int x, int y)
+{
+  if (on_mouse_move)
+    on_mouse_move(x, y);
+}
+</pre>
+
+<p> The <code>on_mouse_move</code> object will store any function
+object that can be called with the given function signature, that is,
+two arguments of type <code>int</code> will be passed to the function
+object and no return value is expected. Note that, unlike with the
+OO-style case using virtual functions, the function object can rely
+on implicit conversions to its actual argument types, so the following
+function object can be called by <code>on_mouse_move</code>:
+
+<pre>
+struct print_position
+{
+  void operator()(long x, long y) const
+  {
+    std::cout << '(' << x << ", " << y << ")\n";
+  }
+};
+</pre>
+
+<p> Most importantly, the use of function objects as callback targets
+in lieu of the more restrictive virtual function approach allows users
+to compose function objects using other libraries (see <a
+href="#binders">Section V</a>) that can be directly used as
+callback types. The callback target that prints the mouse position can
+be concisely created and assigned in a single C++ statement (using
+Boost.Lambda syntax to create the body of the callback target via a
+lambda abstraction; <code>_1</code> and <code>_2</code> are
+placeholders for the first and second callback arguments, respectively):
+<pre>
+on_mouse_move = var(cout) << '(' << _1 << ", " << _2 << ")\n";
+</pre>
+
+<font color=ff0000>[Author's note: the construction of the function
+object on the right-hand side of the assignment above is not covered
+by this proposal]</font>
+
+<h3>Ib. Higher-order Functions</h3>
+<p> Higher-order functions are not often used in C++, in part because
+they are unwieldy. To return a function, one must return a function
+pointer (which therefore cannot have state) or a full callback such as
+the OO-style callback presented above (which requires a large amount
+of boilerplate code). The proposed class template simplifies the
+creation and use of higher-order functions, e.g.,
+
+<pre>
+function&lt;int (int x, int y)&gt; arithmetic_operation(char k)
+{
+  switch (k) {
+    case '+': return plus&lt;int&gt;();
+    case '-': return minus&lt;int&gt;();
+    case '*': return multiplies&lt;int&gt;();
+    case '/': return divides&lt;int&gt;();
+    case '%': return modulus&lt;int&gt;();
+    default: assert(0);
+  }
+}
+</pre>
+
+<p> Polymorphic function object wrappers may also be used in lieu of
+arbitrary function objects whose type is a template parameter,
+allowing a trivial switch from function templates to functions (with a
+corresponding size/speed tradeoff). For instance, the following
+function signatures represent the template and function object wrapper
+versions of a function that minimizes another function. 
+
+<pre>
+<em>// with function objects</em>
+template&lt;typename F&gt;
+vector&lt;double&gt; minimize(F f, const vector&lt;double&gt;&amp; initial);
+
+<em>// with function object wrappers</em>
+vector&lt;double&gt; minimize(const function&lt;double (const vector&lt;double&gt;&amp; values)&gt;&amp; f, const vector&lt;double&gt;&amp; initial);
+</pre>
+
+<p> The former
+signature declares a function template that would be instantiated for
+every function to be minimized (potentially generating a large amount
+of well-optimized code); the latter would require only one
+(non-template) version of the <code>minimize</code> function with
+several small instantiations for use with the <code>function</code>
+class template (less code, but less efficient calls to the
+function object). From the user's point of view, the two options can
+be made indistinguishable, enabling code to be compiled for either
+small size (with short compile times) or faster execution speed (with
+longer compile times).
+
+<h2>II. Impact on the Standard</h2>
+<p> This proposal defines a pure library extension, requiring no
+changes to the core C++ language. A new class template <code><a
+href="#function">function</a></code> is proposed to be added into the
+standard header <code>&lt;functional&gt;</code> along with supporting
+function overloads. A new class template <code><a
+href="#reference_wrapper">reference_wrapper</a></code> is proposed to
+be added to the standard header <code>&lt;utility&gt;</code> with two
+supporting functions. 
+
+<h2>III. Design</h2>
+<p>The proposed function object wrapper is designed to mimic function
+pointers in both syntax and semantics, but generalize the notion to
+allow the <em>target</em> of a function object wrapper to be any
+function object, function pointer, or member function pointer that can
+be called given the return and argument types supplied to the function
+object wrapper. 
+
+<p>
+[Example -
+<pre>
+    int add(int x, int y) { return x+y; }
+    bool adjacent(int x, int y) { return x == y-1 || x == y+1; }
+
+    struct compare_and_record {
+      std::vector&lt;std::pair&lt;int, int&gt; &gt; values;
+
+      bool operator()(int x, int y)
+      {
+        values.push_back(std::make_pair(x, y));
+        return x == y;
+      }
+    };
+    
+    <a href="#function">function</a>&lt;int (int, int)&gt; f;
+    
+    f = &amp;add; 
+    cout &lt;&lt; f(2, 3) &lt;&lt; endl; <em>// 5</em>
+    
+    f = minus&lt;int&gt;();
+    cout &lt;&lt; f(2, 3) &lt;&lt; endl; <em>// -1</em>
+    
+    assert(f); <em>// okay, f refers to a minus&lt;int&gt; object</em>
+    
+    <a href="#function">function</a>&lt;bool (int, int)&gt; g;
+    assert(!g); <em>// okay, g doesn't refer to any object</em>
+    
+    g = &amp;adjacent;
+    assert(g(2, 3)); <em>// okay, adjacent(2, 3) returns true</em>
+    
+    g = equal_to&lt;long&gt;(); <em>// argument conversions ok</em>
+    assert(g(3, 3)); <em>//okay, equal_to&lt;long&gt;()(3, 3) returns true</em>
+
+    compare_and_record car;
+    g = <a href="#ref">ref</a>(car);
+
+    assert(g(3, 3)); <em>// okay, and adds (3, 3) to car.values</em>
+
+    g = f; <em>// okay, int return value of f is convertible to bool</em>
+</pre>
+- end example]
+
+<p> The proposed function object wrapper supports only a subset of the
+operations supported by function pointers with slightly
+different syntax and semantics. The major differences are detailed
+below, but can be summarized as follows:
+
+<ul>
+  <li>Relaxation of target requirements to allow conversions in arguments and result type.</li>
+  <li>Lack of comparison operators.</li>
+  <li>Lack of extraneous null-checking syntax.</li>
+</ul>
+
+<h3>IIIa. Relaxation of target requirements</h3>
+<p> A function pointer of a given type <code>R (*)(T1, T2, ...,
+T<em>N</em>)</code> may only target functions with an identical type
+signature. The corresponding function wrapper <code>function&lt;R (T1, T2, ..., T<em>N</em>)&gt;</code> may target any function
+object <code>f</code> such that for values <code>t1</code>,
+<code>t2</code>, ..., <code>t<em>N</em></code>, of types <code>T1</code>,
+<code>T2</code>, ..., <code>T<em>N</em></code>, respectively, the expression
+<code>static_cast&lt;R&gt;(f(t1, t2, ..., t<em>N</em>))</code> is well-formed.
+When this is true, we
+say that the function object <code>f</code> (and its type <code>F</code>) is <em>Callable</em> with return type <code>R</code> and
+argument types <code>T1</code>, <code>T2</code>, ..., <code>T<em>N</em></code>.
+
+<p> Rationale: this loose definition of Callable allows arbitrary
+function objects to be used with function object wrappers in a manner
+similar to their use when the function object's type is a template
+parameter. A stricter definition, e.g., one that required the argument
+and return types of the target function object match exactly with the
+declared argument and return types of the function object wrapper,
+would make the use of function object wrappers less seamless.
+
+<p>[Example - the given definition of Callable allows the two
+variations on the <code>sort</code> algorithm to operate almost 
+identically from
+the user's point of view; the former <code>sort</code> signature
+favors inlining for efficiency (at the code of increased code size),
+whereas the latter <code>sort</code> signature favors smaller code
+size by producing only a single version of <code>sort</code> for each
+iterator type, with a potential cost in execution efficiency.
+<pre>
+    <em>// Very efficient, but potentially creates a large amount of code</em>
+    template&lt;typename RAIterator, typename Compare&gt;
+    void sort(RAIterator first, RAIterator last, Compare comp);
+    
+    <em>// Less efficient (because of indirection), but less generated code</em>
+    template&lt;typename RAIterator&gt;
+    void sort(RAIterator first, RAIterator last, 
+	      const function&lt;bool (typename iterator_traits&lt;RAIterator&gt;::value_type const&amp;,
+			           typename iterator_traits&lt;RAIterator&gt;::value_type const&amp;)&gt;&amp; comp);
+</pre> - end example]
+
+<h3>IIIb. Lack of comparison operators</h3>
+<p> The comparison operators <code>==, !=, &lt;, &gt;, &lt;=,</code>
+and <code>&gt;=</code> are not supported by the function object
+wrapper. 
+
+<p> Rationale: (in)equality and ordering relations cannot be
+sensibly defined for function objects. 
+
+<h3>IIIc. Lack of extraneous null-checking syntax</h3>
+<p> This follows from the lack of comparison operators. For a function
+object wrapper <code>f</code>, there is no syntax <code>f != 0</code>,
+<code>f == 0</code>, etc. The allowed syntactic constructs for checking for an
+empty (null) function object wrapper are <code>f</code> or
+<code>!f</code> in a boolean context, <code>(bool)f</code> or
+<code>f.empty()</code>. 
+
+<h2>IV. Proposed Text</h2>
+<h2>Addition to 20.2: Utility components</h2>
+<p> Additions to <b>Header <code>&lt;utility&gt;</code> synopsis</b>:
+<pre>
+    <b>template</b>&lt;<b>typename</b> T&gt; <b>class</b> <a href="#reference_wrapper">reference_wrapper</a>;
+
+    <b>template</b>&lt;<b>typename</b> T&gt; <a href="#reference_wrapper">reference_wrapper</a>&lt;T&gt; <a href="#ref">ref</a>(T&amp; t);
+    <b>template</b>&lt;<b>typename</b> T&gt; <a href="#reference_wrapper">reference_wrapper</a>&lt;T <b>const</b>&gt; <a href="#cref">cref</a>(<b>const</b> T&amp; t);
+</pre>
+
+<h2>Proposed new section: 20.2.3 Reference wrappers</h2>
+<ol>
+  <li> The library provides a reference wrapper and reference wrapper construction functions that allow the user to express intent in storing a reference instead of a copy. </li>
+
+  <li><font color=ff0000>[Author's note: the <code>reference_wrapper</code> class template and the <code>ref</code> and <code>cref</code> function templates are shared with the Tuples library proposal. The text is repeated in both proposals.]</font></li>
+</ol>
+
+<a name="reference_wrapper"><h3>20.2.3.1 Class template <code>reference_wrapper</code></h3></a>
+<ol>
+<li> The <code>reference_wrapper</code> class template stores a reference to an object in a CopyConstructible wrapper.
+<pre>
+<b>namespace</b> std {
+  <b>template</b>&lt;<b>typename</b> T&gt;
+  <b>class</b> reference_wrapper {
+  <b>public</b>:
+    <b>typedef</b> T type;
+   
+    <a href="#ref_constructor"><b>explicit</b> reference_wrapper(T &amp;)</a>;
+
+    <a href="#ref_convert"><b>operator</b> T&amp; () <b>const</b></a>;
+    <a href="#ref_get">T&amp; get() <b>const</b></a>;
+
+  <b>private</b>:
+    T&amp; data; <em>// exposition only</em>
+  };
+}
+</pre>
+
+<li> <a name="ref_constructor"><code><b>explicit</b> reference_wrapper(T&amp; t));</code></a>
+<ul>
+  <li><b>Postconditions</b>: <code>this-><a href="#ref_get">get</a>()</code> is equivalent to <code>t</code>.</li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+
+<li> <a name="ref_convert"><code><b>operator</b> T&amp; () <b>const</b></a>;</code></a>
+<ul>
+  <li><b>Returns</b>: <code>this-&gt;<a href="#ref_get">get</a>()</code></li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+
+<li> <a name="ref_get"><code>T&amp; get() <b>const</b></a>;</code></a>
+<ul>
+  <li><b>Returns</b>: the stored reference.</li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+</ol>
+
+<h3>20.2.3.2 <code>ref</code> and <code>cref</code></h3>
+<ol>
+  <li><a name="ref"><code><b>template</b>&lt;<b>typename</b> T&gt; <a href="#reference_wrapper">reference_wrapper</a>&lt;T&gt; ref(T&amp; t);</code></a>
+    <ul>
+      <li><b>Returns</b>: <code> <a href="#reference_wrapper">reference_wrapper</a>&lt;T&gt;(t)</code></li>
+      <li><b>Throws</b>: will not throw.</li>
+    </ul></li>
+  
+  <li><a name="cref"><code><b>template</b>&lt;<b>typename</b> T&gt; <a href="#reference_wrapper">reference_wrapper</a>&lt;T <b>const</b>&gt; cref(<b>const</b> T&amp; t);</code></a>
+    <ul>
+      <li><b>Requires</b>: <code>T</code> cannot be a function type.
+<p><font color=#ff0000>[This requirement may be unnecessary depending on the resolution of core language issue 295]</font>
+</li> 
+      <li><b>Returns</b>: <code> <a href="#reference_wrapper">reference_wrapper</a>&lt;T <b>const</b>&gt;(t)</code></li>
+      <li><b>Throws</b>: will not throw.</li>
+    </ul></li>
+</ol>
+
+<h2>Addition to 20.3: Function objects</h2>
+<p> Additions to <b>Header <code>&lt;functional&gt;</code> synopsis</b>:
+<pre>
+    <b>class</b> <a href="#bad_function_call">bad_function_call</a>;
+
+    <b>template</b>&lt;<b>typename</b> Function, <b>typename</b> Allocator = std::allocator&lt;<b>void</b>&gt; &gt;
+    <b>class</b> <a href="#function">function</a>;
+
+    <b>template</b>&lt;<b>typename</b> Function, <b>typename</b> Allocator&gt;
+    <b>void</b> <a href="#free_swap">swap</a>(function&lt;Function, Allocator&gt;&amp;, function&lt;Function, Allocator&gt;&amp;);
+
+    <b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;
+    <b>void</b> <a href="#undefined_equal"><b>operator</b>==</a>(<b>const</b> function&lt;Function1, Allocator1&gt;&amp;, <b>const</b> function&lt;Function2, Allocator2&gt;&amp;);
+    <b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;
+    <b>void</b> <a href="#undefined_notequal"><b>operator</b>!=</a>(<b>const</b> function&lt;Function1, Allocator1&gt;&amp;, <b>const</b> function&lt;Function2, Allocator2&gt;&amp;);
+</pre>
+
+<a name="bad_function_call"></a>
+<h2>Proposed new section: 20.3.9 Class <code>bad_function_call</code></h2>
+<ol>
+<li>The <code>bad_function_call</code> exception class is thrown primarily when a polymorphic adaptor is invoked but is empty (see 20.3.10).
+<pre>
+<b>namespace</b> std {
+  <b>class</b> bad_function_call : <b>public</b> std::runtime_error
+  {
+  <b>public</b>:
+    <em>// 20.3.9.1 constructor</em>
+    <a href="#bad_function_call_construct">bad_function_call</a>();
+  };
+}
+</pre>
+</ol>
+
+<a name="bad_function_call_construct"><h3>20.3.9.1 <code>bad_function_call</code> constructor</h3></a>
+<ol>
+<li><code>bad_function_call();</code>
+  <ul>
+    <li><b>Effects</b>: constructs a <code>bad_function_call</code> object.</li>
+  </ul></li>
+</ol>
+
+<a name="function"><h2>Proposed new section: 20.3.10 Class template <code>function</code></h2></a>
+<ol>
+<li> The library provides polymorphic wrappers that generalize the notion of a function pointer. Wrappers can store, copy, and call arbitrary function objects given a function signature (denoted by a set of argument types and a return type), allowing functions to be first-class objects.
+
+<a name="callable"></a>
+<li> A function object <code>f</code> of type <code>F</code> is <em>Callable</em> given a set of argument types <code>T1</code>, <code>T2</code>, ..., <code>T<em>N</em></code> and a return type <code>R</code>, if the appropriate following function definition is well-formed:
+<pre>
+  <em>// If F is not a pointer to member function</em>
+  R callable(F&amp; f, T1 t1, T2 t2, ..., T<em>N</em> t<em>N</em>)
+  {
+    <b>return</b> <b>static_cast</b>&lt;R&gt;(f(t1, t2, ..., t<em>N</em>));
+  }
+
+  <em>// If F is a pointer to member function</em>
+  R callable(F f, T1 t1, T2 t2, ..., T<em>N</em> t<em>N</em>)
+  {
+    <b>return</b> <b>static_cast</b>&lt;R&gt;(((*t1).*f)(t2, t3, ..., t<em>N</em>));
+  }
+</pre>
+
+<li> The <code>function</code> class template is a function object type whose call signature is defined by its first template argument (a function type).
+<pre>
+<b>namespace</b> std {
+  <b>template</b>&lt;<b>typename</b> Function, <em>// Function type R (T1, T2, ..., T<em>N</em>), 0 &lt;= N &lt;= implementation-defined maximum (see Annex B)</em>
+           <b>typename</b> Allocator = std::allocator&lt;<b>void</b>&gt; &gt;
+  <b>class</b> function 
+    : <b>public</b> unary_function&lt;R, T1&gt; <em>// iff N == 1</em>
+    : <b>public</b> binary_function&lt;R, T1, T2&gt; <em>// iff N == 2</em>
+  {
+  <b>public</b>:
+    <b>typedef</b> R         result_type;
+    <b>typedef</b> Allocator allocator_type;
+
+    <a href="#construct_copy_destroy"><em>// 20.3.10.1 construct/copy/destroy</em></a>
+    <a href="#default_construct"><b>explicit</b> <b>function</b>(<b>const</b> Allocator&amp; = Allocator())</a>;
+    <a href="#copy_construct"><b>function</b>(<b>const</b> function&amp;)</a>;
+    <a href="#target_construct"><b>template</b>&lt;<b>typename</b> F&gt; function(F, <b>const</b> Allocator&amp; = Allocator())</a>;
+    <a href="#ref_construct"><b>template</b>&lt;<b>typename</b> F&gt; function(reference_wrapper&lt;F&gt;, <b>const</b> Allocator&amp; = Allocator())</a>;
+    <a href="#copy_assn"><b>function</b>& <b>operator</b>=(<b>const</b> function&amp;)</a>;
+    <a href="#target_assn"><b>template</b>&lt;<b>typename</b> F&gt; function&amp; <b>operator</b>=(F)</a>;
+    <a href="#ref_assn"><b>template</b>&lt;<b>typename</b> F&gt; function&amp; <b>operator</b>=(reference_wrapper&lt;F&gt;)</a>;
+    <a href="#destructor">~function()</a>;
+
+    <a href="#modifiers"><em>// 20.3.10.2 function modifiers</em></a>
+    <a href="#swap"><b>void</b> swap(function&amp;)</a>;
+    <a href="#clear"><b>void</b> clear()</a>;
+  
+    <a href="#capacity"><em>// 20.3.10.3 function capacity</em></a>
+    <a href="#empty"><b>bool</b> empty() <b>const</b></a>;
+    <a href="#bool"><b>operator</b> <em>implementation-defined</em>() <b>const</b></a>;
+
+    <a href="#invocation_section"><em>// 20.3.10.4 function invocation</em></a>
+    <a href="#invocation">R <b>operator</b>()(T1, T2, ..., T<em>N</em>) <b>const</b></a>;
+  };
+
+  <a href="#specialized_algorithms"><em>// 20.3.10.5 specialized algorithms</em></a>
+  <b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;
+  <a href="#free_swap"><b>void</b> swap(function&lt;Function1, Allocator1&gt;&amp;, function&lt;Function2, Allocator2&gt;&amp;)</a>;
+
+  <a href="#undefined_operators"><em>// 20.3.10.6 undefined operators</em></a>
+  <b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;
+  <a href="#undefined_equal"><b>void</b> <b>operator</b>==(<b>const</b> function&lt;Function1, Allocator1&gt;&amp;, <b>const</b> function&lt;Function2, Allocator2&gt;&amp;)</a>;
+  <b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;
+  <a href="#undefined_notequal"><b>void</b> <b>operator</b>!=(<b>const</b> function&lt;Function1, Allocator1&gt;&amp;, <b>const</b> function&lt;Function2, Allocator2&gt;&amp;)</a>;
+}
+</pre>
+</ol>
+
+<a name="construct_copy_destroy"><h3>20.3.10.1 function construct/copy/destroy</h3></a>
+<ol>
+<li> <a name="default_construct"><code><b>explicit</b> function(<b>const</b> Allocator&amp; = Allocator());</code></a>
+<ul>
+  <li><b>Postconditions</b>: <code>this-><a href="#empty">empty</a>()</code>.</li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+
+<li> <a name="copy_construct"><code>function(<b>const</b> function<b>&amp;</b> f);</code></a>
+<ul>
+  <li><b>Postconditions</b>: <code>this-&gt;<a href="#empty">empty</a>()</code>if <code>f.<a href="#empty">empty</a>()</code>; otherwise, <code>*this</code> targets a copy of <code>f</code>. </li>
+  <li><b>Throws</b>: will not throw if the target of <code>f</code> is a function pointer or a function object passed via <code>reference_wrapper</code>. Otherwise, may throw <code>bad_alloc</code> or any exception thrown by the copy constructor of the stored function object.</li>
+</ul>
+
+<li> <a name="target_construct"><code><b>template</b>&lt;<b>typename</b> F&gt; function(F f, <b>const</b> Allocator&amp; = Allocator());</code></a>
+<ul>
+  <li><b>Requires</b>: <code>f</code> is a <a href="#callable">callable</a> function object for argument types <code>T1</code>, <code>T2</code>, ..., <code>T<em>N</em></code> and return type <code>R</code>.</li>
+  <li><b>Postconditions</b>: <code>this-&gt;<a href="#empty">empty</a>()</code> if any of the following hold:
+  <ul>
+    <li><code>f</code> is a NULL function pointer.</li>
+    <li><code>f</code> is a NULL member function pointer.</li>
+    <li><code>f</code> is an instance of the <code>function</code> class template and <code>f.<a href="#empty">empty</a>()</code></li>
+  </ul>
+  Otherwise, <code>*this</code> targets a copy of <code>f</code> if <code>f</code> is not a pointer to member function, and targets a copy of <code>mem_fun(f)</code> if <code>f</code> is a pointer to member function.
+  <li><b>Throws</b>: will not throw when <code>f</code> is a function pointer. Otherwise, may throw <code>bad_alloc</code> or any exception thrown by <code>F</code>'s copy constructor.</li>
+</ul>
+
+<li> <a name="ref_construct"><code><b>template</b>&lt;<b>typename</b> F&gt; function(<a href="#reference_wrapper">reference_wrapper</a>&lt;F&gt; f, <b>const</b> Allocator&amp; = Allocator());</code></a>
+<ul>
+  <li><b>Requires</b>: <code>f.get()</code> is a <a href="#callable">callable</a> function object for argument types <code>T1</code>, <code>T2</code>, ..., <code>T<em>N</em></code> and return type <code>R</code>.</li>
+  <li><b>Postconditions</b>: <code>!this-&gt;<a href="#empty">empty</a>()</code> and <code>*this</code> targets <code>f.get()</code>.
+  <li><b>Throws</b>: will not throw.</li>
+  <li><b>Rationale</b>: a potential alternative would be to replace the <code>reference_wrapper</code> argument with an argument taking a function object pointer. This route was not taken because <code>reference_wrapper</code> is a general solution stating the user's intention to pass a reference to an object instead of a copy.</li>
+</ul>
+
+<li> <a name="copy_assn"><code>function<b>&amp;</b> <b>operator</b>=(<b>const</b> function<b>&amp;</b> f);</code></a>
+<ul>
+  <li><b>Effects</b>: <code>function(f).swap(*this);</code>
+  <li><b>Returns</b>: <code>*this</code>
+</ul>
+
+<li> <a name="target_assn"><code><b>template</b>&lt;<b>typename</b> F&gt; function<b>&amp;</b> <b>operator</b>=(F f);</code></a>
+<ul>
+  <li><b>Effects</b>: <code>function(f).swap(*this);</code>
+  <li><b>Returns</b>: <code>*this</code>
+</ul>
+
+<li> <a name="ref_assn"><code><b>template</b>&lt;<b>typename</b> F&gt; function<b>&amp;</b> <b>operator</b>=(<a href="#reference_wrapper">reference_wrapper</a>&lt;F&gt; f);</code></a>
+<ul>
+  <li><b>Effects</b>: <code>function(f).swap(*this);</code>
+  <li><b>Returns</b>: <code>*this</code></li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+
+<li> <a name="destructor"><code>~function();</code></a>
+<ul>
+  <li><b>Effects</b>: if <code>!this-&gt;<a href="#empty">empty</a>()</code>, destroys the target of <code>this</code>.</li>
+</ul>
+
+</ol>
+
+<a name="modifiers"><h3>20.3.10.2 function modifiers</h3></a>
+<ol>
+<li> <a name="swap"><code><b>void</b> swap(function<b>&amp;</b> other);</code></a>
+<ul>
+  <li><b>Effects</b>: interchanges the targets of <code>*this</code> and <code>other</code> and the allocators of <code>*this</code> and <code>other</code>.</li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+
+<li> <a name="clear"><code><b>void</b> clear(); </code></a>
+<ul>
+  <li><b>Effects</b>: If <code>!this-&gt;<a href="#empty">empty</a>()</code>, deallocates current target.</li>
+  <li><b>Postconditions</b>: <code>this-&gt;<a href="#empty">empty</a>()</code>.</li>
+</ul>
+</ol>
+
+<a name="capacity"><h3>20.3.10.3 function capacity</h3></a>
+<ol>
+<li> <a name="empty"><code><b>bool</b> empty() <b>const</b></code></a>
+<ul>
+  <li><b>Returns</b>: <code>true</code> if the function object has a target, <code>false</code> otherwise.</li>
+  <li><b>Throws</b>: will not throw.</li>
+</ul>
+
+<li> <a name="bool"><code><b>operator</b> <em>implementation-defined</em>() <b>const</b></code></a>
+<ul>
+  <li><b>Returns</b>: if <code>!this-&gt;<a href="#empty">empty</a>()</code>, returns a value that will evaluate true in a boolean context; otherwise, returns a value that will evaluate false in a boolean context. The value type returned shall not be convertible to <code>int</code>.</li>
+  <li><b>Throws</b>: will not throw.</li>
+  <li><b>Notes</b>: This conversion can be used in contexts where a <code>bool</code> is expected (e.g., an <code>if</code> condition); however, implicit conversions (e.g., to <code>int</code>) that can occur with <code>bool</code> are not allowed, eliminating some sources of user error. The suggested implementation technique is to use a member function pointer whose class type is private to the <code>function</code> instantiation.
+</ul>
+</ol>
+
+<a name="invocation_section"><h3>20.3.10.4 function invocation</h3></a>
+<ol>
+<li> <a name="invocation"><code>R operator()(T1 t1, T2 t2, ..., T<em>N</em> t<em>N</em>) const</code></a>;
+<ul>
+  <li><b>Effects</b>: <code>f(t1, t2, ..., t<em>N</em>)</code>, where <code>f</code> is the target of <code>*this</code>.</li>
+  <li><b>Returns</b>: nothing, if <code>R</code> is <code>void</code>; otherwise, the return value of the call to <code>f</code>.
+  <li><b>Throws</b>: <code>bad_function_call</code> if <code>this-&gt;empty()</code>; otherwise, any exception thrown by the wrapped function object.</li>
+</ul>
+</ol>
+
+<a name="specialized_algorithms"><h3>20.3.10.5 specialized algorithms</h3></a>
+<ol>
+<li><a name="free_swap"><code><b>template</b>&lt;<b>typename</b> Function, <b>typename</b> Allocator&gt;<br>
+  <b>void</b> swap(function&lt;Function, Allocator&gt;&amp; f1, function&lt;Function, Allocator&gt;&amp; f2);</code></a>
+<ul>
+  <li><b>Effects</b>: <code>f1.<a href="#swap">swap</a>(f2);</code>
+</ul>
+</ol>
+
+<a name="undefined_operators"><h3>20.3.10.6 undefined operators</h3></a>
+<ol>
+<li><a name="undefined_equal"><code><b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;<br>
+  <b>void</b> <b>operator</b>==(<b>const</b> function&lt;Function1, Allocator1&gt;&amp;, <b>const</b> function&lt;Function2, Allocator2&gt;&amp;);</code></a>
+<ul>
+  <li><b>Notes</b>: this function must be left undefined.</li>
+  <li><b>Rationale</b>: the <a href="#bool">boolean-like conversion</a> opens a loophole whereby two <code>function</code> instances can be compared via <code>==</code>. This undefined <code>void</code> operator <code>==</code> closes the loophole and ensures a compile-time or link-time error.</li>
+</ul>
+
+<li><a name="undefined_notequal"><code><b>template</b>&lt;<b>typename</b> Function1, <b>typename</b> Allocator1, <b>typename</b> Function2, <b>typename</b> Allocator2&gt;<br>
+  <b>void</b> <b>operator</b>!=(<b>const</b> function&lt;Function1, Allocator1&gt;&amp;, <b>const</b> function&lt;Function2, Allocator2&gt;&amp;);</code></a>
+<ul>
+  <li><b>Notes</b>: this function must be left undefined.</li>
+  <li><b>Rationale</b>: the <a href="#bool">boolean-like conversion</a> opens a loophole whereby two <code>function</code> instances can be compared via <code>!=</code>. This undefined <code>void</code> operator <code>!=</code> closes the loophole and ensures a compile-time or link-time error.</li>
+</ul>
+</ol>
+
+<h2>Add to Annex B</h2>
+<p>Add to list of implementation quantities:
+<p>&nbsp;&nbsp;-- maximum number of function call arguments supported by class template <code>function</code> [10].
+
+<h2>V. Relationship with Other Proposals or Future Developments</h2>
+<p> This section describes the interaction of this proposal with other
+C++ extension proposals that are already available or are likely to be
+available in the near future, based primarily on experience with the
+Boost libraries. Every attempt has been made to accurately represent
+the proposals, but these comments have not been verified by the
+authors of the proposals discussed.
+
+<a name="binders"></a>
+<p>Binder libraries, such as <a
+href="http://www.boost.org/libs/lambda/doc/index.html">Boost.Lambda</a>
+[<a href="#lambda">3</a>],
+<a href="http://www.boost.org/libs/bind/bind.html">Boost.Bind</a> [<a href="#bind">4</a>],
+Phoenix (part of the <a href="http://spirit.sourceforge.net">Spirit
+parser framework</a>) [<a href="#spirit">5</a>], <a
+href="http://www.cc.gatech.edu/~yannis/fc++/">FC++</a> [<a
+href="#fc++">6</a>],
+and <a
+href="http://www.kfa-juelich.de/zam/FACT/start/index.html">FACT!</a>
+[<a href="#FACT!">7</a>] enable composition of function objects to
+create new function 
+objects. These libraries are orthogonal but complementary to this
+proposal, i.e., this proposal can be accepted or rejected regardless
+of the status of a binder library proposal. However, experience with
+the Boost libraries has shown that most uses of Boost.Function benefit 
+greatly from a binder library.
+
+<p>The proposed <a
+href="http://ourworld.compuserve.com/homepages/John_Maddock/proposals/n1345.htm">type
+traits library</a> [<a href="#type_traits">9</a>] enables further optimization and tighter exception
+guarantees in implementations of the proposed <code>function</code>
+class template. 
+
+<p>The addition of variable-length template
+argument lists would have little effect on this
+proposal. Variable-length template argument lists would allow a syntax
+such as <code>function&lt;void, int, float&gt;</code> instead of
+<code>function&lt; void (int, float)&gt;</code>. However, such a
+formulation:
+<ul>
+  <li>Doesn't have the intuitive grouping of argument types.</li>
+  <li>Doesn't mimic function/function pointer syntax as closely, and
+  loses the ability to directly specify function parameter names.</li>
+  <li>Confuses the last template parameter with the Allocator template
+  parameter.</li>
+  <li>Was originally the syntax of the Boost.Function library (by
+  emulating variable-length template argument lists), and was later
+  changed to the proposed syntax.</li>
+</ul>
+
+<h2>VI. Revision History</h2>
+<p>This proposal is a revised version of document number N1375=02-0033. The changes made from that document are:
+<ul>
+  <li>Discussion of the merits of current syntax vs. an alternative
+  syntax based on variable-length template argument lists.</li>
+
+  <li>Rationale for use of <code>reference_wrapper</code> instead of
+  function object pointers in the proposed <a
+  href="#ref_construct">20.3.10.1</a>.</li> 
+
+  <li><a href="#callable">Callable</a> definition reworded so that it
+  does not rely on <code>mem_fun</code>.</li>
+  
+  <li>Adaptable unary/binary function reference removed.</li>
+
+  <li>Stronger exception guarantees in <a
+  href="#construct_copy_destroy">20.3.10.1</a>.</li>
+
+  <li><a href="#swap"><code>swap()</code></a> swaps the
+  allocator.</li>
+
+  <li><a href="#bool">boolean-like conversion</a> is now an
+  implementation-defined conversion, and the name
+  <code>safe_bool</code> has been removed.</li>
+
+  <li>The term "poisoned" has been replaced with "undefined".</li>
+
+  <li>Added the <code>bad_function_call</code> exception class.</li>
+
+  <li>Removed <code>MAX_ARGS</code>, replacing it with an implementation quantity.</li>
+
+  <li>Removed "stateless" function object terminology and implied "stateless" type trait.</li>
+</ul>
+
+<h2>VII. Acknowledgements</h2>
+William Kempf, Jesse Jones and Karl Nelson were all extremely helpful
+in isolating an interface and scope for the <a
+href="http://www.boost.org/libs/function/index.html">Boost.Function</a>
+[<a href="#function_lib">8</a>]
+library upon which this proposal is based. John Maddock managed the
+formal review, and many reviewers gave excellent comments on
+interface, implementation, and documentation. Peter Dimov proposed
+function pointer syntax for representing the argument and return
+types, which was later revised to use function declarator syntax. 
+
+<h2>VIII. References</h2>
+<p>[1] <a name="huber">Huber, Andreas. <em>Elegant Function Call Wrappers</em>. C/C++ Users Journal. May, 2001. pp. 8-16.</a>
+
+<p>[2] <a name="alexandrescu">Alexandrescu, Andrei. <em>Modern C++ Design: Generic Programming and Design Patterns Applied</em> Addison-Wesley, 2001.</a>
+
+<p>[3] <a name="lambda">The Boost.Lambda Library.</a> <a href="http://www.boost.org/libs/lambda/doc/index.html"><code>http://www.boost.org/libs/lambda/doc/index.html</code></a>
+
+<p>[4] <a name="bind">The Boost.Bind Library.</a> <a href="http://www.boost.org/libs/bind/bind.html"><code>http://www.boost.org/libs/bind/bind.html</code></a>
+
+<p>[5] <a name="phoenix">Phoenix, a part of the Spirit parser
+framework. </a><a href="http://spirit.sourceforge.net"><code>http://spirit.sourceforge.net</code></a>
+
+<p>[6] <a name="fc++">FC++. </a><a href="http://www.cc.gatech.edu/~yannis/fc++/"><code>http://www.cc.gatech.edu/~yannis/fc++/</code></a>
+
+<p>[7] <a name="FACT!">FACT!. </a><a href="http://www.kfa-juelich.de/zam/FACT/start/index.html"><code>http://www.kfa-juelich.de/zam/FACT/start/index.html</code></a>
+
+<p>[8] <a name="function_lib">The Boost.Function Library. </a><a href="http://www.boost.org/libs/function/index.html"><code>http://www.boost.org/libs/function/index.html</code></a>
+
+<p>[9] <a name="type_traits">Maddock, John. <em>A Proposal to add Type Traits to the Standard Library</eM></a>. <a href="http://ourworld.compuserve.com/homepages/John_Maddock/proposals/n1345.htm"><code>http://ourworld.compuserve.com/homepages/John_Maddock/proposals/n1345.htm</code></a>
+
+<p>[10] <a name="fporg">Haendel, Lars.<em>How to implement callbacks in C and C++</em></a>. <a href="http://www.function-pointer.org/">http://www.function-pointer.org/</a>, 2002.
+
+<p>[11] <a name="hickey">Hickey, Rich. </a><em>Callbacks in C++ Using Template Functors</em>. <a href="http://www.tutok.sk/fastgl/callback.html">http://www.tutok.sk/fastgl/callback.html</a>, 1994.
+
+
+</body>
+</html>

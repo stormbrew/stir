@@ -1,0 +1,63 @@
+This file documents the status of the various components of the standard library and Technical Report. This should not be taken as a fine grained analysis, as for example <map> is much more complex than <stdexcept>.
+
+Brackets indicate Library Technical Report extensions.
+They can be gotten at http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n(num).html where (num) is the number of the draft. The list is derived from http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1475.html
+
+components:
+<algorithm>             mostly done.
+<bitset>                not begun.
+<complex>               not begun.
+<deque>                 not begun.
+<exception>             (left to compiler to provide)
+<fstream>               begun.
+<functional>            done.
+ (N1454, result_of)     done. (does not meet ALL requirements, however)
+ (N1456, hash)          done.
+ (N1402, function)      not begun.
+ (N1455, bind)          not begun.
+ (N1432, mem_fn)        done. Up to 10 args
+<iomanip>               not begun.
+<ios>                   done. (just locale linkins aren't there yet)
+<iosfwd>                done.
+<iostream>              not begun.
+<istream>               not begun.
+<iterator>              done.
+<limits>                not begun.
+<list>                  not begun.
+<locale>                begun.
+<map>                   not begun.
+(N1422)<math.h>         not begun. Erk, putting this stuff in math.h is oogly.
+<memory>                done.
+ (N1450, shared_ptr)    done.
+<new>                   (left to compiler)
+<numeric>               (possibly left to compiler?)
+<ostream>               not begun.
+<queue>                 not begun.
+(N1452)<random>         not begun.
+(N1429)<regex>          not begun. Likely to be a long time before it is.
+<set>                   not begun.
+<sstream>               not begun.
+<stack>                 not begun.
+<stdexcept>             done.
+<streambuf>             done.
+<string>                mostly done, just search stuff left, mostly.
+(N1403)<tuple>          not done. Just needs comparison operators and extractors (but inserters are there)
+(N1424)<type_traits>    done. Some traits may be incorrect or too simple
+(N1424)<type_transform> done.
+(N1424)<type_compare>   done.
+<typeinfo>              (left to compiler)
+(N1456)<unordered_map>  not begun.
+(N1456)<unordered_set>  not begun.
+<utility>               done.
+ (N1453, ref & cref)    done.
+<valarray>              not begun.
+<vector>                everything but vector<bool> specialization.
+
+not begun:           22
+begun:                2
+not done:             3
+done:                16
+
+left to compiler:     4
+
+total:               47

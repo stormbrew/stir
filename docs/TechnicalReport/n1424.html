@@ -1,0 +1,995 @@
+<HTML>
+<HEAD>
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=windows-1252">
+<META NAME="Generator" CONTENT="Microsoft Word 97">
+<TITLE>Type Traits Proposal (J16/03-0006 WG21/N1424)</TITLE>
+<META NAME="Version" CONTENT="8.0.3410">
+<META NAME="Date" CONTENT="10/11/96">
+</HEAD>
+<BODY TEXT="#000000" LINK="#0000ff" VLINK="#800080" BGCOLOR="#ffffff">
+
+<H1>A Proposal to add Type Traits to the Standard Library</H1>
+<P>Doc. no.: J16/03-0006 = WG21/N1424<BR>
+Previous Doc. no.: J16/02-0003 = WG21/N1345<BR>
+Date: 03 March 2003<BR>
+Project: Programming Language C++ <BR>
+Wiki: <A HREF="http://www.research.att.com/~austern/cgi-bin/wiki?TypeTraits">http://www.research.att.com/~austern/cgi-bin/wiki?TypeTraits</A><BR>
+Reply to: John Maddock &lt;<A HREF="mailto:john_maddock@compuserve.com"><FONT COLOR="#0000ff"><EM>john_maddock@compuserve.com</FONT></EM></A>&gt; </P>
+<H2>Contents</H2>
+<PRE><A HREF="#motivation">Motivation</A>
+<A HREF="#Impact">Impact on the Standard</A>
+<A HREF="#design">Design</A>
+    <A HREF="#design1">Separate classes, or a single monolithic class</A>?
+    <A HREF="#design2">Are Boolean properties integral-constant expressions or types?</A>
+    <A HREF="#design3">Templates or intrinsic operators?</A>
+    <A HREF="#design4">Selection of templates</A>
+    <A HREF="#design5">Compiler Support</A>
+<A HREF="#revision">Revision History</A>
+<A HREF="#unresolved_issues">Unresolved Issues</A>
+<A HREF="#proposed_text">Proposed Text</A>
+    <A HREF="#Requirements">Requirements</A>
+    <A HREF="#Unary_type_traits">Unary Type Traits</A>
+    <A HREF="#Binary_type_traits">Relationships Between Types</A>
+    <A HREF="#transformation_traits">Transformations Between Type</A>
+<A HREF="#references">References</A>
+<A HREF="#acknowledgements">Acknowledgements</A></PRE>
+<H2><A NAME="motivation"></A>I. Motivation </H2>
+<P>This proposal forms part of the "infrastructure" of the standard library; it attempts to standardize templates that are often reinvented as bespoke solutions. These templates may be used by the end user, and are often used heavily by library implementers, including those who are writing third party libraries. There are three main use cases that help explain the motivation behind this proposal:</P>
+<H5>a) Supporting the widest possible range of types</H5>
+<P>Sometimes templates are not quite as "generic" as one would wish. The problem is that not all types are created equally, implying that some categories of types may need special handling. One example of this is a version of std::pair that can hold reference types[<A HREF="#ref1">1</A>]. The boost compressed_pair class[<A HREF="#ref2">2</A>] is a more advanced example of this; as well as being able to hold reference types, it will inherit from, rather than contain, empty classes in order to take advantage of the "zero sized base class optimisation".</P>
+<H5>b) For use with static (compile time) assertions</H5>
+<P>Often there is a contract that the template parameters to a class or function must obey. Usually if the template argument does not conform to the contract then the template will fail to compile. Often in such cases the position of the error may be deep inside several layers of template code, and it is often not at all easy for the user to deduce what the problem is, and whether it is their problem or the library's. One solution proposed for this is the idea of concept-checks[<A HREF="#ref3">3</A>], however a simpler solution is often possible using a static assertion[<A HREF="#ref4">4</A>]. For example the following code uses the boost type traits library to insist that the iterator arguments have random access semantics; if an error occurs then it will be generated early on in the procedure being instantiated, and can be commented with a description of the problem:</P>
+<PRE>#include &lt;iterator&gt;
+#include &lt;boost/static_assert.hpp&gt; 
+#include &lt;boost/type_traits.hpp&gt; 
+
+template &lt;class RandomAccessIterator &gt; 
+RandomAccessIterator foo(RandomAccessIterator from, 
+                         RandomAccessIterator to) 
+{ 
+   // this template can only be used with 
+   // random access iterators, attempting to
+   // use some other iterator type will result in
+   // an error message here: 
+   typedef typename std::iterator_traits
+           &lt;RandomAccessIterator&gt;::iterator_category cat; 
+
+   typedef int this_is_a_static_assertion[
+         ::boost::is_convertible&lt;
+             cat*, 
+             std::random_access_iterator_tag*
+         &gt;::value ? 1 : -1]; 
+   // 
+   // detail goes here... 
+   //
+   return from; 
+}</PRE>
+<P>Static assertions form part of&nbsp;a separate&nbsp;proposal[<A HREF="#ref10">10</A>].</P>
+<H5>c) Optimising code performance.</H5>
+<P>The classic <A HREF="#Copy_example_code">example</A> here is the algorithm <CODE>std::copy</CODE>; if the types being copied are POD's, then <CODE>std::memcpy</CODE> can be used to copy the data, rather than a slower "object by object" copy. The boost library has one example of this approach[<A HREF="#ref1">1</A>]. However this is by no means the only example: the SGI standard library[<A HREF="#ref7">7</A>] uses a type traits mechanism to achieve the same effect, while the Dinkumware standard library uses a function overloading approach to dispatch to the correct <CODE>std::copy </CODE>implementation. The fact that several vendors have reinvented this technique suggests that this is an area ripe for standardisation. It should be noted that while it is easiest to give examples of traits-based optimisations from the standard library, both third party libraries and user code can (and do) make use of these techniques. In the boost libraries for example, 17 of 57 top level headers make use of boost's type traits code either directly or indirectly.</P>
+<P>Some real world experience comes from the Metrowerks standard library, Howard Hinnant reports: "The Metrowerks "STL" makes fairly heavy use of type traits for optimization purposes, especially the traits that test for trivial member functions (e.g. has_trivial_copy). We also use add_reference extensively in &lt;algorithm&gt; in order to support the issues outlined in [<A HREF="#ref12">12</A>]"</P>
+<H2><A NAME="Impact"></A>II. Impact on the Standard</H2>
+<P>This is basically a pure extension, it does not require any modification to existing standard library headers, and does not require any core language changes. However some of the templates listed in this proposal can not be fully implemented without some help from the compiler. The proposed text does not specify how this help is provided, and as a temporary measure sufficient lattitude is granted in the proposal to ensure that it is possible to provide an implementation that conforms to the semantics given, without compiler help (see the boost reference implementation[<A HREF="#ref5">5</A>]). Those templates that benefit from compiler help are noted below.</P>
+<H2><A NAME="design"></A>III. Design</H2>
+<P>There following key design decisions to be made in this proposal:</P>
+<H3><A NAME="design1"></A>Separate classes, or a single monolithic class?</H3>
+<P>The boost type traits library (and this proposal) uses a separate traits class for each <I>trait</I>, where as, for example, both Loki[<A HREF="#ref6">6</A>] and the SGI type traits library[<A HREF="#ref7">7</A>] use a single type_traits class with multiple members. There are a number of advantages to the separate traits class approach:</P>
+
+<UL>
+<LI>The library contains traits classes both to describe the properties of types, and to transform one type into another. There are also many more traits represented here than there are in competing libraries that use a single "type_traits" class (in other words a single class would be overly complex). </LI>
+<LI>This approach is extensible - it is easy to add new traits classes using the methodology shown. This is particularly important for type transformations, where user defined transformations may be written to extend the library. Also new traits that describe type properties may be added by refining, combining or extending the standard traits provided by this library. In other words we define a set of concepts to which each traits class must conform. </LI>
+<LI>Experience suggests that this approach is easier to maintain - some of the traits classes described here have non-trivial implementations - it is often easier to isolate the trickier cases in their own headers for ease of maintenance. </LI>
+<LI>Separate traits classes allow each trait to be isolated into a separate header. This proposal splits the traits classes into three headers (&lt;type_traits&gt;, &lt;type_compare&gt; and &lt;type_transform&gt;), but an implementation might use more (internally), to allow selective reuse of only those parts of the type traits library that are needed for a particular class/function implementation. </LI>
+<LI>Separate traits classes may be used as "compile time predicates" to metaprogramming libraries, for example with algorithms that operate on type lists[<A HREF="#ref8">8</A>][<A HREF="#ref11">11</A>]. </LI></UL>
+
+<P>Finally it should be noted that Loki's author has shifted away from a single type_traits class and towards separate classes in a type_traits namespace[<A HREF="#ref9">9</A>].</P>
+<P>This approach contrasts with that of the current traits classes in the standard library (numeric_limits, and iterator_traits), these existing traits classes are closed for extention, where as type traits are more like an extensible concept, than a finite set of properties (as is the case for numeric_limits for example).</P>
+<H3><A NAME="design2"></A>Are Boolean properties integral-constant expressions or types?</H3>
+<P>The boost type traits library originally used a <CODE>static const bool</CODE> to represent each true/false condition, where as the SGI type traits library[<A HREF="#ref7">7</A>] uses a type (<CODE>__true_type </CODE>or <CODE>__false_type</CODE>). The use of a type is more convenient for use with function overloading, whereas the use of an integral constant expression makes it much easier to combine traits using logical expressions - something that has been often found to be necessary during the development of the boost library. The following example shows how std::copy can be optimized by combining value based type traits:</P>
+<PRE><A NAME="Copy_example_code">/</A>/
+// copy:
+// same semantics as std::copy
+// calls memcpy where appropriate.
+//
+
+namespace detail{
+
+template &lt;bool b&gt;
+struct copier
+{
+   template&lt;typename I1, typename I2&gt;
+   static I2 do_copy(I1 first, I1 last, I2 out)
+   {
+      while(first != last)
+      {
+         *out = *first;
+         ++out;
+         ++first;
+      }
+      return out;
+   }
+};
+
+template &lt;&gt;
+struct copier&lt;true&gt;
+{
+   template&lt;typename I1, typename I2&gt;
+   static I2* do_copy(I1* first, I1* last, I2* out)
+   {
+      memcpy(out, first, (last-first)*sizeof(I2));
+      return out+(last-first);
+   }
+};
+
+
+}
+
+template&lt;typename I1, typename I2&gt;
+inline I2 copy(I1 first, I1 last, I2 out)
+{
+   typedef typename boost::remove_cv&lt;typename std::iterator_traits&lt;I1&gt;::value_type&gt;::type v1_t;
+   typedef typename boost::remove_cv&lt;typename std::iterator_traits&lt;I2&gt;::value_type&gt;::type v2_t;
+   return detail::copier&lt;
+         ::boost::is_same&lt;v1_t, v2_t&gt;::value
+         &amp;&amp; ::boost::is_pointer&lt;I1&gt;::value
+         &amp;&amp; ::boost::is_pointer&lt;I2&gt;::value
+         &amp;&amp; ::boost::has_trivial_assign&lt;v1_t&gt;::value
+
+       &gt;::do_copy(first, last, out);
+}</PRE>
+<P>There is one potential problem with integral constant members that should be raised however: these require an out of line definition as well as an inline initialization (but see core issues 48 and 82).&nbsp; &nbsp;If <CODE>static const bool</CODE> members are used, then one implementation strategy that avoids the problem of having to provide lots of definitions for these static members, would be to have the traits classes inherit from a common base class:</P>
+<PRE>template &lt;class T, T v&gt; struct integral_constant{ static const T value = v; };
+template &lt;class T, T v&gt; T integral_constant&lt;T,v&gt;::value;
+
+typedef integral_constant&lt;bool, true&gt;  true_type;
+typedef integral_constant&lt;bool, false&gt; false_type;
+
+template &lt;class T&gt; struct is_void : public false_type {};
+template &lt;&gt; struct is_void&lt;void&gt; : public true_type {};
+// etc</PRE>
+<P>Note that there is no requirement to implement the traits classes in this manner: an enum could be used here in place of a <CODE>static const bool</CODE>. This scheme does however make it trivial to select a function overload based on whether a traits class inherits from <CODE>true_type</CODE> or <CODE>false_type</CODE>. </P>
+<P>An important use case for providing a type representation for the result of Boolean traits comes from the template metaprogramming, the discipline where class templates are treated as compile-time invocable entities (metafunctions), and where experience has shown that to build a consistent and coherent framework of well-interpolating components it's crucially important for the metafunctions to provide a single common form of invocation [<A HREF="#ref11">11</A>]. Since it is possible to wrap an integral constant in a type, but not vice-versa, the implementation of boost type traits library was re-written to provide the result of Boolean trait templates through both their static <CODE>const bool value</CODE> member and the nested <CODE>type</CODE> typedef exposing the corresponding specialization of an integral constant type wrapper.</P>
+<P>This proposal follows the boost traits library approach; the template and typedefs:</P>
+<PRE>template &lt;class T, T v&gt; integral_constant;
+typedef integral_constant&lt;bool, true&gt; true_type;
+typedef integral_constant&lt;bool, false&gt; false_type;</PRE>
+<P>have been added to act as type-based aliases for integral constant expressions. Likewise the type_traits requirements and descriptions have been updated to make use of this helper template, for example:</P>
+<PRE>template &lt;class T&gt; struct is_void{
+  static const bool value = implementation defined;
+  typedef bool value_type;
+  typedef integral_constant&lt;value_type, value&gt; type;
+};</PRE>
+<P>This gives us the best of both worlds, allowing the programmer to use either a type or a value depending upon whichever is the most convenient. For example the std::copy example could be implemented as follows:</P>
+<PRE>template&lt;typename T&gt;
+T* do_copy(const T* first, const T* last, T* out, const true_type&amp;)
+{ /* optimised copy here */ }
+
+template&lt;typename I1, typename I2, bool b&gt;
+I2 do_copy(I1 first, I1 last, I2 out, const integral_const&lt;bool,b&gt;&amp;)
+{ /* non-optimised copy here */ }
+
+template&lt;typename I1, typename I2&gt;
+inline I2 copy(I1 first, I1 last, I2 out)
+{
+   typedef typename std::iterator_traits&lt;I1&gt;::value_type value_type;
+   typedef typename has_trivial_assign&lt;value_type&gt;::type trivial_assign;
+   return do_copy(first, last, out, trivial_assign());
+}</PRE>
+<P>This example can be simplified even further if we insist that for each trait X, then X is implicitly convertible to X::type: this can be accomplished in one of two ways: by inheritance from a common base class (as above), or by providing a member conversion operator:</P>
+<PRE>template &lt;class T&gt; struct is_void{
+  static const bool value = implementation defined;
+  typedef bool value_type;
+  typedef integral_constant&lt;value_type, value&gt; type;
+  operator type()const;
+};</PRE>
+<P>This proposal does not specify which method should be used, but it does specify that the conversion is possible; even though this is merely a convenience it is nonetheless a useful one. The std::copy example can now be simplified further still:</P>
+<PRE>template&lt;typename T&gt;
+T* do_copy(const T* first, const T* last, T* out, const true_type&amp;)
+{ /* optimised copy here */ }
+
+template&lt;typename I1, typename I2, bool b&gt;
+I2 do_copy(I1 first, I1 last, I2 out, const integral_constant&lt;bool,b&gt;&amp;)
+{ /* non-optimised copy here */ }
+
+template&lt;typename I1, typename I2&gt;
+inline I2 copy(I1 first, I1 last, I2 out)
+{
+   typedef typename std::iterator_traits&lt;I1&gt;::value_type value_type;
+   return do_copy(first, last, out, has_trivial_assign&lt;value_type&gt;());
+}</PRE>
+<H3>Templates or intrinsic operators?</H3>
+<P>There has been some fairly intense discussion on boost mailing list about the i<FONT FACE="Courier New">s_convertible </FONT>template, one suggestion was that since only expressions (and not types) are convertible to a type or not, that <FONT FACE="Courier New">is_convertible </FONT>should be an intrinsic binary operator whose first argument was an expression, and whose second was a type. There are two key advantages to this approach: it more closely mirrors the text of the standard, and therefore standard wording is easier to formulate, and the result can be context sensitive:</P>
+<PRE>class B;
+class A
+{
+    A(const B&amp;);
+    /* details omitted */
+};</PRE>
+<P>Here class B is convertible to A only within the scope of A; if <CODE>is_convertible</CODE> is a template then the one definition rule requires that <CODE>is_convertible&lt;B,A&gt;::value</CODE> have one value only, and must not be sensitive to context.</P>
+<P>On the other hand, inspite of its failings, the <CODE>is_convertible</CODE> template has proven to be extremely useful in practice, and only very rarely does a corner case arise where it fails to do the right thing. The template also appears to be easily understood by end users, even if getting the standardese correct is tricky. To put this in perspective there are about 50 uses of the <CODE>is_convertible</CODE> template within the boost library, and none of these would obviously benefit from an operator style of syntax, some examples include:</P>
+
+<UL>
+<LI>lexical_cast: uses <CODE>is_convertible</CODE> to determine whether the source type can be implicitly converted to the destination type, if it can then the usual iostream based cast is optimised away. </LI>
+<LI>Named template parameters: several libraries use <CODE>is_convertible</CODE> to determine whether a template parameter is a particular named parameter, otherwise the parameter is treated as a positional parameter. </LI>
+<LI>Higher level traits: <CODE>is_convertible</CODE> is often used to help compose higher level traits classes; for example the lambda library uses this to calculate type promotions. However this functionality could probably be more easily implemented with a typeof operator. </LI>
+<LI>Static assertions: several libraries use <CODE>is_convertible</CODE> in conjunction with static assertions to verify that template arguments have the required properties, and to output an early, well commented error message if they do not. </LI></UL>
+
+<P>Likewise<FONT FACE="Courier New"> </FONT><CODE>is_convertible</CODE> has been used (outside of boost) to ensure that code "does the right thing", for example the constructor:</P>
+<PRE>template &lt;class T, class Allocator&gt;
+template &lt;class I&gt;
+vector&lt;T,Allocator&gt;::vector&lt;I&gt;(I first, I last, const Allocator&amp; a);</PRE>
+<P>Needs to behave differently depending upon whether type I is an iterator or a numeric type. One solution is to default initialise the object, and then perform a compiler time dispatch to different a member function depending upon whether the expression:</P>
+<PRE>is_convertible&lt;I,size_type&gt;::value &amp;&amp; is_convertible&lt;I,value_type&gt;::value</PRE>
+<P>is true or not.</P>
+<P>The author's belief is that as far as the DR is concerned, the <CODE>is_convertible</CODE> template class is the right way to go; it is better understood, and has shown itself to be useful as compared to an as yet untried intrinsic operator. It also fits well into the current type traits conceptual framework. However, implementers should be encouraged to experiment with an intrinsic convertibility operator, and this subject may need to be revisited prior to the next standard.</P>
+<H3>Instantiation of template arguments</H3>
+<P>There have been requests from the authors of boost’s MPL that the proposal document whether instantiation any of the unary traits class templates in this proposal will result in the instantiation of a template argument that is itself a <I>template-id</I> (there are some metaprogramming idioms [<A HREF="#ref11">11</A>] where it is important that instantiation does not occur). Section (14.7.1) implies that if it is a precondition that the a template argument be a complete type (because the semantics of the class depend upon it), then instantiation of that argument (if it is a <I>template-id</I>) is essential in order to determine whether the type has a specific property or not. Similary, for those class templates that do not mandate that the template argument(s) are complete types, there are nonetheless implementations that may require that the type is a complete type (for example <CODE>is_enum </CODE>and any other templates that rely upon it). Therefore, mandating that these templates work with incomplete types or with <I>template-id</I>’s which can not be instantiated, results in compiler support being required where it was not required before. Nonetheless MPL's authors believe that this is a sufficiently important problem that some wording requiring traits class templates not to instantiate their template arguments has been added, albeit with latitude permitting instantiation to occur as a temporary workaround until such time as compiler support becomes available.</P>
+<H3><A NAME="design4"></A>Selection of templates</H3>
+<P>Perhaps the most difficult part of this proposal is deciding which traits classes should be included. The boost type traits library has undergone several revisions, with some templates being removed and others added. This proposal&nbsp;includes most of the current boost type traits classes along with a small number of others that are motivated by Loki[<A HREF="#ref6">6</A>].&nbsp; </P>
+<P>Several templates that were in the original proposal were removed after feedback from the LWG (add_const, add_volatile, add_cv, add_pointer, add_reference). These were then reinstated after strong complaints from some of boost's users. The rationale is that these templates are all used as compile time functors which transform one type to another, for example Aleksey Gurtovoy provides the following example, which uses the boost metaprogramming library[<A HREF="#ref11">11</A>] to transform one type list to another, using type traits as compile time functors:</P>
+<PRE>// transforms 'tuple&lt;T1,T2,..,Tn&gt;'
+// to 'tuple&lt;T1 const&amp;,T2 const&amp;,..,Tn const&amp;&gt;'
+template&lt; typename Tuple &gt;
+struct tuple_of_refs
+{
+   // transform tuple element types
+   typedef typename mpl::transform&lt;
+      typename Tuple::elements,
+      add_reference&lt; add_const&lt;_1&gt; &gt; // here!
+   &gt;::type refs;
+   typedef typename tuple_from_sequence&lt;refs&gt;::type type;
+};
+
+template&lt; typename Tuple &gt;
+typename tuple_of_refs&lt;Tuple&gt;::type
+tuple_ref(Tuple const&amp; t)
+{
+&nbsp;&nbsp;&nbsp; return typename tuple_of_refs&lt;Tuple&gt;::type(t);
+}</PRE>
+<P>Although such uses have been rare up until now, they are becoming much more common, especially with the introduction of metaprogramming frameworks such as boost's MPL. In this context these templates are analogous to those in &lt;functional&gt;, in both cases the implementations are trivial, but unless these are provided in the standard library, users will have to constantly reinvent the same solution. Provision of these templates also allows for compiler warning suppression in a portable manner:</P>
+<PRE>template &lt;class T&gt;
+class foo
+{
+    // The following declaration does not produce a
+    // warning if T is already const, or is a reference type:
+    typedef typename std::add_const&lt;T&gt;::type type; 
+    /* details omitted */
+};</PRE>
+<P>Feedback from the LWG suggested renaming "is_same" to "is_identical", however there was strong feeling among the boost community for retaining is_same, therefore no change has been made.</P>
+<P>There have been three late additions to this proposal:</P>
+<PRE>template &lt;class T&gt; struct is_signed;
+template &lt;class T&gt; struct is_unsigned;
+template &lt;class T&gt; struct is_abstract;</PRE>
+<P>These additions may need reviewing as the proposal progresses - although no great problems are anticipated from them - in particular <CODE>is_signed</CODE> and <CODE>is_unsigned</CODE> have been part of the Metrowerks type traits library for some time. There have been some fairly persistent requests for the addition of these three templates to boost, and they are likely to added soon.</P>
+<P>There have been one or two requests that haven't made it into the proposed text, mainly because these are templates that either don't sit well in the current design structure, or because their usefulness isn't clear. These are documented here in case the committee wants to discuss and/or add these to the text.</P>
+<BLOCKQUOTE>From Dave Abrahams:</BLOCKQUOTE>
+<BLOCKQUOTE>"Here's another one we need:</BLOCKQUOTE>
+<CODE><BLOCKQUOTE>has_common_base_class&lt;T,U&gt;::value</BLOCKQUOTE>
+</CODE><BLOCKQUOTE>This is the one which allows us to explicitly construct empty classes on top of one another. I suppose you could argue that the compiler should just do this automatically with the empty base optimization, but the ABIs of many compilers are now fixed and they will never (for practical purposes) be able to do it."</BLOCKQUOTE>
+<BLOCKQUOTE>From Andrei Alexandrescu:</BLOCKQUOTE>
+<BLOCKQUOTE>"An important trait that's missing is the transformation same_align_pod, which would yield a POD type with the same alignment requirements as the passed-in type. This type would allow one to build a union that obeys specific alignment requirements."</BLOCKQUOTE>
+<H3><A NAME="design5"></A>Compiler Support</H3>
+<P>The following templates require compiler support for a fully conforming implementation<FONT COLOR="#ff0000">:</P>
+</FONT><PRE>template &lt;class T&gt; struct is_class;
+template &lt;class T&gt; struct is_union;
+template &lt;class T&gt; struct is_enum;
+template &lt;class T&gt; struct is_polymorphic;
+template &lt;class T&gt; struct is_empty;
+template &lt;class T&gt; struct has_trivial_constructor;
+template &lt;class T&gt; struct has_trivial_copy;
+template &lt;class T&gt; struct has_trivial_assign;
+template &lt;class T&gt; struct has_trivial_destructor;
+template &lt;class T&gt; struct has_nothrow_constructor;
+template &lt;class T&gt; struct has_nothrow_copy;
+template &lt;class T&gt; struct has_nothrow_assign;
+template &lt;class T&gt; struct is_pod;
+template &lt;class T&gt; struct is_abstract;</PRE>
+<P>In all of these cases however, a nearly-conforming implementation can be provided without any compiler support (see the boost reference implementation [<A HREF="#ref5">5</A>]), in addition temporary latitude is provided in the proposed TR text to permit a library-only implementation (see <A HREF="#implementation_requirements">implementation requirements</A>).</P>
+<P>This text does not specify how the compiler support is provided, and nor will it do so, as the author believes that this is over-specification. There are multiple methods for providing this support, the relative merits of which probably depend most upon the compiler's internal structure. To put this in perspective, library vendors will need to do only a small amount of library configuration if they need to support multiple compilers, where as specifying the method used would entail duplicating a large portion of the existing descriptions in this text, increasing the maintenance cost, and the likelihood of defects.</P>
+<P>To date three vendors provide some degree of compiler type traits support: </P>
+
+<UL>
+<LI>SGI's compiler will automatically generate specialisations for their <CODE>__type_traits</CODE> class, allowing for full implementations of <CODE>is_pod</CODE>, <CODE>has_trivial_constructor</CODE>, <CODE>has_trivial_copy</CODE>, <CODE>has_trivial_assign</CODE> and <CODE>has_trivial_destructor</CODE>. </LI>
+<LI>Metrowerks' compiler supports <CODE>is_enum</CODE>, <CODE>is_union</CODE>, <CODE>is_function</CODE>, <CODE>is_class</CODE>, <CODE>has_trivial_copy</CODE>, <CODE>has_trivial_assign</CODE> and <CODE>has_trivial_destructor</CODE>. Howard Hinnant reports that adding support has been straightforward using builtin operators such as <CODE>__builtin_type</CODE>, and that using builtin operators is an order of magnitude faster than using a more complex but portable library-only solution. Metrowerks' report that they are continuing to add new builtin operators as and when their standard library can make some use of them. </LI>
+<LI>Gabriel Dos Reis and Phil Edwards, both have experimental intrinsic type traits implementations in the gcc compiler. Gabriel reports that these use simple builtin operators, such as <CODE>__is_scalar(T)</CODE>, which evaluates to an integral constant depending upon the type T. Phil Edwards reports that these mostly require very simple one-line implementations; these facilities will form part of an official gcc development-branch shortly. </LI></UL>
+
+<H2><A NAME="revision"></A>IV Revision History</H2>
+<P>Added comparison to numeric_limits and iterator traits design.</P>
+<P>Added discussion on is_convertible.</P>
+<P>Rewritten the compiler support section: added comments on existing implementations.</P>
+<P>Allow implementation of integral members as integral constant expressions, not necessarily as static const bool's.</P>
+<P>Added section on implementation variance to permit a conforming implementation within the current language.</P>
+<P>Clarified language on use of T and cv-qualified T.</P>
+<P>Removed permission for user defined specialisations of type categories.</P>
+<P>is_float renamed is_floating_point.</P>
+<P>is_member_pointer demoted to a composite type category; added is_member_object_pointer and is_member_function_pointer to the primary type category traits.</P>
+<P>Removed all the author's explanitory notes.</P>
+<P>Simplified definition of is_compound.</P>
+<P>Renamed has_nothrow_construct has_nothrow_constructor for consistency with has_trivial_constructor.</P>
+<P>Rewritten definition of non-throwing text, may still not be quite right.</P>
+<P>Renamed is_base_and_derived to is_base_of: this change has caused a fair amout of controversy, with many boosters prefering the more verbose original name.</P>
+<P>Renamed is_POD to is_pod for consistency with other all-lower-case names.</P>
+<P>Added additional members <CODE>type</CODE>, <CODE>value_type</CODE> and <CODE>operator type</CODE>, to Unary and binary type traits.</P>
+<P>Added the new templates is_unsigned, is_signed and is_abstract.</P>
+<P>Added section(s) on template class instantiation.</P>
+<H2><A NAME="unresolved_issues"></A>V Unresolved issues</H2>
+<P>It is unclear what the name of is_base_of should be: this is called is_base_and_derived in the boost library - the intent is that the name is so explicit that the user can't get the template parameters the wrong way around - likewise it is easier on users reading someone else's code. However there is no getting around the fact that this is an extremely verbose name, so perhaps is_base_of is a better choice.</P>
+<P>Is is unclear how remove_pointer should behave with pointers to member (functions). Since there are no such types as "member" or "member function returning type" (you can't dereference member pointers for example), the current version is logical in leaving member pointers unchanged. However one boost user has requested that remove_pointer&lt;T (U::*)&gt;::type evaluates to T, on the grounds that this transformation is sometimes useful.</P>
+<P>It is unclear whether the newly added template is_abstract requires compiler support or not, to be on the safe side it is listed as requiring support, but this may be removed at a later date.</P>
+<P><HR></P>
+<H1 ALIGN="CENTER"><A NAME="proposed_text"></A>Proposed Text</H1>
+<P><HR></P>
+<H2>Type Library</H2>
+<P>This clause describes components used by C++ programs, particularly in templates, to: support the widest possible range of types, optimise template code usage, and detect type related user errors.</P>
+<P>The type library provides three facilities: access to the properties of a particular type, access to the relationships (if any) between two types, and transformations from one type to another; as summarised in table TT1</P>
+<H6 ALIGN="CENTER">Table TT1 - Type Library Summary</H6>
+<P><div align="center"></P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=638>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P>Clause</TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>Header</TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P><A HREF="#Requirements">Requirements</A></TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>&nbsp;</TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P><A HREF="#Unary_type_traits">Unary type traits</A></TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>&lt;type_traits&gt;</TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P><A HREF="#Binary_type_traits">Relationships between types</A></TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>&lt;type_compare&gt;</TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P><A HREF="#transformation_traits">Transformations between types</A></TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>&lt;type_transform&gt;</TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER"></div></P>
+<P>&nbsp;</P>
+<H3><A NAME="Requirements"></A>TT.1 Requirements</H3>
+<H4>TT.1.1 Unary Type Traits</H4>
+<P>In table TT2, X is a class template that is a unary type trait and T is any arbitrary type.</P>
+<H6 ALIGN="CENTER">Table TT2 - UnaryTypeTrait requirements</H6>
+<P><div align="center"></P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=617>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>Expression</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>Return type</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>Requirement</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T&gt;::value</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>bool</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>An integral constant expression that is true if T has the specified trait, and false otherwise.</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T&gt;::value_type</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>bool</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>A type that is the type of X&lt;T&gt;::value, this is always bool for UnaryTypeTraits.</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T&gt;::type</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>integral_constant&lt;bool,value&gt;</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>A type for use in situations where a typename is more appropriate than a value. The class template integral_constant is declared in &lt;type_traits&gt;.</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T&gt;::type t = X&lt;T&gt;()</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>&nbsp;</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>Both lvalues of <CODE>type X&lt;T&gt; const&amp;</CODE> and rvalues of type <CODE>X&lt;T&gt;</CODE> are implicitly convertible to <CODE>X&lt;T&gt;::type</CODE>.</TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER"></div></P>
+<H4>TT.1.2 Binary Type Traits</H4>
+<P>In table TT3, X is a class template that is a binary type trait and T and U are any arbitrary types.</P>
+<H6 ALIGN="CENTER">Table TT3 - BinaryTypeTrait requirements</H6>
+<P><div align="center"></P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=617>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>Expression</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>Return type</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>Requirement</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T,U&gt;::value</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>bool</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>An integral constant expression that is true if T is related to U by the relation specified, and false otherwise.</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T,U&gt;::value_type</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>bool</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>A type that is the type of X&lt;T,U&gt;::value, this is always bool for BinaryTypeTraits.</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T,U&gt;::type</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>integral_constant&lt;bool,value&gt;</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>A type for use in situations where a typename is more appropriate than a value. The class template integral_constant is declared in &lt;type_traits&gt;.</TD>
+</TR>
+<TR><TD WIDTH="33%" VALIGN="TOP">
+<P>X&lt;T,U&gt;::type t = X&lt;T,U&gt;()</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>&nbsp;</TD>
+<TD WIDTH="33%" VALIGN="TOP">
+<P>Both lvalues of type <CODE>X&lt;T,U&gt; const&amp;</CODE> and rvalues of type <CODE>X&lt;T,U&gt;</CODE> are implicitly convertible to <CODE>X&lt;T,U&gt;::type</CODE>.</TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER"></div></P>
+<H4>TT.1.3 Transformation Traits</H4>
+<P>In table TT4, X is a class template that is a transformation trait and T is any arbitrary type.</P>
+<H6 ALIGN="CENTER">Table TT4 - TransformationTrait requirements</H6>
+<P><div align="center"></P>
+<P ALIGN="CENTER"><CENTER><TABLE BORDER CELLSPACING=1 CELLPADDING=7 WIDTH=420>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P>Expression</TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>Requirement</TD>
+</TR>
+<TR><TD WIDTH="50%" VALIGN="TOP">
+<P>X&lt;T&gt;::type</TD>
+<TD WIDTH="50%" VALIGN="TOP">
+<P>The result is a type that is the result of applying transformation X to type T.</TD>
+</TR>
+</TABLE>
+</CENTER></P>
+
+<P ALIGN="CENTER"></div></P>
+<P>&nbsp;</P>
+<H3><A NAME="Unary_type_traits"></A>TT.2 Unary Type Traits</H3>
+<P>This sub-clause contains templates that may be used to query the properties of a type at compile time.</P>
+<P>All of the class templates defined in this header satisfy the UnaryTypeTrait requirements.</P>
+<P>For all of the class templates declared in this clause, all members declared <CODE>static const</CODE> shall be defined in such a way that they are usable as integral constant expressions.</P>
+<P>For all of the class templates <CODE>X</CODE> declared in this clause, both rvalues of type <CODE>X const</CODE> and lvalues of type <CODE>X const&amp;</CODE> shall be implicitly convertible to <CODE>X::type</CODE>. Whether this is accomplished by inheritance or by a member operator is unspecified. For exposition only the class templates in this clause are shown with a member conversion operator:</P>
+<PRE>operator type() const;</PRE>
+<P>which shall return <CODE>type()</CODE> in all cases.</P>
+<P>For all of the class templates <CODE>X</CODE> declared in this clause, instantiating that template with a template-argument that is a class template specialization, may result in the implicit instantiation of the template argument if and only if the semantics of X require that the argument must be a complete type.</P>
+<H4>TT.2.1 Header &lt;type_traits&gt; synopsis</H4>
+<PRE>namespace std{
+
+// helper class:
+template &lt;class T, T v&gt; struct integral_constant;
+typedef integral_constant&lt;bool, true&gt; true_type;
+typedef integral_constant&lt;bool, false&gt; false_type;
+
+// Primary type categories:
+template &lt;class T&gt; struct is_void;
+template &lt;class T&gt; struct is_integral;
+template &lt;class T&gt; struct is_floating_point;
+template &lt;class T&gt; struct is_array;
+template &lt;class T&gt; struct is_pointer;
+template &lt;class T&gt; struct is_reference;
+template &lt;class T&gt; struct is_member_object_pointer;
+template &lt;class T&gt; struct is_member_function_pointer; 
+template &lt;class T&gt; struct is_enum;
+template &lt;class T&gt; struct is_union;
+template &lt;class T&gt; struct is_class;
+template &lt;class T&gt; struct is_function;
+
+// composite type categories: 
+template &lt;class T&gt; struct is_arithmetic;
+template &lt;class T&gt; struct is_fundamental;
+template &lt;class T&gt; struct is_object;
+template &lt;class T&gt; struct is_scalar;
+template &lt;class T&gt; struct is_compound;
+template &lt;class T&gt; struct is_member_pointer;
+
+// type properties:
+template &lt;class T&gt; struct is_const;
+template &lt;class T&gt; struct is_volatile;
+template &lt;class T&gt; struct is_pod;
+template &lt;class T&gt; struct is_empty;
+template &lt;class T&gt; struct is_polymorphic;
+template &lt;class T&gt; struct is_abstract;
+template &lt;class T&gt; struct has_trivial_constructor;
+template &lt;class T&gt; struct has_trivial_copy;
+template &lt;class T&gt; struct has_trivial_assign;
+template &lt;class T&gt; struct has_trivial_destructor;
+template &lt;class T&gt; struct has_nothrow_constructor;
+template &lt;class T&gt; struct has_nothrow_copy;
+template &lt;class T&gt; struct has_nothrow_assign;
+template &lt;class T&gt; struct is_signed;
+template &lt;class T&gt; struct is_unsigned;
+
+} // namespace std</PRE>
+<H4><BR>
+TT.2.2 Helper classes</H4>
+<PRE>template &lt;class T, T v&gt; 
+struct integral_constant
+{
+   static  const T                value = v;
+   typedef T                      value_type;
+   typedef integral_constant&lt;T,v&gt; type;
+};
+typedef integral_constant&lt;bool, true&gt; true_type;
+typedef integral_constant&lt;bool, false&gt; false_type;</PRE>
+<P>The class template <CODE>integral_constant </CODE>and its associated typedefs <CODE>true_type</CODE> and <CODE>false_type</CODE> are for use in situations where a type rather than a value is required. </P>
+<H4>TT.2.3 Primary Type Categories</H4>
+<P>The primary type categories correspond to the descriptions given in section 3.9.</P>
+<P>For any given type T, exactly one of the primary type categories shall have its member <CODE>value</CODE> evaluate to true.</P>
+<P>For any given type T, the result of applying one of these templates to <CODE>T</CODE>, and to cv-qualified<CODE> T</CODE> shall yield the same result.</P>
+<P>Undefined behaviour results if any C++ program adds specializations for any of the class templates defined in this clause.</P>
+<PRE>template &lt;class T&gt; struct is_void {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is void or a cv-qualified void. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_integral {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is an integral type (3.9.1). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_floating_point {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a floating point type (3.9.1). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_array {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is an array type (3.9.2). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_pointer {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a pointer type (3.9.2), this includes all function pointer types, but not pointers to members or member functions. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_reference {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a reference type (3.9.2), this includes all reference to function types. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_member_object_pointer {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a pointer to a data member. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_member_function_pointer {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a pointer to a member function. Otherwise defined to be false<FONT COLOR="#ff0000">.</P>
+</FONT><PRE>template &lt;class T&gt; struct is_enum {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is an enumeration type (3.9.2). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_union {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+}; </PRE>
+<CODE><P>value</CODE>: defined to be true if T is a union type (3.9.2). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_class {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+}; </PRE>
+<CODE><P>value</CODE>: defined to be true if T is a class type (3.9.2), in this context unions are not considered to be class types. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_function {
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a function type (3.9.2). Otherwise defined to be false.</P>
+<H4>TT.2.4 Composite type traits</H4>
+<P>These templates provide convenient compositions of the primary type categories, corresponding to the descriptions given in section 3.9.</P>
+<P>For any given type T, the result of applying one of these templates to <CODE>T</CODE>, and to cv-qualified<CODE> T</CODE> shall yield the same result.</P>
+<P>Undefined behaviour results if any C++ program adds specializations for any of the class templates defined in this clause.</P>
+<PRE>template &lt;class T&gt; struct is_arithmetic { 
+   static const bool value = is_integral&lt;T&gt;::value || is_floating_point&lt;T&gt;::value; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is an arithmetic type (3.9.1). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_fundamental{
+   static const bool value = 
+      is_integral&lt;T&gt;::value 
+      || is_floating_point&lt;T&gt;::value 
+      || is_void&lt;T&gt;::value; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a fundamental type (3.9.1). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_object{
+   static const bool value = 
+      !(is_function&lt;T&gt;::value 
+         || is_reference&lt;T&gt;::value 
+         || is_void&lt;T&gt;::value); 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is an object type (3.9). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_scalar{
+   static const bool value = 
+      is_arithmetic&lt;T&gt;::value 
+      || is_enum&lt;T&gt;::value
+      || is_pointer&lt;T&gt;::value 
+      || is_member_pointer&lt;T&gt;::value; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a scalar type (3.9). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_compound{
+   static const bool value = !is_fundamental&lt;T&gt;::value; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a compound type (3.9.2). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_member_pointer {
+&nbsp;&nbsp; static const bool value = 
+       is_member_object_pointer&lt;T&gt;::value
+       || is_member_function_pointer&lt;T&gt;::value; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a pointer to a member or member function. Otherwise defined to be false.</P>
+<H4>TT.2.5 Type properties</H4>
+<P>These templates provide access to some of the more important properties of types; they reveal information which is available to the compiler, but which would not otherwise be detectable in C++ code.</P>
+<P>Except where specified, it is undefined whether any of these templates have any full or partial specialisations defined. It is permitted for the user to specialise any of these templates on a user-defined type, provided the semantics of the specialisation match those given for the template in its description.</P>
+<PRE>template &lt;class T&gt; struct is_const{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is const-qualified (3.9.3). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_volatile{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is volatile-qualified (3.9.3). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_pod{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if T is a POD type (3.9). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_empty{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if T is an empty class (10). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_polymorphic{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if T is a polymorphic class (10.3). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_abstract{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if T is a abstract class (10.4). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct has_trivial_constructor{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the default constructor for T is trivial(12.1). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct has_trivial_copy{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the copy constructor for T is trivial (12.8). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct has_trivial_assign{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the assignment operator for T is trivial (12.8). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct has_trivial_destructor{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the destructor for T is trivial (12.4). Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct has_nothrow_constructor{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the default constructor for T has an empty exception specification, or can otherwise be deduced never to throw an exception. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct has_nothrow_copy{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the copy constructor for T has an empty exception specification, or can otherwise be deduced never to throw an exception. Otherwise defined to be false<FONT COLOR="#ff0000">.</P>
+</FONT><PRE>template &lt;class T&gt; struct has_nothrow_assign{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template argument <CODE>T</CODE> shall be a complete type.</P>
+<CODE><P>value</CODE>: defined to be true if the assignment operator for T has an empty exception specification, or can otherwise be deduced never to throw an exception. Otherwise defined to be false.</P>
+<PRE>template &lt;class T&gt; struct is_signed{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is a signed integral type (3.9.1). Otherwise defined to be false<FONT COLOR="#ff0000">.</P>
+</FONT><PRE>template &lt;class T&gt; struct is_unsigned{
+&nbsp;&nbsp; static  const bool value                    = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T is an unsigned integral type (3.9.1). Otherwise defined to be false.</P>
+<H3>TT.3 Relationships between Types</H3>
+<P>This sub-clause contains templates that may be used to query the relationships between two types at compile time.</P>
+<P>All of the templates in this header satisfy the BinaryTypeTrait requirements.</P>
+<P>For all of the class templates declared in this clause, all members declared static const shall be defined in such a way that they are usable as integral constant expressions.</P>
+<P>For all of the class templates <CODE>X</CODE> declared in this clause, both rvalues of type <CODE>X const</CODE> and lvalues of type <CODE>X const&amp;</CODE> shall be implicitly convertible to <CODE>X::type</CODE>. Whether this is accomplished by inheritance or by a member operator is unspecified. For exposition only the class templates in this clause are shown with a member conversion operator:</P>
+<PRE>operator type() const;</PRE>
+<P>which shall return <CODE>type()</CODE> in all cases.</P>
+<H4>TT.3.1 Header &lt;type_compare&gt; synopsis</H4>
+<PRE>namespace std{
+
+// helper classes:
+template &lt;class T, T v&gt; struct integral_constant;
+typedef integral_constant&lt;bool, true&gt;  true_type;
+typedef integral_constant&lt;bool, false&gt; false_type;
+
+// type relations:
+template &lt;class T, class U&gt; struct is_same;
+template &lt;class From, class To&gt; struct is_convertible;
+template &lt;class Base, class Derived&gt; struct is_base_of;
+
+} // namespace std</PRE>
+<P>Inclusion of the header <CODE>&lt;type_compare&gt;</CODE> shall make the type <CODE>integral_constant</CODE>, and it’s associated typedefs <CODE>true_type</CODE> and <CODE>false_type</CODE> defined in <CODE>&lt;type_traits&gt;</CODE> visible. Whether any other types declared in <CODE>&lt;type_traits&gt;</CODE> are made visible by the inclusion of <CODE>&lt;type_compare&gt;</CODE> is implementation defined.</P>
+<H4>TT.3.2 Type Relationships</H4>
+<PRE>template &lt;class T, class U&gt; struct is_same{
+   static const bool value = false; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};
+template &lt;class T&gt; struct is_same&lt;T,T&gt;{
+   static const bool value = true; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true if T and U are the same type. Otherwise defined to be false.</P>
+<PRE>template &lt;class From, class To&gt; struct is_convertible {
+   static const bool value = implementation_defined; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<CODE><P>value</CODE>: defined to be true only if an imaginary lvalue of type <CODE>From</CODE> is implicitly-convertible to type <CODE>To</CODE> (4.0). Otherwise defined to be false. Special conversions involving string-literals and null-pointer constants are not considered (4.2, 4.10 and 4.11). No function-parameter adjustments (8.3.5) are made to type <CODE>To</CODE> when determining whether <CODE>From</CODE> is convertible to <CODE>To</CODE>: this implies that if type <CODE>To</CODE> is a function type or an array type, then <CODE>value</CODE> must necessarily evaluate to false.</P>
+<P>The expression <CODE>is_convertible&lt;From,To&gt;::value</CODE> is ill-formed if:</P>
+<P>Type <CODE>From</CODE>, is a void or incomplete type (3.9).</P>
+<P>Type <CODE>To</CODE>, is an incomplete, void or abstract type (3.9).</P>
+<P>The conversion is ambiguous, for example if type <CODE>From</CODE> has multiple base classes of type <CODE>To</CODE> (10.2).</P>
+<P>Type <CODE>To</CODE> is of class type and the conversion would invoke a non-public constructor of <CODE>To</CODE> (11.0 and 12.3.1).</P>
+<P>Type <CODE>From</CODE> is of class type and the conversion would invoke a non-public conversion operator of <CODE>From</CODE> (11.0 and 12.3.2).</P>
+<PRE>template &lt; class Base, class Derived&gt; struct is_base_of {
+   static const bool value = <CODE>implementation_defined</CODE>; 
+   typedef bool                                value_type;
+   typedef integral_constant&lt;value_type,value&gt; type;
+   operator type()const;
+};</PRE>
+<B><P>Preconditions:</B> template arguments <CODE>Base</CODE> and <CODE>Derived</CODE> shall both be complete types.</P>
+<CODE><P>value</CODE>: defined to be true only if type <CODE>Base</CODE> is a base class of type <CODE>Derived</CODE> (10). Otherwise defined to be false.</P>
+<H3><A NAME="transformation_traits"></A>TT.4 Transformations between Types</H3>
+<P>This sub-clause contains templates that may be used to transform one type to another following some predefined rule.</P>
+<P>All of the templates in this header satisfy the TransformationTrait requirements.</P>
+<H4>TT.4.1 Header &lt;type_transform&gt; synopsis</H4>
+<PRE>namespace std{
+
+// const-volatile modifications:
+template &lt;class T&gt; struct remove_const;
+template &lt;class T&gt; struct remove_volatile;
+template &lt;class T&gt; struct remove_cv;
+template &lt;class T&gt; struct add_const;
+template &lt;class T&gt; struct add_volatile;
+template &lt;class T&gt; struct add_cv;
+
+// reference modifications:
+template &lt;class T&gt; struct remove_reference;
+template &lt;class T&gt; struct add_reference;
+
+// array modifications:
+template &lt;class T&gt; struct remove_bounds;
+
+// pointer modifications:
+template &lt;class T&gt; struct remove_pointer;
+template &lt;class T&gt; struct add_pointer;
+
+} // namespace std</PRE>
+<H4>Const-volatile Modifications</H4>
+<PRE>template &lt;class T&gt; struct remove_const{
+   typedef T type; 
+};
+template &lt;class T&gt; struct remove_const&lt;T const&gt;{
+   typedef T type; 
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the same as T, except that any top level const-qualifier has been removed. For example: <CODE>remove_const&lt;const volatile int&gt;::type</CODE>&nbsp;evaluates to <CODE>volatile int,</CODE> where as <CODE>remove_const&lt;const int*&gt;</CODE> is <CODE>const int*</CODE>.</P>
+<PRE>template &lt;class T&gt; struct remove_volatile{
+   typedef T type; 
+};
+template &lt;class T&gt; struct remove_volatile&lt;T volatile&gt;{
+   typedef T type; 
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the same as T, except that any top level volatile-qualifier has been removed. For example: <CODE>remove_const&lt;const volatile int&gt;::type</CODE>&nbsp;evaluates to <CODE>const int,</CODE> where as <CODE>remove_const&lt;volatile int*&gt;</CODE> is <CODE>volatile int*</CODE>.</P>
+<PRE>template &lt;class T&gt; struct remove_cv{
+   typedef typename remove_const&lt;typename remove_volatile&lt;T&gt;::type&gt;::type type; 
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the same as T, except that any top level cv-qualifiers have been removed. For example: <CODE>remove_cv&lt;const volatile int&gt;::type</CODE>&nbsp;evaluates to <CODE>int,</CODE> where as <CODE>remove_cv&lt;const volatile int*&gt;</CODE> is <CODE>const volatile int*</CODE>.</P>
+<PRE>template &lt;class T&gt; struct add_const{
+   typedef T const type; 
+};</PRE>
+<CODE><P>type</CODE>: if T is a reference, function, or top level const-qualified type, then the same type as T, otherwise <FONT FACE="Courier New">T const</FONT>.</P>
+<PRE>template &lt;class T&gt; struct add_volatile{
+   typedef T volatile type; 
+};</PRE>
+<CODE><P>type: </CODE>if T is a reference, function, or top level const-qualified type, then the same type as <CODE>T</CODE>, otherwise <CODE>T volatile.</P>
+<PRE>template &lt;class T&gt; struct add_cv{
+   typedef typename add_const&lt; typename add_volatile&lt;T&gt;::type &gt;::type type; 
+};</PRE>
+<P>type: </CODE>the same type as <CODE>add_const&lt; add_volatile&lt;T&gt;::type &gt;::type.</P>
+</CODE><H4>Reference Modifications</H4>
+<PRE>template &lt;class T&gt; struct remove_reference{
+   typedef T type;
+};
+template &lt;class T&gt; struct remove_reference&lt;T&amp;&gt;{
+   typedef T type;
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the same as T, except any reference qualifier has been removed.</P>
+<PRE>template &lt;class T&gt; struct add_reference{
+   typedef T&amp; type;
+};
+template &lt;class T&gt; struct add_reference&lt;T&amp;&gt;{
+   typedef T&amp; type;
+};</PRE>
+<FONT FACE="Courier New"><P>type</FONT>: if <FONT FACE="Courier New">T</FONT> is a reference type, then <FONT FACE="Courier New">T</FONT>, otherwise <FONT FACE="Courier New">T&amp;</FONT>.</P>
+<H4>Array Modifications</H4>
+<PRE>template &lt;class T&gt; struct remove_bounds{
+   typedef T type;
+};
+template &lt;class T, std::size_t N&gt; struct remove_bounds&lt;T[N]&gt;{
+   typedef T type;
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the same as T, except any top level array bounds have been removed.</P>
+<H4>Pointer Modifications</H4>
+<PRE>template &lt;class T&gt; struct remove_pointer{
+   typedef T type;
+};
+template &lt;class T&gt; struct remove_pointer&lt;T*&gt;{
+   typedef T type;
+};
+template &lt;class T&gt; struct remove_pointer&lt;T* const&gt;{
+   typedef T type;
+};
+template &lt;class T&gt; struct remove_pointer&lt;T* volatile&gt;{
+   typedef T type;
+};
+template &lt;class T&gt; struct remove_pointer&lt;T* const volatile&gt;{
+   typedef T type;
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the same as T, except any top level indirection has been removed. Note: pointers to members are left unchanged by <CODE>remove_pointer</CODE>.</P>
+<PRE>template &lt;class T&gt; struct add_pointer{
+   typedef typename remove_bounds&lt;typename remove_reference&lt;T&gt;::type&gt;::type* type;
+};</PRE>
+<CODE><P>type</CODE>: defined to be a type that is the result of the expression <CODE>&amp;t</CODE>, where <CODE>t </CODE>is an imaginary lvalue of type T.</P>
+<H3><A NAME="implementation_requirements"></A>TT.5 Implementation requirements</H3>
+<P>The behaviour of all the class templates defined in &lt;type_traits&gt;, &lt;type_compare&gt; and &lt;type_transform&gt; shall conform to the specifications given, except where noted below.</P>
+<P>The latitude granted to implementers in this clause is temporary, and will be removed in future revisions of this document.</P>
+<P>If there is no means by which the implementation can differentiate between class and union types, then the class templates <CODE>is_class</CODE> and <CODE>is_union </CODE>need not be provided.</P>
+<P>If there is no means by which the implementation can detect polymorphic types, then the class template <CODE>is_polymorphic</CODE> need not be provided.</P>
+<P>If there is no means by which the implementation can detect abstract types, then the class template <CODE>is_abstract</CODE> need not be provided.</P>
+<P>It is unspecified under what circumstances, if any, <CODE>is_empty&lt;T&gt;::value</CODE> evaluates to true.</P>
+<P>It is unspecified under what circumstances, if any, <CODE>is_pod&lt;T&gt;::value</CODE> evaluates to true, except that, for all types T:</P>
+<PRE>is_pod&lt;T&gt;::value == is_pod&lt;remove_bounds&lt;T&gt;::type&gt;::value
+is_pod&lt;T&gt;::value == is_pod&lt;T const volatile&gt;::value
+is_pod&lt;T&gt;::value &gt;= (is_scalar&lt;T&gt;::value || is_void&lt;T&gt;::value)</PRE>
+<P>It is unspecified under what circumstances, if any,&nbsp;<CODE>has_trivial_*&lt;T&gt;::value</CODE> evaluates to true, except that:</P>
+<PRE>has_trivial_*&lt;T&gt;::value == has_trivial_*&lt;remove_bounds&lt;T&gt;::type&gt;::value
+has_trivial_*&lt;T&gt;::value &gt;= is_pod&lt;T&gt;::value</PRE>
+<P>It is unspecified under what circumstances, if any,&nbsp;<CODE>has_nothrow_*&lt;T&gt;::value</CODE> evaluates to true.</P>
+<P>There are trait templates whose semantics do not require their argument(s) to be completely defined, nor does such completeness in any way affect the exact definition of the traits class template specializations. However, in the absence of compiler support these traits cannot be implemented without causing implicit instantiation of their arguments; in particular: is_class, is_enum, and is_scalar. For these templates, it is unspecified whether their template argument(s) are implicitly instantiated when the traits class is itself instantiated.</P>
+<P><HR></P>
+<H2><A NAME="references"></A>References</H2>
+<OL>
+
+<B><FONT SIZE=5><LI><A NAME="ref1"></A></B></FONT>John Maddock and Steve Cleary, "<A HREF="http://www.boost.org/libs/type_traits/c++_type_traits.htm">C++ Type Traits</A>", <A HREF="http://www.ddj.com/">Dr Dobbs Journal</A>, October 2000. </LI>
+<LI><A NAME="ref2"></A>Steve Cleary, Beman Dawes, Howard Hinnant and John Maddock, "<A HREF="http://www.boost.org/libs/utility/compressed_pair.htm">compressed_pair</A>", <A HREF="http://www.boost.org/libs/libraries.htm">Boost library documentation</A>. </LI>
+<LI><A NAME="ref3"></A>Jeremy Siek, "Concept Checking", <A HREF="http://www.oonumerics.org/tmpw00/">C++ Template Workshop 2000</A>. </LI>
+<LI><A NAME="ref4"></A>John Maddock, "<A HREF="http://www.boost.org/libs/static_assert/static_assert.htm">static assert</A>", <A HREF="http://www.boost.org/libs/libraries.htm">Boost library documentation</A>. </LI>
+<LI><A NAME="ref5"></A>Steve Cleary, Beman Dawes, Aleksey Gurtovoy, Howard Hinnant, Jesse Jones, Mat Marcus, John Maddock and Jeremy Siek, "<A HREF="http://www.boost.org/libs/type_traits/index.htm">Type traits</A>", <A HREF="http://www.boost.org/libs/libraries.htm">Boost library documentation</A>. </LI>
+<LI><A NAME="ref6"></A>Andrei Alexandrescu, "<A HREF="http://moderncppdesign.com/">Modern C++ Design: Generic Programming and Design Patterns Applied</A>", Addison-Wesley, 2001. </LI>
+<LI><A NAME="ref7"></A>SGI, "The SGI standard template library". </LI>
+<LI><A NAME="ref8"></A>Emily Winch, <A HREF="http://www.oonumerics.org/tmpw01/winch.pdf">Heterogenous lists of named objects</A>, <A HREF="http://www.oonumerics.org/tmpw01/schedule.html">Second C++ Template Programming Workshop 2001</A>. </LI>
+<LI><A NAME="ref9"></A>Andrei Alexandrescu, "<A HREF="http://www.cuj.com/experts/1910/alexandr.htm?topic=experts&amp;topic=experts">Generic&lt;Programming&gt;: Typed Buffers (II)</A>", <A HREF="http://www.cuj.com/experts/?topic=experts">Oct CUJ C++ Experts</A>, 2001. </LI>
+<LI><A NAME="ref10"></A>Robert Klarer and&nbsp;John Maddock, <A HREF="http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2002/n1381.htm">Proposal to Add Static Assertions to the Core Language</A>, 2002.</LI>
+<LI><A NAME="ref11"></A>Aleksey Gurtovoy and David Abrahams, <A HREF="http://www.mywikinet.com/mpl/paper/mpl_paper.pdf">The Boost C++ Metaprogramming Library</A>, 2002.</LI>
+<LI><A NAME="ref12"></A>Klaus Kreft and Angelika Langer, <A HREF="http://www.cuj.com/experts/1812/langer.htm?topic=experts">Effective Standard C++ Library: Explicit Function Template Argument Specification and STL A New Language Feature and Its Impact on Old Programming Techniques</A>, <A HREF="http://www.cuj.com/">C/C++ Users Journal</A>, December 2000.</LI></OL>
+
+<H2><A NAME="acknowledgements"></A>Acknowledgements</H2>
+<P>The author is particularly indebted to everyone who has worked on the boost type traits library[<A HREF="#ref5">5</A>], but also to David Abrahams, Darin Adler, Beman Dawes, Daniel Frey, Aleksey Gurtovoy, Howard Hinnant, Richard Peters, Gabriel Dos Reis and Emily Winch for their helpful comments on various drafts of this document, and to the Library Working Group Reviewers (Martin Sebor, Dietmar Kuehl and Benjamin Kosnik).</P>
+<P>&nbsp;</P></BODY>
+</HTML>

@@ -1,0 +1,860 @@
+#ifndef _SSTL_TR1_FUNCTIONAL_
+# define _SSTL_TR1_FUNCTIONAL_
+
+// hash functors are described at http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1456.html
+// the algorithms used here are by no means very good. The draft provides no indications of performance or result characteristics,
+// which is probably on purpose but may be misleading. After all, the standard itself defines the characteristics of sort and stable_sort
+// such that pretty much only one algorithm can be used. Later I may come back and improve the hashes used.
+
+// arithmatic hash functions derived from http://ciips.ee.uwa.edu.au/~morris/Year2/PLDS210/hash_func.html
+
+// most of the actual hashing work is done in the double handler. Others, except bool, are done by casting to double.
+// string has each element multiplied to the last to create a pre-key, then is run through the double version.
+// This conforms with the expectations of the draft, in that a long double or int cast to a double should always produce the
+// same number for hashing.
+
+// result_of is described at http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1454.html and specialized for 
+// function pointers and member function pointers up to 10 argument as well as all object function types described in
+// both the 1998 standard and the TR1 extensions provided here.
+
+// mem_fn is described at http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1432.html
+
+#include <cmath>
+#include <cstddef>
+#include <climits>
+#include <string>
+
+// we include directly to prevent an error in case this is being included by the library
+// when _SSTL_NO_TR1/EXT* is defined.
+#include "type_transform"
+#include "type_traits"
+
+namespace std
+{namespace tr1 {
+
+	namespace functional_impl
+	{
+		// this set of classes acts as a helper to extract the return type of a function
+		template <typename tList>
+		struct extract_return;
+
+		template <typename tReturn>
+		struct extract_return<tReturn ()>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1>
+		struct extract_return<tReturn (tArg1)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2>
+		struct extract_return<tReturn (tArg1, tArg2)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4, tArg5)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4, tArg5, tArg6)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8, typename tArg9>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8, typename tArg9, typename tArg10>
+		struct extract_return<tReturn (tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9, tArg10)>
+		{
+			typedef tReturn type;
+		};
+
+		// and again for function pointers
+		template <typename tReturn>
+		struct extract_return<tReturn (*)()>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1>
+		struct extract_return<tReturn (*)(tArg1)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2>
+		struct extract_return<tReturn (*)(tArg1, tArg2)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4, tArg5)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8, typename tArg9>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8, typename tArg9, typename tArg10>
+		struct extract_return<tReturn (*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9, tArg10)>
+		{
+			typedef tReturn type;
+		};
+
+		// and again for member function types
+		template <typename tReturn, typename tClass>
+		struct extract_return<tReturn (tClass::*)()>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1>
+		struct extract_return<tReturn (tClass::*)(tArg1)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8, typename tArg9>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9)>
+		{
+			typedef tReturn type;
+		};
+		template <typename tReturn, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+			typename tArg6, typename tArg7, typename tArg8, typename tArg9, typename tArg10>
+		struct extract_return<tReturn (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9, tArg10)>
+		{
+			typedef tReturn type;
+		};
+
+		// much of this code derived from the method used to test convertability
+		// in type_compare. See also http://groups.google.com/groups?selm=df893da6.0203170237.3760f3c4%40posting.google.com
+		// for a discussion of the technique.
+		typedef char noType;
+		struct yesType { char mDummy[2]; };
+		
+		template <typename tTest>
+		static noType test(...);
+		template <typename tTest>
+		static yesType test(typename tTest::result_type *);
+		
+		template <typename tTest>
+		struct find_result_type
+		{
+			// note, GCC really hates it if we're not utterly completely specific about scope here.
+			static const bool exists = 
+				(sizeof(::std::tr1::functional_impl::test<tTest>(0)) == sizeof(yesType));
+		};
+
+		template <bool has_result_type, typename tFunction, typename tList>
+		struct result_of_object;
+
+		template <typename tFunction, typename tList>
+		struct result_of_object<true, tFunction, tList>
+		{
+			typedef typename tFunction::result_type type;
+		};
+
+		// we have to specialize this one, which deals with objects that have a template result type
+		// to deal with zero args, in which case we return void. Functors that take zero arguments
+		// should have a result_type member type.
+		template <typename tFunction>
+		struct result_of_object<false, tFunction, tFunction ()>
+		{
+			typedef void type;
+		};
+		template <typename tFunction, typename tList>
+		struct result_of_object<false, tFunction, tList>
+		{
+			typedef typename tFunction::result<tList>::type type;
+		};
+
+		template <bool is_function_pointer, typename tFunction, typename tList>
+		struct result_of_impl;
+
+		template <typename tFunction, typename tList>
+		struct result_of_impl<true, tFunction, tList>
+		{
+			typedef typename extract_return<tFunction>::type type;
+		};
+		template <typename tFunction, typename tList>
+		struct result_of_impl<false, tFunction, tList>
+		{
+			typedef typename result_of_object<
+				find_result_type<tFunction>::exists, 
+				tFunction, tList>::type type;
+		};
+	}
+
+	// this breaks the standard, here, but in this case I think the standard is broken.
+	// It just makes *no sense* to do the typelist the way it's done in the draft. It requires
+	// more work for no good reason.
+	template <typename tList>
+	struct result_of
+	{
+		typedef typename functional_impl::extract_return<tList>::type function_type;
+		typedef typename functional_impl::result_of_impl<
+			is_pointer<function_type>::value || is_member_function_pointer<function_type>::value, 
+			function_type, tList>::type type;
+	};
+
+	// general template undefined.
+	template <typename tArg>
+	struct hash;
+
+	template <>
+	struct hash<bool> : public unary_function<bool, std::size_t>
+	{
+		size_t operator()(bool b)
+		{
+			// ok, this is pretty lame. If a container's type is bool, there can only ever really be two buckets.
+			// using a hash for bool would be lame, a tree would be far better.
+			return b? 1 : 0;
+		}
+	};
+	template <>
+	struct hash<double> : public unary_function<double, size_t>
+	{
+		size_t operator()(double k)
+		{
+			double val = 0.6180339887 * k;
+			return static_cast<size_t>(floor(ULONG_MAX * (val - floor(val))));
+		}
+	};
+
+	template <typename tChar, typename tTraits, typename tAlloc>
+	struct hash< basic_string<tChar, tTraits, tAlloc> >
+		: public unary_function< basic_string<tChar, tTraits, tAlloc>, size_t >
+	{
+		typedef basic_string<tChar, tTraits, tAlloc> argument_type;
+
+		size_t operator()(const argument_type &str)
+		{
+			unsigned long key = 1;
+			for (typename argument_type::const_iterator it = str.begin();
+				 it != str.end();
+				 it++)
+			{
+				key *= *it;
+			}
+			return hash<float>()(static_cast<float>(key));
+		}
+	};
+	template <>
+	struct hash<float> : public unary_function<float, size_t>
+	{
+		size_t operator()(float k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<long double> : public unary_function<long double, size_t>
+	{
+		size_t operator()(long double k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<char> : public unary_function<char, size_t>
+	{
+		size_t operator()(char k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<signed char> : public unary_function<signed char, size_t>
+	{
+		size_t operator()(signed char k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<unsigned char> : public unary_function<unsigned char, size_t>
+	{
+		size_t operator()(unsigned char k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<signed short> : public unary_function<signed short, size_t>
+	{
+		size_t operator()(signed short k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<unsigned short> : public unary_function<unsigned short, size_t>
+	{
+		size_t operator()(unsigned short k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<signed long> : public unary_function<signed long, size_t>
+	{
+		size_t operator()(signed long k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<unsigned long> : public unary_function<unsigned long, size_t>
+	{
+		size_t operator()(unsigned long k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<signed int> : public unary_function<signed int, size_t>
+	{
+		size_t operator()(signed int k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <>
+	struct hash<unsigned int> : public unary_function<unsigned int, size_t>
+	{
+		size_t operator()(long double k)
+		{
+			return hash<double>()(static_cast<double>(k));
+		}
+	};
+	template <typename tValue>
+	struct hash<tValue*> : public unary_function<tValue*, size_t>
+	{
+		size_t operator()(tValue *k)
+		{
+			return hash<double>()(static_cast<double>(k - 0));
+		}
+	};
+
+	// function, bind, and mem_fn all need a parameter type to use. We specify one here
+	namespace functional_impl
+	{
+		template <typename tArg, bool isPrimitive>
+		struct make_passthrough_if_not_primitive;
+		template <typename tArg>
+		struct make_passthrough_if_not_primitive<tArg, true>
+		{
+			typedef tArg type;
+		};
+		template <typename tArg>
+		struct make_passthrough_if_not_primitive<tArg, false>
+		{
+			typedef typename add_reference<typename add_const<tArg>::type>::type type;
+		};
+
+		template <typename tArg>
+		struct make_passthrough
+		{
+			typedef typename 
+				::std::tr1::functional_impl::make_passthrough_if_not_primitive<
+					tArg, ::std::tr1::is_scalar<tArg>::value>::type type;
+		};
+		template <typename tValue>
+		struct make_passthrough<tValue &>
+		{
+			typedef tValue& type;
+		};
+		template <typename tValue>
+		struct make_passthrough<const tValue &>
+		{
+			typedef const tValue& type;
+		};
+	}
+
+	// in here is the class that implements the mem_fn return type. As the draft does
+	// not specify the actual type, it is placed in the functional_impl namespace.
+	namespace functional_impl
+	{
+		// unspecified generic
+		template <typename tPtr>
+		class object_member;
+
+		template <typename tValue, typename tClass>
+		class object_member<tValue tClass::*>
+		{
+		public:
+			typedef typename add_reference<typename add_const<tValue>::type>::type result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+
+			// mem_fun_t compatibility
+			typedef argument1_type argument_type;
+
+			typedef tValue tClass::* pointer_type;
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj) const
+			{
+				return (*obj).*mPointer;
+			}
+			result_type operator()(const tClass &obj) const
+			{
+				return obj.*mPointer;
+			}
+		};
+
+		template <typename tReturnType, typename tClass>
+		class object_member<tReturnType (tClass::*)()>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+
+			// mem_fun_t compatibility
+			typedef argument1_type argument_type;
+
+			typedef tReturnType (tClass::*pointer_type)();
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj) const
+			{
+				return ((*obj).*mPointer)();
+			}
+			result_type operator()(argument1_type obj) const
+			{
+				return (obj.*mPointer)();
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1>
+		class object_member<tReturnType (tClass::*)(tArg1)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+
+			// mem_fun_t compatibility
+			typedef argument1_type first_argument_type;
+			typedef argument2_type second_argument_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg1) const
+			{
+				return ((*obj).*mPointer)(arg1);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg1) const
+			{
+				return (obj.*mPointer)(arg1);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3) const
+			{
+				return (obj.*mPointer)(arg2, arg3);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3, tArg4)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+			typedef typename functional_impl::make_passthrough<tArg4>::type argument5_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3, tArg4);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4, arg5);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4, arg5);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4,
+			typename tArg5>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+			typedef typename functional_impl::make_passthrough<tArg4>::type argument5_type;
+			typedef typename functional_impl::make_passthrough<tArg5>::type argument6_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3, tArg4, tArg5);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4, arg5, arg6);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4, arg5, arg6);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4,
+			typename tArg5, typename tArg6>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+			typedef typename functional_impl::make_passthrough<tArg4>::type argument5_type;
+			typedef typename functional_impl::make_passthrough<tArg5>::type argument6_type;
+			typedef typename functional_impl::make_passthrough<tArg6>::type argument7_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4,
+			typename tArg5, typename tArg6, typename tArg7>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+			typedef typename functional_impl::make_passthrough<tArg4>::type argument5_type;
+			typedef typename functional_impl::make_passthrough<tArg5>::type argument6_type;
+			typedef typename functional_impl::make_passthrough<tArg6>::type argument7_type;
+			typedef typename functional_impl::make_passthrough<tArg7>::type argument8_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7, argument8_type arg8) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7, argument8_type arg8) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4,
+			typename tArg5, typename tArg6, typename tArg7, typename tArg8>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+			typedef typename functional_impl::make_passthrough<tArg4>::type argument5_type;
+			typedef typename functional_impl::make_passthrough<tArg5>::type argument6_type;
+			typedef typename functional_impl::make_passthrough<tArg6>::type argument7_type;
+			typedef typename functional_impl::make_passthrough<tArg7>::type argument8_type;
+			typedef typename functional_impl::make_passthrough<tArg8>::type argument9_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7, argument8_type arg8, argument9_type arg9) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7, argument8_type arg8, argument9_type arg9) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
+			}
+		};
+		template <typename tReturnType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4,
+			typename tArg5, typename tArg6, typename tArg7, typename tArg8, typename tArg9>
+		class object_member<tReturnType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9)>
+		{
+		public:
+			typedef tReturnType result_type;
+			typedef typename add_reference<tClass>::type argument1_type;
+			typedef typename functional_impl::make_passthrough<tArg1>::type argument2_type;
+			typedef typename functional_impl::make_passthrough<tArg2>::type argument3_type;
+			typedef typename functional_impl::make_passthrough<tArg3>::type argument4_type;
+			typedef typename functional_impl::make_passthrough<tArg4>::type argument5_type;
+			typedef typename functional_impl::make_passthrough<tArg5>::type argument6_type;
+			typedef typename functional_impl::make_passthrough<tArg6>::type argument7_type;
+			typedef typename functional_impl::make_passthrough<tArg7>::type argument8_type;
+			typedef typename functional_impl::make_passthrough<tArg8>::type argument9_type;
+			typedef typename functional_impl::make_passthrough<tArg9>::type argument10_type;
+
+			typedef tReturnType (tClass::*pointer_type)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9);
+
+		private:
+			pointer_type mPointer;
+
+		public:
+			object_member(pointer_type ptr)
+			 : mPointer(ptr)
+			{}
+
+			template <typename tInputClass>
+			result_type operator()(tInputClass obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7, argument8_type arg8, argument9_type arg9,
+				argument10_type arg10) const
+			{
+				return ((*obj).*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+			}
+			result_type operator()(argument1_type obj, argument2_type arg2, argument3_type arg3, argument4_type arg4,
+				argument5_type arg5, argument6_type arg6, argument7_type arg7, argument8_type arg8, argument9_type arg9,
+				argument10_type arg10) const
+			{
+				return (obj.*mPointer)(arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10);
+			}
+		};
+	}
+
+	template <typename tPointer>
+	functional_impl::object_member<tPointer> mem_fn(tPointer member)
+	{
+		return functional_impl::object_member<tPointer>(member);
+	}
+}}
+
+#endif

@@ -1,0 +1,252 @@
+#ifndef _SSTL_TR1_TYPE_TRAITS_
+#define _SSTL_TR1_TYPE_TRAITS_
+
+// type traits are specified in http://std.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1424.htm
+
+namespace std
+{namespace tr1 {
+
+	template <typename tValue, tValue constant_value>
+	struct integral_constant
+	{
+		typedef tValue value_type;
+		typedef integral_constant<value_type, constant_value> type;
+		
+		static const value_type value = constant_value;
+	};
+	typedef integral_constant<bool, true> true_type;
+	typedef integral_constant<bool, false> false_type;
+	
+	template <typename tArg>
+	struct is_void : public false_type
+	{};
+	template <>
+	struct is_void<void> : public true_type
+	{};
+	
+	template <typename tArg>
+	struct is_signed : public false_type
+	{};
+	template <typename tArg>
+	struct is_unsigned : public false_type
+	{};
+	template <typename tArg>
+	struct is_integral : public integral_constant<bool,
+		is_signed<tArg>::value || is_unsigned<tArg>::value>
+	{};
+	template <>
+	struct is_unsigned<unsigned char> : public true_type
+	{};
+	template <>
+	struct is_signed<signed char> : public true_type
+	{};
+	template <>
+	struct is_signed<char> : public true_type
+	{};
+	template <>
+	struct is_unsigned<unsigned short> : public true_type
+	{};
+	template <>
+	struct is_signed<signed short> : public true_type
+	{};
+	template <>
+	struct is_unsigned<unsigned long> : public true_type
+	{};
+	template <>
+	struct is_signed<signed long> : public true_type
+	{};
+	template <>
+	struct is_unsigned<unsigned int> : public true_type
+	{};
+	template <>
+	struct is_signed<signed int> : public true_type
+	{};
+	
+	// possible addition, add __intxx for win32 and long long for gcc
+	
+	template <typename tArg>
+	struct is_floating_point : public false_type
+	{};
+	template <>
+	struct is_floating_point<float> : public true_type
+	{};
+	template <>
+	struct is_floating_point<double> : public true_type
+	{};
+	template <>
+	struct is_floating_point<long double> : public true_type
+	{};
+	
+	template <typename tArg>
+	struct is_pointer : public false_type
+	{};
+	template <typename tValue>
+	struct is_pointer<tValue *> : public true_type
+	{};
+	
+	template <typename tArg>
+	struct is_reference : public false_type
+	{};
+	template <typename tValue>
+	struct is_reference<tValue &> : public true_type
+	{};
+	
+	// this section gets a little verbose due to duplication of is_member_function_pointer. It's hoped
+	// that someday this will be unneeded because of some variant or iterative template construct. Right
+	// now, however, this is a standard deficiency and not a compiler deficiency.
+	template <typename tArg>
+	struct is_member_object_pointer : public false_type
+	{};
+	template <typename tType, typename tClass>
+	struct is_member_object_pointer<tType tClass::*> : public true_type
+	{};
+	template <typename tArg>
+	struct is_member_function_pointer : public false_type
+	{};
+	template <typename tType, typename tClass, typename tArg1>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5,
+		typename tArg6>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5, 
+		typename tArg6, typename tArg7>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5, 
+		typename tArg6, typename tArg7, typename tArg8>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5, 
+		typename tArg6, typename tArg7, typename tArg8, typename tArg9>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9)> : public true_type
+	{};
+	template <typename tType, typename tClass, typename tArg1, typename tArg2, typename tArg3, typename tArg4, typename tArg5, 
+		typename tArg6, typename tArg7, typename tArg8, typename tArg9, typename tArg10>
+	struct is_member_function_pointer<tType (tClass::*)(tArg1, tArg2, tArg3, tArg4, tArg5, tArg6, tArg7, tArg8, tArg9, tArg10)> : public true_type
+	{};
+	
+	// not sure how to do is_enum, is_class, or is_function, come back later.
+	// for now all say false always. This will break composit types that rely on them.
+	template <typename tArg>
+	struct is_enum : public false_type
+	{};
+	
+	template <typename tArg>
+	struct is_class : public false_type
+	{};
+	
+	template <typename tArg>
+	struct is_function : public false_type
+	{};
+	
+	template <typename tArg>
+	struct is_arithmetic : public integral_constant<bool,
+		is_integral<tArg>::value || is_floating_point<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct is_fundamental : public integral_constant<bool,
+		is_arithmetic<tArg>::value || is_void<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct is_object : public integral_constant<bool,
+		!is_function<tArg>::value && !is_reference<tArg>::value && !is_void<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct is_member_pointer : public integral_constant<bool,
+		is_member_object_pointer<tArg>::value || is_member_function_pointer<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct is_scalar : public integral_constant<bool,
+		is_arithmetic<tArg>::value || is_enum<tArg>::value || is_pointer<tArg>::value || is_member_pointer<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct is_compound : public integral_constant<bool,
+		!is_fundamental<tArg>::value>
+	{};
+		
+	template <typename tArg>
+	struct is_const : public false_type
+	{};
+	template <typename tValue>
+	struct is_const<const tValue> : public true_type
+	{};
+	
+	template <typename tArg>
+	struct is_volatile : public false_type
+	{};
+	template <typename tValue>
+	struct is_volatile<volatile tValue> : public true_type
+	{};
+	
+	// this only sees if the type is a scalar type, I'm not sure how to do more.
+	template <typename tArg>
+	struct is_pod : public integral_constant<bool, is_scalar<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct is_empty : public integral_constant<bool, sizeof(tArg) == 0>
+	{};
+
+	// no idea how to detect this, must look into it.
+	template <typename tArg>
+	struct is_polymorphic : public false_type
+	{};
+	
+	// or this...
+	template <typename tArg>
+	struct is_abstract : public false_type
+	{};
+	
+	template <typename tArg>
+	struct has_trivial_constructor : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_trivial_copy : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_trivial_assign : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_trivial_destructor : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_nothrow_constructor : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_nothrow_copy : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_nothrow_assign : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+	
+	template <typename tArg>
+	struct has_nothrow_destructor : public integral_constant<bool, is_pod<tArg>::value>
+	{};
+}}
+
+#endif

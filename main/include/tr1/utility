@@ -1,0 +1,47 @@
+#ifndef _SSTL_TR1_UTILITY_
+# define _SSTL_TR1_UTILITY_
+
+// reference_wrapper and it's helpers are defined at http://anubis.dkuug.dk/jtc1/sc22/wg21/docs/papers/2003/n1453.html
+
+namespace std
+{namespace tr1 {
+
+	template <typename tValue>
+	class reference_wrapper
+	{
+	public:
+		typedef tValue type;
+
+	private:
+		type &mRef;
+
+	public:
+		explicit reference_wrapper(type &ref)
+		 : mRef(ref)
+		{}
+
+		operator type&() const
+		{
+			return mRef;
+		}
+		type &get() const
+		{
+			return mRef;
+		}
+
+		// XXX function stuff undefined as yet XXX
+	};
+
+	template <typename tValue>
+	reference_wrapper<tValue> ref(tValue &val)
+	{
+		return reference_wrapper<tValue>(val);
+	}
+	template <typename tValue>
+	reference_wrapper<const tValue> cref(tValue &val)
+	{
+		return reference_wrapper<const tValue>(val);
+	}
+}}
+
+#endif

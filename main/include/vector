@@ -1,0 +1,286 @@
+#ifndef _SSTL_VECTOR_
+#define _SSTL_VECTOR_
+
+#include <memory>
+#include <iterator>
+#include <algorithm>
+#include <functional>
+#include <stdexcept>
+
+#include "stir/linear_buffer.hpp"
+
+namespace std
+{
+
+	template <typename tValue, typename tAllocator = allocator<tValue> >
+	class vector
+	{
+	public:
+		typedef tValue                                  value_type;
+		typedef tAllocator                              allocator_type;
+
+		typedef typename tAllocator::reference          reference;
+		typedef typename tAllocator::const_reference    const_reference;
+		typedef typename tAllocator::pointer            pointer;
+		typedef typename tAllocator::const_pointer      const_pointer;
+		typedef typename tAllocator::size_type          size_type;
+		typedef typename tAllocator::difference_type    difference_type;
+
+		typedef pointer                                 iterator;
+		typedef const_pointer                           const_iterator;
+		typedef ::std::reverse_iterator<iterator>       reverse_iterator;
+		typedef ::std::reverse_iterator<const_iterator> const_reverse_iterator;
+
+	private:
+		stir::linear_buffer<tValue, tAllocator> mBuffer;
+
+	public:
+		explicit vector(const allocator_type &alloc = allocator_type())
+		 : mBuffer(0, alloc)
+		{
+		}
+		explicit vector(size_type count, const value_type &value = value_type(),
+		                const allocator_type &alloc = allocator_type())
+		 : mBuffer(count, alloc)
+		{
+			assign(count, value);
+		}
+		template <typename tIterator>
+		vector(const tIterator &copy_begin, const tIterator &copy_end, const allocator_type &alloc = allocator_type())
+		 : mBuffer(0, alloc)
+		{
+			assign<tIterator>(copy_begin, copy_end, iterator_traits<tIterator>::iterator_category());
+		}
+		vector(const vector &y)
+		 : mBuffer(0, y.mBuffer.get_allocator())
+		{
+			reserve(y.size());
+			assign<const_iterator>(y.begin(), y.end());
+		}
+
+		size_type size() const
+		{
+			return mBuffer.size();
+		}
+		size_type max_size() const
+		{
+			return mBuffer.max_size();
+		}
+		size_type capacity() const
+		{
+			return mBuffer.capacity();
+		}
+		bool empty() const
+		{
+			return mBuffer.size() > 0;
+		}
+
+		// the second and third arguments here are optional extensions.
+		void reserve(size_type count)
+		{
+			mBuffer.reserve(count);
+		}
+		void resize(size_type count, const value_type &fill)
+		{
+			mBuffer.resize_fill(count, size(), fill);
+		}
+
+		inline void assign(size_type count, const value_type &value)
+		{
+			resize(0, value);
+			resize(count, value);
+		}
+		template <typename tIterator>
+		inline void assign(const tIterator &assign_begin, const tIterator &assign_end)
+		{
+			resize(0, value_type());
+			insert<tIterator>(begin(), assign_begin, assign_end, iterator_traits<tIterator>::iterator_category());
+		}
+
+		inline vector &operator=(const vector &y)
+		{
+			assign<const_iterator>(y.begin(), y.end());
+			return *this;
+		}
+
+		inline allocator_type get_allocator() const
+		{
+			return mBuffer.get_allocator();
+		}
+
+		inline iterator begin()
+		{
+			return iterator(mBuffer.begin());
+		}
+		inline const_iterator begin() const
+		{
+			return const_iterator(mBuffer.begin());
+		}
+
+		inline iterator end()
+		{
+			return iterator(mBuffer.end());
+		}
+		inline const_iterator end() const
+		{
+			return const_iterator(mBuffer.end());
+		}
+
+		inline reverse_iterator rbegin()
+		{
+			return reverse_iterator(mBuffer.end());
+		}
+		inline const_reverse_iterator rbegin() const
+		{
+			return const_reverse_iterator(mBuffer.end());
+		}
+
+		inline reverse_iterator rend()
+		{
+			return reverse_iterator(mBuffer.begin());
+		}
+		inline const_reverse_iterator rend() const
+		{
+			return const_reverse_iterator(mBuffer.begin());
+		}
+
+		inline reference operator[](size_type n)
+		{
+			return *(mBuffer.begin() + n);
+		}
+		inline const_reference operator[](size_type n) const
+		{
+			return *(mBuffer.begin() + n);
+		}
+		inline reference at(size_type n)
+		{
+			if (n > size())
+				throw out_of_range("std::vector::at out of range");
+			return *(mBuffer.begin() + n);
+		}
+		inline const_reference at(size_type n) const
+		{
+			if (n > size())
+				throw out_of_range("std::vector::at out of range");
+			return *(mBuffer.begin() + n);
+		}
+
+		inline reference front()
+		{
+			return *mBuffer.begin();
+		}
+		inline const_reference front() const
+		{
+			return *mBuffer.begin();
+		}
+		inline reference back()
+		{
+			return *(mBuffer.end() - 1);
+		}
+		inline const_reference back() const
+		{
+			return *(mBuffer.end() - 1);
+		}
+
+		inline void push_back(const value_type &value)
+		{
+			resize(size() + 1, value);
+		}
+		inline void pop_back()
+		{
+			if (size() > 0)
+				resize(size() - 1);
+		}
+
+		iterator erase(const iterator &erase_begin, const iterator &erase_end)
+		{
+			mBuffer.resize(size() - (erase_end - erase_begin), erase_begin - begin());
+			return erase_begin;
+		}
+		inline iterator erase(const iterator &pos)
+		{
+			return erase(pos, pos + 1);
+		}
+
+		void insert(iterator pos, size_type count, const value_type &value)
+		{
+			mBuffer.resize_fill(size() + count, pos - begin(), value);
+		}		
+		inline iterator insert(const iterator &pos, const value_type &value)
+		{
+			size_type index = pos - begin();
+			insert(pos, 1, value);
+			return begin() + index + 1;
+		}
+		template <typename tIterator>
+		inline void insert(const iterator &pos, const tIterator &begin, const tIterator &end)
+		{
+			insert<tIterator>(pos, begin, end, iterator_traits<tIterator>::iterator_category());
+		}
+
+		void clear()
+		{
+			resize(0, value_type());
+		}
+		void swap(const vector &y)
+		{
+			mBuffer.swap(y.mBuffer);
+		}
+
+	private:
+		template <typename tIterator>
+		void insert(const iterator &pos, const tIterator &begin, const tIterator &end, const input_iterator_tag &tag)
+		{
+			// this is ugly, we have to add them one at a time since we can't find out the distance
+			// in any reasonable time
+			insert_iterator<vector> out(*this, pos);
+			::std::copy(begin, end, out);
+		}
+
+		template <typename tIterator>
+		void insert(const iterator &pos, const tIterator &insert_begin, const tIterator &insert_end, const random_access_iterator_tag &tag)
+		{
+			mBuffer.resize_copy(size() + (insert_end - insert_begin), pos - begin(), insert_begin);
+		}
+	};
+
+	// todo: vector<bool> specialization
+
+	template <typename tValue, typename tAlloc>
+	bool operator==(const vector<tValue, tAlloc> &x, const vector<tValue, tAlloc> &y)
+	{
+		return (x.size() == y.size()) && equal(x.begin(), x.end(), y.begin());
+	}
+	template <typename tValue, typename tAlloc>
+	bool operator!=(const vector<tValue, tAlloc> &x, const vector<tValue, tAlloc> &y)
+	{
+		return (x.size() != y.size()) && equal(x.begin(), x.end(), y.begin(), not_equal_to<tValue>());
+	}
+	template <typename tValue, typename tAlloc>
+	bool operator<(const vector<tValue, tAlloc> &x, const vector<tValue, tAlloc> &y)
+	{
+		return (x.size() < y.size()) && equal(x.begin(), x.end(), y.begin(), less<tValue>());
+	}
+	template <typename tValue, typename tAlloc>
+	bool operator<=(const vector<tValue, tAlloc> &x, const vector<tValue, tAlloc> &y)
+	{
+		return (x.size() <= y.size()) && equal(x.begin(), x.end(), y.begin(), less_equal<tValue>());
+	}
+	template <typename tValue, typename tAlloc>
+	bool operator>(const vector<tValue, tAlloc> &x, const vector<tValue, tAlloc> &y)
+	{
+		return (x.size() >= y.size()) && equal(x.begin(), x.end(), y.begin(), greater<tValue>());
+	}
+	template <typename tValue, typename tAlloc>
+	bool operator>=(const vector<tValue, tAlloc> &x, const vector<tValue, tAlloc> &y)
+	{
+		return (x.size() >= y.size()) && equal(x.begin(), x.end(), y.begin(), greater_equal<tValue>());
+	}
+	template <typename tValue, typename tAlloc>
+	void swap(vector<tValue, tAlloc> &x, vector<tValue, tAlloc> &y)
+	{
+		x.swap(y);
+	}
+}
+
+#endif

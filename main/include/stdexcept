@@ -1,0 +1,99 @@
+#ifndef _SSTL_STDEXCEPT_
+#define _SSTL_STDEXCEPT_
+
+//#include <string>
+#include <exception>
+
+namespace std
+{
+	class logic_error : public exception
+	{
+	private:
+//		std::string mStr;
+
+	public:
+		logic_error(const char *str) throw() // this is wrong.
+//		 : mStr(str)
+		{}
+
+		virtual const char *what() const throw()
+		{
+//			return mStr.c_str();
+			return 0;
+		}
+	};
+
+/*	class domain_error : public logic_error
+	{
+	public:
+		domain_error(const std::string &str) throw()
+		 : logic_error(str)
+		{}
+	};
+
+	class invalid_argument : public logic_error
+	{
+	public:
+		invalid_argument(const std::string &str) throw()
+		 : logic_error(str)
+		{}
+	};*/
+
+	class length_error : public logic_error
+	{
+	public:
+		length_error(const char *str) throw()
+		 : logic_error(str)
+		{}
+	};
+
+	class out_of_range : public logic_error
+	{
+	public:
+		out_of_range(const char *str) throw()
+		 : logic_error(str)
+		{}
+	};
+
+	class runtime_error : public exception
+	{
+	private:
+//		std::string mStr;
+
+	public:
+		runtime_error(const char *str) throw()
+//		 : mStr(str)
+		{}
+
+		virtual const char *what() throw()
+		{
+//			return mStr.c_str();
+		}
+	};
+
+/*	class range_error : public runtime_error
+	{
+	public:
+		range_error(const std::string &str) throw()
+		 : runtime_error(str)
+		{}
+	};
+
+	class overflow_error : public runtime_error
+	{
+	public:
+		overflow_error(const std::string &str) throw()
+		 : runtime_error(str)
+		{}
+	};
+
+	class underflow_error : public runtime_error
+	{
+	public:
+		underflow_error(const std::string &str) throw()
+		 : runtime_error(str)
+		{}
+	};*/
+};
+
+#endif

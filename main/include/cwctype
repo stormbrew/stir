@@ -1,0 +1,11 @@
+#ifndef _SSTL_CWCTYPE_
+# define _SSTL_CWCTYPE_
+
+namespace std
+{
+	extern "C"
+	{
+# include <wctype.h>
+	}
+}
+#endif
