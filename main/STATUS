@@ -25,7 +25,7 @@ components:
 <limits>                not begun.
 <list>                  not begun.
 <locale>                begun.
-<map>                   not begun.
+<map>                   not begun. -- sponsored $10 by Roger Clark
 (N1422)<math.h>         not begun. Erk, putting this stuff in math.h is oogly.
 <memory>                done.
  (N1450, shared_ptr)    done.
